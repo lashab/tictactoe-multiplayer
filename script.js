@@ -50,11 +50,11 @@ canvas.add(
 canvas.on({
   'mouse:down': function(e) {
     if (e.target) {
-      
-      var box = e.target;
-      , left = box.getLeft();
-      , top = box.getTop();
-      , wLeft = box.getLeft() + box.getWidth();
+
+      var box = e.target
+      , left = box.getLeft()
+      , top = box.getTop()
+      , wLeft = box.getLeft() + box.getWidth()
       , hTop = box.getTop() + box.getHeight();
 
       box.set('evented', false);
