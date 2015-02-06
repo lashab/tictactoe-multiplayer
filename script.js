@@ -1,67 +1,89 @@
 (function() {
- 'use strict'; 
- var canvas = new fabric.Canvas('tictactoe');
+  'use strict'; 
+  var canvas = new fabric.Canvas('tictactoe');
+  canvas.setWidth(window.innerWidth);
+  canvas.setHeight(window.innerHeight);
 
- canvas.setWidth(window.innerWidth);
- canvas.setHeight(window.innerHeight);
+  var x = canvas.getWidth() / 3;
+  var y = canvas.getHeight() / 3;
+  x = x - (x - y);
 
- var x = canvas.getWidth() / 3;
- var y = canvas.getHeight() / 3;
- x = x - (x - y);
+  var cross = true;
 
- var makeLine = function(coords) {
-  return new fabric.Line(coords, {
-    stroke: 'black',
-    strokeWidth: 1,
-    selectable: false,
-    evented: false
-  }); 
-}
+  function Draw() {
+    this.fabric = fabric;
+  };
 
-var makeGroup = function(groups) {
-  return new fabric.Group(groups, {
-    selectable: false,
-    hoverCursor: 'pointer',
-    hasBorders: false,
-    hasControls: false,
-    lockMovementX: true,
-    lockMovementY: true
-  });
-}
-
-canvas.add(
-  makeGroup([makeLine([x, 0, x, y]), makeLine([0, y, x, y])]),
-  makeGroup([makeLine([x * 2, 0, x * 2, y]), makeLine([x * 2, y, x, y])]),
-  makeGroup([makeLine([x * 3, 0, x * 3, y]), makeLine([x * 3, y, x * 2, y])]),
-  makeGroup([makeLine([x, y, x, y * 2]), makeLine([0, y * 2, x, y * 2])]),
-  makeGroup([makeLine([x * 2, y, x * 2, y * 2]), makeLine([x, y * 2, x * 2, y * 2])]),
-  makeGroup([makeLine([x * 3, y, x * 3, y * 2]), makeLine([x * 3, y * 2, x * 2, y * 2])]),
-  makeGroup([makeLine([x, y * 2, x, y * 3]), makeLine([0, y * 3, x, y * 3])]),
-  makeGroup([makeLine([x * 2, y * 2, x * 2, y * 3]), makeLine([x, y * 3, x * 2, y * 3])]),
-  makeGroup([makeLine([x * 3, y * 2, x * 3, y * 3]), makeLine([x * 2, y * 3, x * 3, y * 3])])
-  );
-
-  // canvas.forEachObject(function(o) {
-  //   o.on('mouse:down', function(e) {
-  //     alert();
-  //   })
-  // });
-
-canvas.on({
-  'mouse:down': function(e) {
-    if (e.target) {
-
-      var box = e.target
-      , left = box.getLeft()
-      , top = box.getTop()
-      , wLeft = box.getLeft() + box.getWidth()
-      , hTop = box.getTop() + box.getHeight();
-
-      box.set('evented', false);
-      canvas.add(makeLine([left + 50, top + 50, wLeft - 50, hTop - 50]), makeLine([wLeft - 50, top + 50, left + 50, hTop - 50]));
+  Draw.prototype = {
+    line: function(coords) {
+      var options = {
+        stroke: 'black',
+        strokeWidth: 1,
+        selectable: false,
+        evented: false
+      };
+      return new this.fabric.Line(coords, options);
+    }
+    , circle: function(left, top, radius) {
+      var options = {
+        radius: radius, 
+        fill: '#fff',
+        left: left,
+        top: top,
+        stroke: 'black',
+        strokeWidth: 1,
+        originX: 'center',
+        originY: 'center'
+      };  
+      return new this.fabric.Circle(options);
+    }
+    , group: function(groups) {
+      var options = {
+        selectable: false,
+        hoverCursor: 'pointer',
+        hasBorders: false,
+        hasControls: false,
+        lockMovementX: true,
+        lockMovementY: true
+      };
+      return new this.fabric.Group(groups, options);
     }
   }
-});
 
-canvas.renderAll();
-})()
+  var draw = new Draw();
+
+  canvas.add(
+    draw.group([draw.line([x, 0, x, y]), draw.line([0, y, x, y])]),
+    draw.group([draw.line([x * 2, 0, x * 2, y]), draw.line([x * 2, y, x, y])]),
+    draw.group([draw.line([x * 3, 0, x * 3, y]), draw.line([x * 3, y, x * 2, y])]),
+    draw.group([draw.line([x, y, x, y * 2]), draw.line([0, y * 2, x, y * 2])]),
+    draw.group([draw.line([x * 2, y, x * 2, y * 2]), draw.line([x, y * 2, x * 2, y * 2])]),
+    draw.group([draw.line([x * 3, y, x * 3, y * 2]), draw.line([x * 3, y * 2, x * 2, y * 2])]),
+    draw.group([draw.line([x, y * 2, x, y * 3]), draw.line([0, y * 3, x, y * 3])]),
+    draw.group([draw.line([x * 2, y * 2, x * 2, y * 3]), draw.line([x, y * 3, x * 2, y * 3])]),
+    draw.group([draw.line([x * 3, y * 2, x * 3, y * 3]), draw.line([x * 2, y * 3, x * 3, y * 3])])
+    ).on({
+      'mouse:down': function(e) {
+        if (e.target) {
+          var box = e.target;
+          var left = box.getLeft();
+          var top = box.getTop();
+          var width = box.getWidth();
+          var height = box.getHeight();
+          var offset = width / 4;
+          if (cross) {
+            cross = false;
+            canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]));
+          } 
+          else {
+            cross = true;
+            var centerX = left + ( width / 2 );
+            var centerY = top + ( height / 2 );
+            var radius  = width / 3;
+            canvas.add(draw.circle(centerX, centerY, radius));
+          }
+          box.set('evented', false);
+        }
+      }
+    }).renderAll();
+  })();
