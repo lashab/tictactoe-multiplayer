@@ -25,7 +25,7 @@
       };
       return new this.fabric.Line(coords, options);
     }
-  , circle: function(left, top, radius) {
+    , circle: function(left, top, radius) {
       var options = {
         radius: radius, 
         fill: '#fff',
@@ -40,7 +40,7 @@
       };  
       return new this.fabric.Circle(options);
     }
-  , group: function(groups, evented) {
+    , group: function(groups, evented) {
       var options = {
         selectable: false,
         hoverCursor: 'pointer',
@@ -65,7 +65,7 @@
     draw.group([draw.line([x, y * 2, x, y * 3]), draw.line([0, y * 3, x, y * 3])]),
     draw.group([draw.line([x * 2, y * 2, x * 2, y * 3]), draw.line([x, y * 3, x * 2, y * 3])]),
     draw.group([draw.line([x * 3, y * 2, x * 3, y * 3]), draw.line([x * 2, y * 3, x * 3, y * 3])])
-  );
+    );
 
   canvas.forEachObject(function(object, index) {
     object.set('_box', {
@@ -86,12 +86,7 @@
         var offset = width / 4;
         if (which) {
           which = false;
-          canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]).set({evented: false,
-          }));
-          box.set('_box', {
-            key: box.get('_box').key,
-            value: 1
-          });
+          canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]).set({evented: false}));
         }
         else {
           which = true;
