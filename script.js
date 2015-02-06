@@ -8,7 +8,8 @@
   var y = canvas.getHeight() / 3;
   x = x - (x - y);
 
-  var cross = true;
+  var which = true;
+  var _box = {};
 
   function Draw() {
     this.fabric = fabric;
@@ -64,25 +65,67 @@
     draw.group([draw.line([x, y * 2, x, y * 3]), draw.line([0, y * 3, x, y * 3])]),
     draw.group([draw.line([x * 2, y * 2, x * 2, y * 3]), draw.line([x, y * 3, x * 2, y * 3])]),
     draw.group([draw.line([x * 3, y * 2, x * 3, y * 3]), draw.line([x * 2, y * 3, x * 3, y * 3])])
-  ).on({
+  );
+
+  canvas.forEachObject(function(object, index) {
+    object.set('_box', {
+      key: index + 1,
+      value: NaN
+    });
+  });
+
+  canvas.on({
     'mouse:down': function(e) {
       if (e.target) {
+
         var box = e.target.set('evented', false);
         var left = box.getLeft();
         var top = box.getTop();
         var width = box.getWidth();
         var height = box.getHeight();
         var offset = width / 4;
-        if (cross) {
-          cross = false;
-          canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]).set('evented', false));
-        } 
+        if (which) {
+          which = false;
+          canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]).set({evented: false,
+          }));
+          box.set('_box', {
+            key: box.get('_box').key,
+            value: 1
+          });
+        }
         else {
-          cross = true;
+          which = true;
           var centerX = left + ( width / 2 );
           var centerY = top + ( height / 2 );
           var radius  = width / 3;
           canvas.add(draw.circle(centerX, centerY, radius));
+        }
+        var _group = '_box';
+        box.set(_group, {
+          key: box.get(_group).key,
+          value: ~~which
+        });
+        var combinations = {
+          0: [0, 1, 2],
+          1: [3, 4, 5],
+          2: [6, 7, 8],
+          3: [0, 3, 6],
+          4: [1, 4, 7],
+          5: [2, 5, 8],
+          6: [0, 4, 8],
+          7: [2, 4, 6]
+        };
+        for (var i in combinations) {
+          var combination = combinations[i];
+          var a = canvas.item(combination[0])._box.value;
+          var b = canvas.item(combination[1])._box.value;
+          var c = canvas.item(combination[2])._box.value;
+
+          console.log('a = ' + a + ' b = ' + b + ' c = ' + c );
+          
+          if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c )) {
+            alert();
+          }
         }
       }
     }
