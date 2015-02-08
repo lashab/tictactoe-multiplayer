@@ -76,81 +76,20 @@
     });
   });
 
-  var Game = function() {};
-
-  Game.prototype = {
-    play: function(group) {
-
-    }
-  }
-
-  var sio = io();
-
-  sio.on('get', function(data) {
-    var group = canvas.item(data.key).set('evented', false);
-    var left = group.getLeft();
-    var top = group.getTop();
-    var width = group.getWidth();
-    var height = group.getHeight();
-    var offset = width / 4;
-
-    if (which) {
-      which = false;
-      canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]).set({evented: false}));
-    }
-    else {
-      which = true;
-      var centerX = left + ( width / 2 );
-      var centerY = top + ( height / 2 );
-      var radius  = width / 3;
-      canvas.add(draw.circle(centerX, centerY, radius));
-    }
-    var key = group.get(_group).key;
-    var options = {
-      key: key,
-      value: ~~which
-    };
-    group.set(_group, options);
-          var j = 8;
-      while ( j !== -1 ) {
-        if (isNaN(canvas.item(j).get('value'))) {
-          canvas.item(j).set('evented', true);
-        }
-        j--;
-      } 
-    var combinations = {
-      0: [0, 1, 2],
-      1: [3, 4, 5],
-      2: [6, 7, 8],
-      3: [0, 3, 6],
-      4: [1, 4, 7],
-      5: [2, 5, 8],
-      6: [0, 4, 8],
-      7: [2, 4, 6]
-    };
-    for (var i in combinations) {
-      var combination = combinations[i];
-      var a = canvas.item(combination[0])[_group].value;
-      var b = canvas.item(combination[1])[_group].value;
-      var c = canvas.item(combination[2])[_group].value;          
-      if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c )) {
-        alert();
-      }
-    }
-  });
-
-canvas.on({
-  'mouse:down': function(e) {
-    if (e.target) {
-      var group = e.target.set('evented', false);
+  var play = function(group, options, callback) {
+    if (group) {
+      // group = group.set('evented', false);
       var left = group.getLeft();
       var top = group.getTop();
       var width = group.getWidth();
       var height = group.getHeight();
       var offset = width / 4;
-      if (which) {
+      if ( which ) {
         which = false;
-        canvas.add(draw.group([draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), draw.line([left + width - offset, top + offset, left + offset, top + height - offset])]));
+        canvas.add(draw.group([
+          draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), 
+          draw.line([left + width - offset, top + offset, left + offset, top + height - offset])
+        ]).set('evented', false));
       }
       else {
         which = true;
@@ -160,20 +99,12 @@ canvas.on({
         canvas.add(draw.circle(centerX, centerY, radius));
       }
       var key = group.get(_group).key;
-      var options = {
+      group.set(_group, {
         key: key,
         value: ~~which
-      };
-      group.set(_group, options);
-
+      });
       var j = 8;
-      while ( j !== -1 ) {
-        if (isNaN(canvas.item(j)[_group].value)) {
-          canvas.item(j).set('evented', false);
-        }
-        j--;
-      } 
-
+      var property = 'value';
       var combinations = {
         0: [0, 1, 2],
         1: [3, 4, 5],
@@ -184,18 +115,41 @@ canvas.on({
         6: [0, 4, 8],
         7: [2, 4, 6]
       };
+      while ( j !== -1 ) {
+        canvas.item(j).set('evented', options.evented);
+        j--;
+      }
       for (var i in combinations) {
         var combination = combinations[i];
-        var a = canvas.item(combination[0])[_group].value;
-        var b = canvas.item(combination[1])[_group].value;
-        var c = canvas.item(combination[2])[_group].value;          
+        var a = canvas.item(combination[0]).get(_group).value;
+        var b = canvas.item(combination[1]).get(_group).value;
+        var c = canvas.item(combination[2]).get(_group).value;          
         if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c )) {
           alert();
         }
       }
-      sio.emit('set', options);
+      if (callback && typeof callback === 'function') {
+        callback(key);
+      }
     }
-  }
-})
-canvas.renderAll();
+  };
+
+  var sio = io();
+
+  sio.on('get', function(options) {
+    play(canvas.item(options.key), {
+      evented: true
+    })
+  });
+
+  canvas.on({
+    'mouse:down': function(e) {
+      play(e.target, {
+        evented: false
+      }, function(key) {
+        sio.emit('set', { key: key });
+      })
+    }
+  })
+  canvas.renderAll();
 })();
