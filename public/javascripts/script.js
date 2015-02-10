@@ -1,7 +1,8 @@
 (function() {
-  'use strict'; 
+  'use strict';
+
   var canvas = new fabric.Canvas('tictactoe');
-  canvas.setWidth(window.innerWidth);
+  canvas.setWidth(window.innerWidth / 2);
   canvas.setHeight(window.innerHeight);
 
   var x = canvas.getWidth() / 3;
@@ -36,25 +37,25 @@
         originX: 'center',
         originY: 'center',
         selectable: false,
-        evented: false      
+        evented: false
       };  
       return new this.fabric.Circle(options);
     }
     , group: function(groups, evented) {
       var options = {
         selectable: false,
-        hoverCursor: 'pointer',
         hasBorders: false,
         hasControls: false,
         lockMovementX: true,
-        lockMovementY: true
+        lockMovementY: true,
+        evented: false
       };
       return new this.fabric.Group(groups, options);
     }
   }
 
   var draw = new Draw();
-
+  
   canvas.add(
     draw.group([draw.line([x, 0, x, y]), draw.line([0, y, x, y])]),
     draw.group([draw.line([x * 2, 0, x * 2, y]), draw.line([x * 2, y, x, y])]),
@@ -68,17 +69,25 @@
     );
 
   var _group = '_group';
+  var _group_c = canvas.getObjects().length - 1;
 
-  canvas.forEachObject(function(object, index) {
-    object.set(_group, {
-      key: index,
-      value: NaN
+  var init = function() {
+    canvas.forEachObject(function(object, index) {
+      object.set({
+        _group: {
+          key: index,
+          value: NaN 
+        },
+        evented: true,
+      });
     });
-  });
+  }
+
+  init();
 
   var play = function(group, options, callback) {
     if (group) {
-      // group = group.set('evented', false);
+      group = group.set('evented', false);
       var left = group.getLeft();
       var top = group.getTop();
       var width = group.getWidth();
@@ -89,7 +98,7 @@
         canvas.add(draw.group([
           draw.line([left + offset, top + offset, left + width - offset, top + height - offset]), 
           draw.line([left + width - offset, top + offset, left + offset, top + height - offset])
-        ]).set('evented', false));
+          ]));
       }
       else {
         which = true;
@@ -103,8 +112,9 @@
         key: key,
         value: ~~which
       });
-      var j = 8;
+      var j = _group_c;
       var property = 'value';
+      var over = false;
       var combinations = {
         0: [0, 1, 2],
         1: [3, 4, 5],
@@ -115,19 +125,33 @@
         6: [0, 4, 8],
         7: [2, 4, 6]
       };
+
       while ( j !== -1 ) {
-        canvas.item(j).set('evented', options.evented);
+        if (isNaN(canvas.item(j).get(_group)[property])) {
+          canvas.item(j).set('evented', options.evented);
+        }
         j--;
       }
+
       for (var i in combinations) {
         var combination = combinations[i];
         var a = canvas.item(combination[0]).get(_group).value;
         var b = canvas.item(combination[1]).get(_group).value;
         var c = canvas.item(combination[2]).get(_group).value;          
         if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c )) {
-          alert();
+          over = true;
         }
       }
+
+      if (over) {
+        var count = canvas.getObjects().length - 1;
+        while (count !== _group_c) {
+          canvas.fxRemove(canvas.item(count));
+          count--;
+        }
+        init();
+      }
+
       if (callback && typeof callback === 'function') {
         callback(key);
       }
@@ -150,6 +174,7 @@
         sio.emit('set', { key: key });
       })
     }
-  })
+  });
+
   canvas.renderAll();
 })();
