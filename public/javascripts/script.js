@@ -2,13 +2,14 @@
   'use strict';
 
   var canvas = new fabric.Canvas('tictactoe');
+
   canvas.setWidth( window.innerWidth - (window.innerWidth - window.innerHeight));
   canvas.setHeight( window.innerHeight );
 
   var x = canvas.getWidth() / 3;
   var y = canvas.getHeight() / 3;
 
-  var which = true;
+  var figure = true;
   var _box = {};
 
   function Draw() {
@@ -53,18 +54,18 @@
     }
   }
 
-  var draw = new Draw();
+  var Draw = new Draw();
   
   canvas.add(
-    draw.group([draw.line([ x, 0, x, y ]), draw.line([ 0, y, x, y ])]),
-    draw.group([draw.line([ x * 2, 0, x * 2, y ]), draw.line([ x * 2, y, x, y ])]),
-    draw.group([draw.line([ x * 3, 0, x * 3, y ]), draw.line([ x * 3, y, x * 2, y ])]),
-    draw.group([draw.line([ x, y, x, y * 2 ]), draw.line([ 0, y * 2, x, y * 2 ])]),
-    draw.group([draw.line([ x * 2, y, x * 2, y * 2 ]), draw.line([ x, y * 2, x * 2, y * 2 ])]),
-    draw.group([draw.line([ x * 3, y, x * 3, y * 2 ]), draw.line([ x * 3, y * 2, x * 2, y * 2 ])]),
-    draw.group([draw.line([ x, y * 2, x, y * 3 ]), draw.line([ 0, y * 3, x, y * 3 ])]),
-    draw.group([draw.line([ x * 2, y * 2, x * 2, y * 3 ]), draw.line([ x, y * 3, x * 2, y * 3 ])]),
-    draw.group([draw.line([ x * 3, y * 2, x * 3, y * 3 ]), draw.line([ x * 2, y * 3, x * 3, y * 3 ])])
+    Draw.group([Draw.line([ x, 0, x, y ]), Draw.line([ 0, y, x, y ])]),
+    Draw.group([Draw.line([ x * 2, 0, x * 2, y ]), Draw.line([ x * 2, y, x, y ])]),
+    Draw.group([Draw.line([ x * 3, 0, x * 3, y ]), Draw.line([ x * 3, y, x * 2, y ])]),
+    Draw.group([Draw.line([ x, y, x, y * 2 ]), Draw.line([ 0, y * 2, x, y * 2 ])]),
+    Draw.group([Draw.line([ x * 2, y, x * 2, y * 2 ]), Draw.line([ x, y * 2, x * 2, y * 2 ])]),
+    Draw.group([Draw.line([ x * 3, y, x * 3, y * 2 ]), Draw.line([ x * 3, y * 2, x * 2, y * 2 ])]),
+    Draw.group([Draw.line([ x, y * 2, x, y * 3 ]), Draw.line([ 0, y * 3, x, y * 3 ])]),
+    Draw.group([Draw.line([ x * 2, y * 2, x * 2, y * 3 ]), Draw.line([ x, y * 3, x * 2, y * 3 ])]),
+    Draw.group([Draw.line([ x * 3, y * 2, x * 3, y * 3 ]), Draw.line([ x * 2, y * 3, x * 3, y * 3 ])])
   );
 
   var _group = '_group';
@@ -94,31 +95,47 @@
       var height = group.getHeight();
       var offset = width / 4;
 
-      if ( which ) {
-        which = false;
-        canvas.add(draw.group([
-          draw.line([ left + offset, top + offset, left + width - offset, top + height - offset ]), 
-          draw.line([ left + width - offset, top + offset, left + offset, top + height - offset ])
-        ]).set('opacity', 0.5).animate('opacity', 1, {
+      if ( figure ) {
+
+        var cross = Draw.group([
+          Draw.line([ left + offset, top + offset, left + width - offset, top + height - offset ]), 
+          Draw.line([ left + width - offset, top + offset, left + offset, top + height - offset ])
+        ]);
+
+        cross.set('opacity', 0.5);
+        cross.animate('opacity', 1, {
           duration: 200,
           onChange: canvas.renderAll.bind(canvas)
-        }));
+        });
+
+        canvas.add( cross );
+        
+        figure = false;
       }
       else {
-        which = true;
         var centerX = left + ( width / 2 );
         var centerY = top + ( height / 2 );
         var radius  = width / 3;
-        canvas.add(draw.circle( centerX, centerY, radius ).set('opacity', 0.5).animate('opacity', 1, {
+        var circle = Draw.circle( centerX, centerY, radius );
+
+        circle.set('opacity', 0.5);
+        circle.animate('opacity', 1, {
           duration: 200,
           onChange: canvas.renderAll.bind(canvas)
-        }));
+        });
+
+        canvas.add(circle);
+
+        figure = true;
       }
 
       var key = group.get( _group ).key;
       var j = _group_c;
       var property = 'value';
-      var over = false;
+      var game = {
+        over: false,
+        won: []
+      };
 
       var combinations = {
         0: [ 0, 1, 2 ],
@@ -133,7 +150,7 @@
 
       group.set(_group, {
         key: key,
-        value: ~~which
+        value: ~~figure
       });
 
       while ( j !== -1 ) {
@@ -149,12 +166,81 @@
         var b = canvas.item( combination[1] ).get(_group)[ property ];
         var c = canvas.item( combination[2] ).get(_group)[ property ];
         if ( ( !isNaN( a ) && !isNaN( b ) && !isNaN( c ) ) && ( a === b && b === c ) ) {
-          over = true;
+          game = {
+            over: true,
+            won: combination
+          } 
         }
       }
 
-      if (over) {
+      if (game.over) {
+
         var count = canvas.getObjects().length - 1;
+
+        var _a = game.won[0];
+        var _b = game.won[2];
+        var _c = _b - _a;
+
+        var _a_group = canvas.item(_a);
+        var _c_group = canvas.item(_b);
+
+        var _a_groupWidth = _a_group.getWidth() / 3;
+        var _c_groupWidth = _c_group.getWidth() / 3;
+
+        var _a_groupHeight = _a_group.getHeight() / 3;
+        var _c_groupHeight = _c_group.getHeight() / 3; 
+
+        var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
+        var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
+
+        var coords = null;
+
+        var setCoords = function(coords) {
+          var coords_default = {
+            x1: _a_groupOriginCenter.x,
+            y1: _a_groupOriginCenter.y,
+            x2: _c_groupOriginCenter.x,
+            y2: _c_groupOriginCenter.y
+          };
+          for ( i in coords ) {
+            coords_default[i] = coords[i];
+          }
+          return coords_default;
+        }
+
+        if( _c === 2 ) {
+          coords = setCoords({
+            x1: _a_groupOriginCenter.x - _a_groupWidth,
+            x2: _c_groupOriginCenter.x + _c_groupWidth
+          });
+        }
+        else if ( _c === 4) {
+          coords = setCoords({
+            x1: _a_groupOriginCenter.x + _a_groupWidth,
+            y1: _a_groupOriginCenter.y - _a_groupHeight,
+            x2: _c_groupOriginCenter.x - _c_groupWidth,
+            y2: _c_groupOriginCenter.y + _c_groupHeight
+          });
+        }
+        else if ( _c === 6 ) {
+          coords = setCoords({
+            y1: _a_groupOriginCenter.y - _a_groupHeight,
+            y2: _c_groupOriginCenter.y + _a_groupHeight
+          });
+        }
+        else if ( _c === 8 ) {
+          coords = setCoords({
+            x1: _a_groupOriginCenter.x - _a_groupWidth,
+            y1: _a_groupOriginCenter.y - _a_groupHeight,
+            x2: _c_groupOriginCenter.x + _c_groupWidth,
+            y2: _c_groupOriginCenter.y + _c_groupHeight
+          });
+        }
+
+        if( coords ) {
+          canvas.add(Draw.line([coords.x1, coords.y1, coords.x2, coords.y2]));
+        }
+
         while (count !== _group_c) {
           canvas.fxRemove(canvas.item(count));
           count--;
