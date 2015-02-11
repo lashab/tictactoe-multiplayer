@@ -109,7 +109,7 @@
         });
 
         canvas.add( cross );
-        
+
         figure = false;
       }
       else {
@@ -175,8 +175,6 @@
 
       if (game.over) {
 
-        var count = canvas.getObjects().length - 1;
-
         var _a = game.won[0];
         var _b = game.won[2];
         var _c = _b - _a;
@@ -184,11 +182,11 @@
         var _a_group = canvas.item(_a);
         var _c_group = canvas.item(_b);
 
-        var _a_groupWidth = _a_group.getWidth() / 3;
-        var _c_groupWidth = _c_group.getWidth() / 3;
+        var _a_groupWidth = _a_group.getWidth() / 2.5;
+        var _c_groupWidth = _c_group.getWidth() / 2.5;
 
-        var _a_groupHeight = _a_group.getHeight() / 3;
-        var _c_groupHeight = _c_group.getHeight() / 3; 
+        var _a_groupHeight = _a_group.getHeight() / 2.5;
+        var _c_groupHeight = _c_group.getHeight() / 2.5; 
 
         var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
         var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
@@ -238,14 +236,19 @@
         }
 
         if( coords ) {
-          canvas.add(Draw.line([coords.x1, coords.y1, coords.x2, coords.y2]));
+          canvas.add(Draw.group([Draw.line([coords.x1, coords.y1, coords.x2, coords.y2])]));
         }
 
-        while (count !== _group_c) {
-          canvas.fxRemove(canvas.item(count));
-          count--;
-        }
+        var count = canvas.getObjects().length - 1;
+
+        setTimeout(function() {
+          while (count !== _group_c) {
+            canvas.fxRemove(canvas.item(count));
+            count--;
+          }
         init();
+        }, 1000);
+
       }
 
       if ( callback && typeof callback === 'function' ) {
