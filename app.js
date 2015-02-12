@@ -28,12 +28,13 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/', routes.index);
+app.get('/room', routes.play);
+app.post('/join', routes.join);
 
 sio.listen(app.get('port'));
 
 io.on('connection', function (socket) {
   socket.on('set', function(data) {
-    console.log(data);
     socket.broadcast.emit('get', data);
   });
 });

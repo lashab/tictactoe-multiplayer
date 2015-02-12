@@ -2,12 +2,17 @@
 <html lang="en">
   <head>
     <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css'>
+    <link rel='stylesheet' href='/css/style.css'>
+    <link rel='stylesheet' href='/library/bootstrap/dist/css/bootstrap.css'>
   </head>
   <body>
-    <canvas id="tictactoe"></canvas>
+    <% if (body) { %>
+      <%- body %>
+    <% } %>
+    <script src="/library/jquery/dist/jquery.js"></script>
+    <script src="/library/bootstrap/dist/js/bootstrap.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script type="text/javascript" src="/javascripts/fabric.js-1.4.13/dist/fabric.js"></script>
-    <script type="text/javascript" src="/javascripts/script.js"></script>
+    <script src="/library/fabric/dist/fabric.js"></script>
+    <script src="/js/script.js"></script>
   </body>
 </html>
