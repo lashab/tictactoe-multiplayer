@@ -1,13 +1,10 @@
-
-/*
- * GET home page.
- */
-
-// 'use strict';
+'use strict';
 
 var ejs = require('ejs');
 var fs = require('fs');
 var join = require('path').join;
+var Game = require('../models/game');
+var Schema = require('../models/schema');
 
 exports.index = function(req, res){
   var file = fs.readFileSync(join(__dirname, '../views/homepage.ejs'), 'utf-8');
@@ -28,7 +25,9 @@ exports.play = function(req, res) {
 }
 
 exports.join = function(req, res) {
-  res.redirect('/room');
+  if (req.body.name) { 
+    Game.join(Schema.room, req.body.name);
+  }
 }
 
 exports.leave = function(req, res) {

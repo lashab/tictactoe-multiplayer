@@ -3,14 +3,13 @@
  * Module dependencies.
  */
 var express = require('express')
-  , routes = require('./app/routes')
+  , controllers = require('./app/controllers')
   , http = require('http')
   , path = require('path');
 
 var app = express();
 var sio = require('http').Server(app);
 var io = require('socket.io')(sio);
-var Schema = require('./app/models/schema');
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -28,9 +27,9 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.get('/', routes.index);
-app.get('/room', routes.play);
-app.post('/join', routes.join);
+app.get('/', controllers.index);
+app.get('/room', controllers.play);
+app.post('/join', controllers.join);
 
 sio.listen(app.get('port'));
 
