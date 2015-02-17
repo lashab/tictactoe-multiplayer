@@ -13,8 +13,8 @@ Database.prototype = {
       if (err) throw err;
       cb(db);
     });
-  }
-, select: function(collection, query, callback) {
+  }, 
+  select: function(collection, query, callback) {
     this.connect(function(db) {
       var _collection = db.collection(collection);
       _collection.find(query).toArray(function(err, documents) {
@@ -23,8 +23,8 @@ Database.prototype = {
       });
     });
     return this;
-  }
-, save: function(collection, query, insert, callback) {
+  }, 
+  save: function(collection, query, insert, callback) {
     this.connect(function(db) {
       var _collection = db.collection(collection);
       _collection.save(insert, query, function(err, documents) {
@@ -32,8 +32,8 @@ Database.prototype = {
         callback(documents, db);
       }); 
     });
-  }
-, insert: function(collection, document, callback) {
+  }, 
+  insert: function(collection, document, callback) {
     this.connect(function(db) {
       var _collection = db.collection(collection);
       _collection.insert(document, function(err, documents) {
@@ -41,19 +41,22 @@ Database.prototype = {
         callback(documents, db);
       }); 
     });
-  }
-, inc: function(collection, $id, field, by, callback) {
-    var _inc = {};
-    _inc[field] = by;
+  },
+  count: function(collection, callback) {
     this.connect(function(db) {
       var _collection = db.collection(collection);
-      _collection.findAndModify({
-        query: { _id: $id },
-        update: { $inc: _inc },
-        new: true
-      }, function(err, document) {
+      _collection.count(function(err, count) {
         if (err) throw err;
-        callback(document, db);
+        callback(count, db);
+      })
+    });
+  },
+  modify: function(collection, criteria, sort, update, options, callback) {
+    this.connect(function(db) {
+      var _collection = db.collection(collection);
+      _collection.findAndModify(criteria, sort, update, options, function(err, documents) {
+        if (err) throw err;
+        callback(documents, db);
       });
     });
   }

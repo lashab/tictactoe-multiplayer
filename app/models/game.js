@@ -4,54 +4,57 @@ var v = require('validator');
 var join = require('path').join
 var db = require(join(__dirname, 'database'));
 
-db.insert('rooms', {}, { _id: 1, users: ["data", "dachi"], rid: 4 }, function(docs, db) {
-  db.close();
-});
-
 function Game() {};
+
 Game.prototype = {
-  join: function(room, user, callback) {
-  //   var _user = v.escape(v.trim(user));
-  //   room.count(function(err, count) { 
-  //     if (err) throw err;
-  //     if (count) {
-  //       room.find({ available: true }, function(err, documents) {
-  //         if (err) throw err;
-  //           console.log(typeof documents);            
-  //         if (documents.length) {
-
-  //           var _ids = [];
-  //           documents.forEach(function(doc) {
-  //             _ids.push(doc._id);
-  //           });
-  //           var rid = _ids[Math.floor(Math.random() * _ids.length)];
-  //           room.findByIdAndUpdate(rid, {
-  //             $push: { users: _user },
-  //             $set: { available: false },
-  //             $inc: { rid: 1 }
-  //           }, function(err, doc) {
-  //             if (err) throw err;
-  //             console.log(doc);
-  //           });
-  //         }
-  //         else {
-  //           room.find().sort({_id: -1}).limit(1).exec(function(err, document) {
-  //             room.create({ users: [_user]}, function(err, document) {
-  //               if (err) throw err;
-  //               if ( document ) {
-  //                 console.log( '%s has joined', _user )
-  //               }
-  //             });
-  //           });
-  //         }
-  //       });
-  //     }
-  //     else {
-
-  //     }
-  //   });
-  // }
-  }
+  join: function(user, callback) {
+    var collection = 'rooms';
+    var user = v.escape(v.trim(user));
+    var create = function(count) {
+      db.insert(collection, {
+        users: [ user ],
+        available: true,
+        roomid: count + 1
+      }, function(document, connection) {
+        if (document) {
+          console.log('%s has joined', user);
+          connection.close();
+        }
+      });
+    }
+    db.count(collection, function(count) {
+      if (count) {
+        db.select(collection, { available: true }, function(documents, connection) {
+          if (documents.length) {
+            var _ids = [];
+            documents.forEach(function(document) {
+              _ids.push(document._id);
+            });
+            var _id = _ids[Math.floor(Math.random() * _ids.length)];
+            db.modify(collection,
+              { _id: _id },
+              [],
+              { $push: { users: user }, $set: { available: false } },
+              { new: true },
+              function(document, connection) {
+                if (document) {
+                  console.log('%s has joined', user);
+                  callback(document.roomid);
+                  connection.close();
+                }
+              }
+              );
+          }
+          else {
+            create(count);
+          }
+        });
+      }
+      else {
+        create(count);
+      }
+    });
+}
 }
 
 module.exports = new Game();
