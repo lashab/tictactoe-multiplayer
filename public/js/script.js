@@ -206,13 +206,13 @@
           return coords_default;
         }
 
-        if( _c === 2 ) {
+        if(_c === 2) {
           coords = setCoords({
             x1: _a_groupOriginCenter.x - _a_groupWidth,
             x2: _c_groupOriginCenter.x + _c_groupWidth
           });
         }
-        else if ( _c === 4) {
+        else if (_c === 4) {
           coords = setCoords({
             x1: _a_groupOriginCenter.x + _a_groupWidth,
             y1: _a_groupOriginCenter.y - _a_groupHeight,
@@ -220,13 +220,13 @@
             y2: _c_groupOriginCenter.y + _c_groupHeight
           });
         }
-        else if ( _c === 6 ) {
+        else if (_c === 6) {
           coords = setCoords({
             y1: _a_groupOriginCenter.y - _a_groupHeight,
             y2: _c_groupOriginCenter.y + _a_groupHeight
           });
         }
-        else if ( _c === 8 ) {
+        else if (_c === 8) {
           coords = setCoords({
             x1: _a_groupOriginCenter.x - _a_groupWidth,
             y1: _a_groupOriginCenter.y - _a_groupHeight,
@@ -242,7 +242,7 @@
         var count = canvas.getObjects().length - 1;
 
         setTimeout(function() {
-          while (count !== _group_c) {
+          while ( count !== _group_c ) {
             canvas.fxRemove(canvas.item(count));
             count--;
           }
@@ -257,23 +257,102 @@
     }
   };
 
-  var sio = io();
-
-  sio.on( 'get', function( options ) {
-    play( canvas.item( options.key ), {
-      evented: true
-    })
-  });
-
-  canvas.on({
-    'mouse:down': function( e ) {
-      play(e.target, {
-        evented: false
-      }, function(key) {
-        sio.emit( 'set', { key: key } );
-      })
+  var attach = function(players) {
+    var waiting = false;
+    if (players.length === 1) {
+      waiting = true;
     }
-  });
+    var images = '../images';
+    var images_waiting = images + '/waiting.gif';
+    var images_default = images + '/default.png';
 
-  canvas.renderAll();
+    if (players) {
+      var image = function(src) {
+        return $('<img/>', {
+          attr: {
+            src: src,
+            class: 'img-responsive img-circle',
+            alt: 'user-image'
+          }
+        });
+      };
+      var player = function(name) {
+        return $('<div/>', {
+          class: 'caption'
+        }).append($('<h4/>', {
+          class: 'text-center',
+          text: name
+        }));
+      };
+      var first_player = $('.id-users-1');
+      var next_player = $('.id-users-2');
+      var _image_default = image(images_default);
+      if (waiting) {
+        first_player
+        .append(image(images_default))
+        .append(player(players[0]))
+        .fadeIn()
+        .show()
+        .next()
+          .toggleClass('col-md-8')
+        .end();
+
+        next_player
+        .append(image(images_waiting))
+        .fadeIn()
+        .show();
+      }
+      else {
+        first_player
+        .append(image(images_default))
+        .append(player(players[0]))
+        .show()
+        .next()
+          .toggleClass('col-md-8')
+        .end();
+
+        next_player
+          .children('img')
+          .remove()
+        .end()
+        .append(image(images_default))
+        .append(player(players[1]))
+        .fadeIn(700);
+      }
+    }
+  }
+
+  $(function() {
+
+    var sio = io();
+    var room = window.location.pathname.split('/')[2];
+
+    sio.emit('join', room);
+
+    sio.on('waiting', function(players) {
+      attach(players);
+    });
+
+    sio.on('play', function(players){
+      attach(players);
+    });
+
+    sio.on('get', function( options ) {
+      play(canvas.item( options.key ), {
+        evented: true
+      });
+    });
+
+    canvas.on({
+      'mouse:down': function(e) {
+        play(e.target, {
+          evented: false
+        }, function(key) {
+          sio.emit('set', {key: key});
+        })
+      }
+    });
+    
+    canvas.renderAll();
+  });
 })();

@@ -11,8 +11,7 @@ exports.index = function(req, res){
   res.render('index', { 
     title: 'Tictactoe',
     body: template()
-  });
-};
+  });};
 
 exports.play = function(req, res) {
   var file = fs.readFileSync(join(__dirname, '../views/tictactoe.ejs'), 'utf-8');
@@ -20,15 +19,16 @@ exports.play = function(req, res) {
   res.render('index', { 
     title: 'Tictactoe',
     body: template()
-  });
-}
+  });}
 
 exports.join = function(req, res) {
   if (req.body.name) { 
-    Game.join(req.body.name);
+    Game.join(req.body.name, function(room) {
+      res.redirect(join('room', room.toString()));
+    });
   }
-}
+  else {
+    res.redirect('/');
+  }}
 
-exports.leave = function(req, res) {
-
-}
+exports.leave = function(req, res) {}

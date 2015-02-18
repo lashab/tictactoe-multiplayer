@@ -1,6 +1,8 @@
 'use strict';
 
-var MongoClient = require('mongodb').MongoClient
+var MongoClient = require('mongodb').MongoClient;
+var config = require('config');
+var url = require('url');
 
 var Database = function(uri, mongo) {
   this.mongo = mongo;
@@ -13,7 +15,16 @@ Database.prototype = {
       if (err) throw err;
       cb(db);
     });
-  }, 
+  },
+  selectOne: function(collection, query, callback) {
+    this.connect(function(db) {
+      var _collection = db.collection(collection);
+      _collection.findOne(query, function(err, document) {
+        if (err) throw err;
+        callback(document, db);
+      });
+    });
+  },
   select: function(collection, query, callback) {
     this.connect(function(db) {
       var _collection = db.collection(collection);
@@ -61,9 +72,6 @@ Database.prototype = {
     });
   }
 };
-
-var config = require('config');
-var url = require('url');
 
 if (config.has('tictactoe.db')) {
   var _config = config.get('tictactoe.db');

@@ -12,12 +12,13 @@ Game.prototype = {
     var user = v.escape(v.trim(user));
     var create = function(count) {
       db.insert(collection, {
+        _id: count + 1,
         users: [ user ],
         available: true,
-        roomid: count + 1
       }, function(document, connection) {
         if (document) {
           console.log('%s has joined', user);
+          callback(document[0]._id);
           connection.close();
         }
       });
@@ -38,8 +39,9 @@ Game.prototype = {
               { new: true },
               function(document, connection) {
                 if (document) {
+                  console.log(document);
                   console.log('%s has joined', user);
-                  callback(document.roomid);
+                  callback(document._id);
                   connection.close();
                 }
               }
@@ -54,7 +56,7 @@ Game.prototype = {
         create(count);
       }
     });
-}
+  }
 }
 
 module.exports = new Game();

@@ -5,7 +5,6 @@ html, body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-.canvas-container {
-	margin: 0 auto;
-}
+.canvas-container {margin: 0 auto;}
 
+.users {display: none;}
