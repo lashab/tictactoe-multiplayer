@@ -1,7 +1,23 @@
 <div class="container-fluid">
   <div class="row">
-    <div class="col-sm-6 col-md-2 users id-users-1"></div>
-    <div class="col-md-11"><canvas id="tictactoe"></canvas></div>
-    <div class="col-sm-6 col-md-2 id-users-2"></div>
+    <% if (users[0]) { %>
+    <div class="col-sm-6 col-md-1 players id-users-1">
+      <img src="../images/default.png" class="img-responsive img-circle">
+      <div class="caption">
+        <h4 class="text-center"> <%= users[0] %></h4>
+      </div>
+    </div>
+    <% } %>
+    <div class="col-md-12"><canvas id="tictactoe"></canvas></div>
+    <div class="col-sm-6 col-md-1 players id-users-2">
+    <% if (users[1]) { %>
+      <img src="../images/default.png" class="img-responsive img-circle">
+      <div class="caption">
+        <h4 class="text-center"> <%= users[1] %></h4>
+      </div>
+    <% } else { %>  
+      <img src="../images/waiting.gif" class="img-responsive img-circle">
+    <% } %>
+    </div>
   </div>
 </div>

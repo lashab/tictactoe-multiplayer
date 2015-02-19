@@ -40,16 +40,10 @@ sio.listen(app.get('port'));
 io.on('connection', function (socket) {
   socket.on('join', function(room) {
     if (room) {
-      // socket.join(join('/room', room));
       db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
-        if (document.users.length === 1) {
-          socket.emit('waiting', document.users);
+        if (document.users.length > 1) {
+          socket.broadcast.emit('join', document.users);
         }
-        else {
-          // socket.emit('play', document.users);
-          socket.broadcast.emit('play', document.users);
-        }
-        // socket.broadcast.emit('join', document.users);
         connection.close();
       });
     }

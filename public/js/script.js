@@ -322,20 +322,22 @@
     }
   }
 
+  var _init_players = function() {
+    var players = $('.players');
+    players
+    .fadeIn()
+    .show()
+      .next()
+      .toggleClass('col-md-10')
+    .end();
+  }
+
   $(function() {
+
+    _init_players();
 
     var sio = io();
     var room = window.location.pathname.split('/')[2];
-
-    sio.emit('join', room);
-
-    sio.on('waiting', function(players) {
-      attach(players);
-    });
-
-    sio.on('play', function(players){
-      attach(players);
-    });
 
     sio.on('get', function( options ) {
       play(canvas.item( options.key ), {
