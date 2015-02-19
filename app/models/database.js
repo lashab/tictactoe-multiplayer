@@ -33,7 +33,6 @@ Database.prototype = {
         callback(documents, db);
       });
     });
-    return this;
   }, 
   save: function(collection, query, insert, callback) {
     this.connect(function(db) {

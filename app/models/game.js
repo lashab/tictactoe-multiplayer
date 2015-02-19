@@ -45,7 +45,7 @@ Game.prototype = {
                   connection.close();
                 }
               }
-              );
+            );
           }
           else {
             create(count);
@@ -59,4 +59,4 @@ Game.prototype = {
   }
 }
 
-module.exports = new Game();
+module.exports = Game;
