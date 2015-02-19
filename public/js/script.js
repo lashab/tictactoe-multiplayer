@@ -85,9 +85,9 @@
 
   init();
 
-  var play = function( group, options, callback ) {
-    if ( group ) {
-      group = group.set( 'evented', false );
+  var play = function(group, options, callback) {
+    if (group) {
+      group = group.set('evented', false);
 
       var left = group.getLeft();
       var top = group.getTop();
@@ -95,8 +95,7 @@
       var height = group.getHeight();
       var offset = width / 4;
 
-      if ( figure ) {
-
+      if (figure) {
         var cross = Draw.group([
           Draw.line([ left + offset, top + offset, left + width - offset, top + height - offset ]), 
           Draw.line([ left + width - offset, top + offset, left + offset, top + height - offset ])
@@ -107,16 +106,15 @@
           duration: 200,
           onChange: canvas.renderAll.bind(canvas)
         });
-
-        canvas.add( cross );
+        canvas.add(cross);
 
         figure = false;
       }
       else {
-        var centerX = left + ( width / 2 );
-        var centerY = top + ( height / 2 );
+        var centerX = left + (width / 2);
+        var centerY = top + (height / 2);
         var radius  = width / 3;
-        var circle = Draw.circle( centerX, centerY, radius );
+        var circle = Draw.circle(centerX, centerY, radius);
 
         circle.set('opacity', 0.5);
         circle.animate('opacity', 1, {
@@ -339,7 +337,13 @@
     var sio = io();
     var room = window.location.pathname.split('/')[2];
 
-    sio.on('get', function( options ) {
+    sio.emit('join', room);
+
+    sio.on('join', function(players) {
+      console.log(players);
+    });
+
+    sio.on('get', function(options) {
       play(canvas.item( options.key ), {
         evented: true
       });

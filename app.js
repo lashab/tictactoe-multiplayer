@@ -36,7 +36,6 @@ app.post('/join', controllers.join);
 
 sio.listen(app.get('port'));
 
-
 io.on('connection', function (socket) {
   socket.on('join', function(room) {
     if (room) {

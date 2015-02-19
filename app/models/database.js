@@ -4,81 +4,66 @@ var MongoClient = require('mongodb').MongoClient;
 var config = require('config');
 var url = require('url');
 
-var Database = function(uri, mongo) {
-  this.mongo = mongo;
-  this.uri = uri;
+var Database = function() {
+  if (config.has('tictactoe.db')) {
+    this.config = config.get('tictactoe.db');
+    this.url = url.format({
+      protocol: 'mongodb',
+      host: this.config.host,
+      pathname: this.config.name,
+      port: this.config.port,
+      slashes: true
+    });
+  }
+  else {
+    throw new Error('No Connection');
+  }
 };
 
 Database.prototype = {
-  connect: function(cb) {
-    this.mongo.connect(this.uri, function(err, db) {
+  connect: function(callback) {
+    this.mongo.connect(this.url, function(err, db) {
       if (err) throw err;
-      cb(db);
+      callback(db);
     });
   },
-  selectOne: function(collection, query, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.findOne(query, function(err, document) {
-        if (err) throw err;
-        callback(document, db);
-      });
+  setCollection: function(db, collection) {
+    this.collection = db.collection(collection);
+    return this;
+  },
+  getCollection: function() {
+    return this.collection;
+  },
+  selectOne: function(query, callback) {
+    this.getCollection().findOne(query, function(err, document) {
+      if (err) throw err;
+      callback(document);
     });
   },
-  select: function(collection, query, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.find(query).toArray(function(err, documents) {
-        if (err) throw err;
-        callback(documents, db);
-      });
-    });
-  }, 
-  save: function(collection, query, insert, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.save(insert, query, function(err, documents) {
-        if (err) throw err;
-        callback(documents, db);
-      }); 
-    });
-  }, 
-  insert: function(collection, document, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.insert(document, function(err, documents) {
-        if (err) throw err;
-        callback(documents, db);
-      }); 
+  select: function(query, callback) {
+    this.getCollection().find(query).toArray(function(err, documents) {
+      if (err) throw err;
+      callback(documents);
     });
   },
-  count: function(collection, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.count(function(err, count) {
-        if (err) throw err;
-        callback(count, db);
-      })
-    });
+  insert: function(document, callback) {
+    this.getCollection().insert(document, function(err, documents) {
+      if (err) throw err;
+      callback(documents);
+    }); 
   },
-  modify: function(collection, criteria, sort, update, options, callback) {
-    this.connect(function(db) {
-      var _collection = db.collection(collection);
-      _collection.findAndModify(criteria, sort, update, options, function(err, documents) {
-        if (err) throw err;
-        callback(documents, db);
-      });
+  count: function(callback) {
+    this.getCollection().count(function(err, count) {
+      if (err) throw err;
+      callback(count);
+    })
+  },
+  modify: function(criteria, sort, update, options, callback) {
+    this.getCollection().findAndModify(criteria, sort, update, options, function(err, documents) {
+      if (err) throw err;
+      callback(documents);
     });
   }
 };
 
-if (config.has('tictactoe.db')) {
-  var _config = config.get('tictactoe.db');
-  module.exports = new Database(url.format({
-    protocol: 'mongodb',
-    host: _config.host,
-    pathname: _config.name,
-    port: _config.port,
-    slashes: true
-  }), require('mongodb').MongoClient);
-}
+module.exports = Database;

@@ -3,7 +3,7 @@
 var join = require('path').join;
 var url = require('url');
 var Game = require('../models/game');
-var Players = require('../models/players');
+var Player = require('../models/player');
 var Template = require('../models/template');
 var Room = require('../models/room');
 
@@ -11,13 +11,13 @@ exports.index = function(req, res){
   var template = new Template('../views/homepage.ejs')
   res.render('index', { 
     title: 'Tictactoe',
-    body: template.rendr()
+    body: template.render()
   });};
 
 exports.play = function(req, res) {
   var template = new Template('../views/tictactoe.ejs');
   var room = new Room();
-  Players.getRoomPlayers(room.getRoomIdByPath(req.path), function(_players, connection) {
+  Room.getRoomPlayers(room.getRoomIdByPath(req.path), function(_players, connection) {
     res.render('index', { 
       title: 'Tictactoe',
       body: template.render({ users: _players })
