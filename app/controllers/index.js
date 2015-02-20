@@ -35,7 +35,8 @@ exports.join = function(req, res) {
   if (req.body.name) {
     var game = new Game();
     game.join(req.body.name, function(room) {
-      // res.redirect(join('room', room.toString()));
+      console.log(room);
+      res.redirect(join('room', room.toString()));
     });
   }
   else {

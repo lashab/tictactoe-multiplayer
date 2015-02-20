@@ -6,14 +6,17 @@ var Mongo = require(join(__dirname, 'database'));
 var Room = require(join(__dirname, 'room'));
 var db = new Mongo();
 
-var Player = function(connection, player) {
-  this.connection = connection || {};
-  this.player = player || {};
+var Player = function() {
   this.playerCollection = 'players';
 }
 
 Player.prototype.setPlayer = function(player) {
-  this.player = player;
+  this.player = {
+    _rid: player._rid,
+    player: this.playersValidate(player.name),
+    video: player.video,
+    status: player.status
+  };
   return this;
 }
 
@@ -29,26 +32,29 @@ Player.prototype.getPlayerCollection = function() {
   return this.playerCollection;
 }
 
-Player.prototype.playersValidate = function() {
+Player.prototype.playersValidate = function(player) {
   return validator.escape(validator.trim(player));
 }
 
-Player.prototype.playerEnsureIndex = function(callback) {
-  db.setCollection(this.connection, this.getPlayerCollection()).setIndex('player', function(document) {
+Player.prototype.playerEnsureIndex = function(connection, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).setIndex({ player: 1 }, function(document) {
     callback(document);
   });
+  return this;
 }
 
-Player.prototype.getPlayersByRoomId = function(room, callback) {
-  db.setCollection(this.connection, this.getPlayerCollection()).selectOne({ _id: room }, function(document) {
+Player.prototype.getPlayersByRoomId = function(connection, room, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).selectOne({ _id: room }, function(document) {
     callback(document.players);
   });
+  return this;
 };
 
-Player.prototype.add = function() {
-  db.setCollection(this.connection, this.getPlayerCollection()).insert(this.getPlayer(), function(document) {
+Player.prototype.addPlayer = function(connection, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).insert(this.getPlayer(), function(document) {
     callback(document);
   });
+  return this;
 }
 
 module.exports = Player;

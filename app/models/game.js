@@ -1,6 +1,5 @@
 'use strict';
 
-var v = require('validator');
 var join = require('path').join
 var Mongo = require(join(__dirname, 'database'));
 var Room = require(join(__dirname, 'room'));
@@ -12,8 +11,8 @@ Game.prototype = {
   constructor: Game,
   join: function(player, callback) {
     db.connect(function(connection) {
-      var room = new Room(connection);
-      room.count(connection, function(count) {
+      var room = new Room();
+      room.countRooms(connection, function(count) {
         if(count) {
 
         }
@@ -23,21 +22,24 @@ Game.prototype = {
             _id: _id,
             players: _id,
             available: true
-          }).create(function(document) {
+          }).addRoom(connection, function(document) {
             if (document) {
-              var _id = document._id;
-              console.log('%d room created', _id);
+              var _rid = document[0]._id;
+              console.log('Room #%d created', _rid);
               room.setPlayer({
-                _rid: _id,
-                player: room.playersValidate(player),
+                _rid: _rid,
+                name: player,
                 video: false,
-                status: 1
-              }).add(function(document) {
+                status: 1,
+                score: 0
+              }).addPlayer(connection, function(document) {
                 if (document) {
-                  console.log('%s has joined', document.player);
-                  room.playerEnsureIndex(function(document) {
+                  console.log('%s has joined', document[0].player);
+                  room.playerEnsureIndex(connection, function(document) {
                     if (document) {
-                      console.log('')
+                      console.log('created index for %s', document);
+                      callback(_rid);
+                      connection.close();
                     }
                   })
                 }

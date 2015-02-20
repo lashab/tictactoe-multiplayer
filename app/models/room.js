@@ -5,17 +5,21 @@ var Mongo = require(join(__dirname, 'database'));
 var Player = require(join(__dirname, 'player'));
 var db = new Mongo();
 
-var Room = function(connection, room, player) {
-  Player.call(this, player);
-  this.connection = connection || {};
-  this.room = room || {};
+var Room = function() {
+  Player.call(this);
   this.roomCollection = 'rooms';
 }
 
 Room.prototype = Object.create(Player.prototype);
 
+Room.prototype.constructor = Room;
+
 Room.prototype.setRoom = function(room) {
-  this.room = room;
+  this.room = {
+    _id: room._id,
+    players: room._id,
+    available: room.available
+  };
   return this;
 }
 
@@ -36,18 +40,24 @@ Room.prototype.getRoomCollection = function() {
   return this.roomCollection;
 }
 
-Room.prototype.count = function(callback) {
-  db.setCollection(this.connection, this.getRoomCollection()).count(function(count) {
+Room.prototype.countRooms = function(connection, callback) {
+  db.setCollection(connection, this.getRoomCollection()).count(function(count) {
     callback(count);
   });
   return this;
 }
 
-Room.prototype.create = function(callback) {
-  db.setCollection(this.connection, this.getRoomCollection()).insert(this.getRoom(), function(document) {
+Room.prototype.addRoom = function(connection, callback) {
+  db.setCollection(connection, this.getRoomCollection()).insert(this.getRoom(), function(document) {
     callback(document);
   });
   return this;
+}
+
+Room.prototype.getAvailableRooms = function(connection, callback) {
+  db.setCollection(connection, this.getRoomCollection()).select({ available: true }, function(documents) {
+
+  })
 }
 
 module.exports = Room;

@@ -35,7 +35,7 @@ Database.prototype = {
     return this.collection;
   },
   setIndex: function(field, callback) {
-    this.getCollection().enensureIndex(field, function(err, document) {
+    this.getCollection().ensureIndex(field, function(err, document) {
       if (err) throw err;
       callback(document);
     });
