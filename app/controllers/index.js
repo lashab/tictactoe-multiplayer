@@ -21,7 +21,7 @@ exports.play = function(req, res) {
   db.connect(function(connection) {
     var template = new Template('../views/tictactoe.ejs');
     var room = new Room();
-    room.getPlayersByRoomId(room.getRoomIdByPath(req.path), function(players) {
+    room.getPlayersByRoomId(connection, room.getRoomIdByPath(req.path), function(players) {
       res.render('index', { 
         title: 'Tictactoe',
         body: template.render({ players: players })
@@ -35,7 +35,6 @@ exports.join = function(req, res) {
   if (req.body.name) {
     var game = new Game();
     game.join(req.body.name, function(room) {
-      console.log(room);
       res.redirect(join('room', room.toString()));
     });
   }

@@ -56,8 +56,36 @@ Room.prototype.addRoom = function(connection, callback) {
 
 Room.prototype.getAvailableRooms = function(connection, callback) {
   db.setCollection(connection, this.getRoomCollection()).select({ available: true }, function(documents) {
+    callback(documents);
+  });
+  return this;
+}
 
-  })
+Room.prototype.getRandomRoom = function(documents, callback) {
+  var ids = [];
+  documents.map(function(document) {
+    ids.push(document._id);
+  });
+  callback(ids[Math.floor(Math.random() * ids.length)]);
+  return this;
+}
+
+Room.prototype.updateRoomById = function(connection, _id, callback) {
+  db.setCollection(connection, this.getRoomCollection()).modify({ _id: _id }, [], { $set: { available: false } }, { new: true }, function (document) {
+    callback(document);
+  });
 }
 
 module.exports = Room;
+
+
+
+
+
+
+
+
+
+
+
+

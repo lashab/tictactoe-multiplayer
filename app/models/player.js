@@ -44,8 +44,12 @@ Player.prototype.playerEnsureIndex = function(connection, callback) {
 }
 
 Player.prototype.getPlayersByRoomId = function(connection, room, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).selectOne({ _id: room }, function(document) {
-    callback(document.players);
+  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: room }, function(documents) {
+    var players = [];
+    documents.map(function(document) {
+      players.push(document.player);
+    })
+    callback(players);
   });
   return this;
 };

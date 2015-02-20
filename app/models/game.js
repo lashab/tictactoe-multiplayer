@@ -1,5 +1,4 @@
 'use strict';
-
 var join = require('path').join
 var Mongo = require(join(__dirname, 'database'));
 var Room = require(join(__dirname, 'room'));
@@ -13,10 +12,8 @@ Game.prototype = {
     db.connect(function(connection) {
       var room = new Room();
       room.countRooms(connection, function(count) {
-        if(count) {
-
-        }
-        else {
+        var create = function(ensure) {
+          var ensure = ensure || false;
           var _id = count + 1;
           room.setRoom({
             _id: _id,
@@ -29,76 +26,65 @@ Game.prototype = {
               room.setPlayer({
                 _rid: _rid,
                 name: player,
-                video: false,
+                video: false, //TODO
                 status: 1,
                 score: 0
               }).addPlayer(connection, function(document) {
                 if (document) {
                   console.log('%s has joined', document[0].player);
-                  room.playerEnsureIndex(connection, function(document) {
-                    if (document) {
-                      console.log('created index for %s', document);
-                      callback(_rid);
-                      connection.close();
-                    }
-                  })
+                  if (ensure) {
+                    room.playerEnsureIndex(connection, function(document) {
+                      if (document) {
+                        console.log('created index for %s', document);
+                        callback(_rid);
+                        connection.close();
+                      }
+                    });
+                  }
+                  else {
+                    callback(_rid);
+                    connection.close();
+                  }
                 }
               });
             }
           });
         }
+        if (count) {
+          room.getAvailableRooms(connection, function(documents) {
+            if (documents) {
+              room.getRandomRoom(documents, function(_rid) {
+                if (_rid) {
+                  room.updateRoomById(connection, _rid, function(document) {
+                    if (document) {
+                      var _id = document._id; 
+                      room.setPlayer({
+                        _rid: _id,
+                        name: player,
+                        video: false, //TODO
+                        status: 1
+                      }).addPlayer(connection, function(document) {
+                        if (document) {
+                          console.log('%s has joined', document[0].player);
+                          callback(_id);
+                          connection.close();
+                        }
+                      });
+                    }
+                  });
+                }
+              });
+            }
+            else {
+              create();
+            }
+          });
+        }
+        else {
+          create(true);
+        }
       });
     });
   }
 }
-
 module.exports = Game;
-
-    // var collection = 'rooms';
-    // var user = v.escape(v.trim(user));
-    // var create = function(count) {
-    //   db.insert(collection, {
-    //     _id: count + 1,
-    //     users: [ user ],
-    //     available: true,
-    //   }, function(document, connection) {
-    //     if (document) {
-    //       console.log('%s has joined', user);
-    //       callback(document[0]._id);
-    //       connection.close();
-    //     }
-    //   });
-    // }
-    // db.count(collection, function(count) {
-    //   if (count) {
-    //     db.select(collection, { available: true }, function(documents, connection) {
-    //       if (documents.length) {
-    //         var _ids = [];
-    //         documents.forEach(function(document) {
-    //           _ids.push(document._id);
-    //         });
-    //         var _id = _ids[Math.floor(Math.random() * _ids.length)];
-    //         db.modify(collection,
-    //           { _id: _id },
-    //           [],
-    //           { $push: { users: user }, $set: { available: false } },
-    //           { new: true },
-    //           function(document, connection) {
-    //             if (document) {
-    //               console.log(document);
-    //               console.log('%s has joined', user);
-    //               callback(document._id);
-    //               connection.close();
-    //             }
-    //           }
-    //         );
-    //       }
-    //       else {
-    //         create(count);
-    //       }
-    //     });
-    //   }
-    //   else {
-    //     create(count);
-    //   }
-    // });
