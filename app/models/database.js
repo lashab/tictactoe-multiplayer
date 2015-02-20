@@ -22,7 +22,7 @@ var Database = function() {
 
 Database.prototype = {
   connect: function(callback) {
-    this.mongo.connect(this.url, function(err, db) {
+    MongoClient.connect(this.url, function(err, db) {
       if (err) throw err;
       callback(db);
     });
@@ -33,6 +33,12 @@ Database.prototype = {
   },
   getCollection: function() {
     return this.collection;
+  },
+  setIndex: function(field, callback) {
+    this.getCollection().enensureIndex(field, function(err, document) {
+      if (err) throw err;
+      callback(document);
+    });
   },
   selectOne: function(query, callback) {
     this.getCollection().findOne(query, function(err, document) {
