@@ -37,19 +37,19 @@ app.post('/join', controllers.join);
 sio.listen(app.get('port'));
 
 io.on('connection', function (socket) {
-  socket.on('join', function(room) {
-    if (room) {
-      db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
-        if (document.users.length > 1) {
-          socket.broadcast.emit('join', document.users);
-        }
-        connection.close();
-      });
-    }
-  });
-  socket.on('set', function(data) {
-    socket.broadcast.to('room').emit('get', data);
-  });
+  // socket.on('join', function(room) {
+  //   if (room) {
+  //     db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
+  //       if (document.users.length > 1) {
+  //         socket.broadcast.emit('join', document.users);
+  //       }
+  //       connection.close();
+  //     });
+  //   }
+  // });
+  // socket.on('set', function(data) {
+  //   socket.broadcast.to('room').emit('get', data);
+  // });
 });
 
 

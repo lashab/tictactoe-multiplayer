@@ -22,7 +22,7 @@ Game.prototype = {
           }).addRoom(connection, function(document) {
             if (document) {
               var _rid = document[0]._id;
-              console.log('Room #%d created', _rid);
+              console.log('Room #%d created', _rid); //LOG
               room.setPlayer({
                 _rid: _rid,
                 name: player,
@@ -31,11 +31,11 @@ Game.prototype = {
                 score: 0
               }).addPlayer(connection, function(document) {
                 if (document) {
-                  console.log('%s has joined', document[0].player);
+                  console.log('%s has joined', document[0].player); //LOG
                   if (ensure) {
                     room.playerEnsureIndex(connection, function(document) {
                       if (document) {
-                        console.log('created index for %s', document);
+                        console.log('created index for %s', document); //LOG
                         callback(_rid);
                         connection.close();
                       }
@@ -52,7 +52,7 @@ Game.prototype = {
         }
         if (count) {
           room.getAvailableRooms(connection, function(documents) {
-            if (documents) {
+            if (documents.length) {
               room.getRandomRoom(documents, function(_rid) {
                 if (_rid) {
                   room.updateRoomById(connection, _rid, function(document) {
@@ -65,7 +65,7 @@ Game.prototype = {
                         status: 1
                       }).addPlayer(connection, function(document) {
                         if (document) {
-                          console.log('%s has joined', document[0].player);
+                          console.log('%s has joined', document[0].player); //LOG
                           callback(_id);
                           connection.close();
                         }
@@ -76,6 +76,7 @@ Game.prototype = {
               });
             }
             else {
+              console.log('aqvar');
               create();
             }
           });
