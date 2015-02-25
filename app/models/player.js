@@ -13,7 +13,7 @@ var Player = function() {
 Player.prototype.setPlayer = function(player) {
   this.player = {
     _rid: player._rid,
-    player: this.playersValidate(player.name),
+    name: this.playersValidate(player.name),
     video: player.video,
     status: player.status
   };
@@ -47,7 +47,7 @@ Player.prototype.getPlayersByRoomId = function(connection, room, callback) {
   db.setCollection(connection, this.getPlayerCollection()).select({ _rid: room }, function(documents) {
     var players = [];
     documents.map(function(document) {
-      players.push(document.player);
+      players.push(document.name);
     })
     callback(players);
   });

@@ -1,7 +1,7 @@
 <div class="container-fluid">
   <div class="row">
     <% if (players[0]) { %>
-    <div class="col-sm-6 col-md-1 players id-users-1">
+    <div class="col-sm-6 col-md-1 seats id-seat-1">
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption">
         <h4 class="text-center"> <%= players[0] %></h4>
@@ -9,7 +9,7 @@
     </div>
     <% } %>
     <div class="col-md-12"><canvas id="tictactoe"></canvas></div>
-    <div class="col-sm-6 col-md-1 players id-users-2">
+    <div class="col-sm-6 col-md-1 seats id-seat-2">
     <% if (players[1]) { %>
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption">

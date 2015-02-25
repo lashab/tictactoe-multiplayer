@@ -18,7 +18,8 @@ Game.prototype = {
           room.setRoom({
             _id: _id,
             players: _id,
-            available: true
+            available: true,
+            status: 0
           }).addRoom(connection, function(document) {
             if (document) {
               var _rid = document[0]._id;
@@ -31,7 +32,7 @@ Game.prototype = {
                 score: 0
               }).addPlayer(connection, function(document) {
                 if (document) {
-                  console.log('%s has joined', document[0].player); //LOG
+                  console.log('%s has joined', document[0].name); //LOG
                   if (ensure) {
                     room.playerEnsureIndex(connection, function(document) {
                       if (document) {
@@ -65,7 +66,7 @@ Game.prototype = {
                         status: 1
                       }).addPlayer(connection, function(document) {
                         if (document) {
-                          console.log('%s has joined', document[0].player); //LOG
+                          console.log('%s has joined', document[0].name); //LOG
                           callback(_id);
                           connection.close();
                         }
@@ -76,7 +77,6 @@ Game.prototype = {
               });
             }
             else {
-              console.log('aqvar');
               create();
             }
           });

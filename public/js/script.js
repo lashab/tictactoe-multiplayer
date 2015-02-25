@@ -255,93 +255,55 @@
     }
   };
 
-  var attach = function(players) {
-    var waiting = false;
-    if (players.length === 1) {
-      waiting = true;
-    }
-    var images = '../images';
-    var images_waiting = images + '/waiting.gif';
-    var images_default = images + '/default.png';
+  var Game = function(socket) {
+    this.socket = socket;
+  };
 
-    if (players) {
-      var image = function(src) {
-        return $('<img/>', {
-          attr: {
-            src: src,
-            class: 'img-responsive img-circle',
-            alt: 'user-image'
-          }
-        });
-      };
-      var player = function(name) {
-        return $('<div/>', {
-          class: 'caption'
-        }).append($('<h4/>', {
-          class: 'text-center',
-          text: name
-        }));
-      };
-      var first_player = $('.id-users-1');
-      var next_player = $('.id-users-2');
-      var _image_default = image(images_default);
-      if (waiting) {
-        first_player
-        .append(image(images_default))
-        .append(player(players[0]))
-        .fadeIn()
-        .show()
-        .next()
-          .toggleClass('col-md-8')
-        .end();
+  Game.prototype.init = function() {
 
-        next_player
-        .append(image(images_waiting))
-        .fadeIn()
-        .show();
-      }
-      else {
-        first_player
-        .append(image(images_default))
-        .append(player(players[0]))
-        .show()
-        .next()
-          .toggleClass('col-md-8')
-        .end();
+    this.socket.emit('join', this.getRoomId());
 
-        next_player
-          .children('img')
-          .remove()
-        .end()
-        .append(image(images_default))
-        .append(player(players[1]))
-        .fadeIn(700);
-      }
-    }
+    $('.seats')
+      .fadeIn()
+      .show()
+      .next()
+        .toggleClass('col-md-10')
+      .end()
+    .end()
+
+    return this;
   }
 
-  var _init_players = function() {
-    var players = $('.players');
-    players
-    .fadeIn()
-    .show()
-      .next()
-      .toggleClass('col-md-10')
-    .end();
+  Game.prototype.join = function() {
+    this.socket.on('join', function(player) {
+      var image_default = '../images/default.png';
+      var caption = $('<div/>', { class: 'caption' }).append($('<h4/>', { class: 'text-center', text: player.name }));
+      $('.id-seat-2')
+        .hide()
+        .children('img')
+          .prop('src', image_default)
+        .end()
+        .append(caption)
+        .fadeIn()
+        .show()
+      .end()
+    });
+
+    return this;
+  }
+
+  Game.prototype.getRoomId = function() {
+    var path = window.location.pathname;
+    return path.split('/')[2];
   }
 
   $(function() {
 
-    _init_players();
-
+    var game = new Game(io());
     var sio = io();
-    var room = window.location.pathname.split('/')[2];
 
-    sio.emit('join', room);
-
-    sio.on('join', function(players) {
-      console.log(players);
-    });
+    game.init();
+    game.join();
 
     sio.on('get', function(options) {
       play(canvas.item( options.key ), {
@@ -354,7 +316,10 @@
         play(e.target, {
           evented: false
         }, function(key) {
-          sio.emit('set', {key: key});
+          sio.emit('set', { 
+            key: key,
+            room: game.getRoomId()
+          });
         })
       }
     });

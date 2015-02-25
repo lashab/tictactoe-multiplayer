@@ -18,7 +18,8 @@ Room.prototype.setRoom = function(room) {
   this.room = {
     _id: room._id,
     players: room._id,
-    available: room.available
+    available: room.available,
+    status: room.status
   };
   return this;
 }

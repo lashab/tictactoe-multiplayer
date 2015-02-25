@@ -12,7 +12,8 @@ var express = require('express')
 var app = express();
 var sio = require('http').Server(app);
 var io = require('socket.io')(sio);
-var db = require('./app/models/database');
+var Mongo = require('./app/models/database');
+var db = new Mongo();
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -37,19 +38,37 @@ app.post('/join', controllers.join);
 sio.listen(app.get('port'));
 
 io.on('connection', function (socket) {
-  // socket.on('join', function(room) {
-  //   if (room) {
-  //     db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
-  //       if (document.users.length > 1) {
-  //         socket.broadcast.emit('join', document.users);
-  //       }
-  //       connection.close();
-  //     });
-  //   }
-  // });
-  // socket.on('set', function(data) {
-  //   socket.broadcast.to('room').emit('get', data);
-  // });
+  socket.on('join', function(room) {
+    if (room) {
+      db.connect(function(connection) {
+        db.setCollection(connection, 'rooms').selectOne({_id: parseInt(room)}, function(document) {
+          db.setCollection(connection, 'players').select({_rid: document.players}, function(documents) {
+            var size = documents.length;
+            var status = document.status;
+            if (size > 1 && !status) {
+              db.setCollection(connection, 'rooms').modify({_id: parseInt(room)}, [], {$set: {status: 1}}, {new: true}, function(document) {
+                socket.join(join('room', room));
+                socket.broadcast.in(join('room', room)).emit('join', documents[size - 1]);
+                console.log('status changed!');
+                connection.close();
+              });
+            }
+          });
+        });
+      });
+      // db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
+      //   if (document.users.length > 1) {
+      //     socket.broadcast.emit('join', document.users);
+      //   }
+      //   connection.close();
+      // });
+    }
+  });
+
+
+  socket.on('set', function(data) {
+    socket.broadcast.in(join('room', data.room)).emit('get', data);
+  });
 });
 
 
