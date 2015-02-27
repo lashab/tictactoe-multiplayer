@@ -276,6 +276,7 @@
 
   Game.prototype.join = function() {
     this.socket.on('join', function(player) {
+      console.log(player);
       var image_default = '../images/default.png';
       var caption = $('<div/>', { class: 'caption' }).append($('<h4/>', { class: 'text-center', text: player.name }));
       $('.id-seat-2')

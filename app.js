@@ -45,11 +45,11 @@ io.on('connection', function (socket) {
           db.setCollection(connection, 'players').select({_rid: document.players}, function(documents) {
             var size = documents.length;
             var status = document.status;
+            socket.join(room);
             if (size > 1 && !status) {
               db.setCollection(connection, 'rooms').modify({_id: parseInt(room)}, [], {$set: {status: 1}}, {new: true}, function(document) {
-                socket.join(join('room', room));
-                socket.broadcast.in(join('room', room)).emit('join', documents[size - 1]);
-                console.log('status changed!');
+                console.log(document);
+                socket.broadcast.in(room).emit('join', documents[1]);
                 connection.close();
               });
             }
@@ -67,7 +67,7 @@ io.on('connection', function (socket) {
 
 
   socket.on('set', function(data) {
-    socket.broadcast.in(join('room', data.room)).emit('get', data);
+    socket.broadcast.in(data.room).emit('get', data);
   });
 });
 
