@@ -275,22 +275,38 @@
   }
 
   Game.prototype.join = function() {
-    this.socket.on('join', function(player) {
-      console.log(player);
-      var image_default = '../images/default.png';
-      var caption = $('<div/>', { class: 'caption' }).append($('<h4/>', { class: 'text-center', text: player.name }));
-      $('.id-seat-2')
-        .hide()
-        .children('img')
-          .prop('src', image_default)
-        .end()
-        .append(caption)
-        .fadeIn()
-        .show()
-      .end()
-    });
+    var form = $('.id-join').length ? $('.id-join') : null;
+    if (form) {
+      var _this = this;
+      form.submit(function(e) {
+        e.preventDefault();
+        var name = $(this).find('input:text').val().replace(/(<([^>]+)>)/ig, null);
+        _this.socket.emit('join', {
+          player: name
+        });
+      });
+    }
+    return this;
+  }
+
+  Game.prototype.execute = function(event) {
+    var map = {
+      join: '_join'
+    };
+
+    var callback = map[event] && $.isFunction(this[map[event]]) 
+      ? this[map[event]] 
+        : (function () { 
+          throw new Error(event + ' ' + 'function not found')
+        })();
+        
+    this.socket.on(event, callback);
 
     return this;
+  }
+
+  Game.prototype._join = function() {
+    console.log('hello world');
   }
 
   Game.prototype.getRoomId = function() {
@@ -298,13 +314,20 @@
     return path.split('/')[2];
   }
 
+  Game.prototype.run = function() {
+    //Client to server.
+    this.join();
+
+    //Server to client.
+    this.execute('join');
+  }
+
   $(function() {
 
     var game = new Game(io());
     var sio = io();
 
-    game.init();
-    game.join();
+    game.run();
 
     sio.on('get', function(options) {
       play(canvas.item( options.key ), {
@@ -327,4 +350,22 @@
     
     canvas.renderAll();
   });
+
+    //   this.socket.on('join', function(player) {
+    //   console.log(player);
+    //   var image_default = '../images/default.png';
+    //   var caption = $('<div/>', { class: 'caption' }).append($('<h4/>', { class: 'text-center', text: player.name }));
+    //   $('.id-seat-2')
+    //     .hide()
+    //     .children('img')
+    //       .prop('src', image_default)
+    //     .end()
+    //     .append(caption)
+    //     .fadeIn()
+    //     .show()
+    //   .end()
+    // });
+
+    return this;
+
 })();
