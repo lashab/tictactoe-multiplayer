@@ -12,6 +12,7 @@ var express = require('express')
 var app = express();
 var sio = require('http').Server(app);
 var io = require('socket.io')(sio);
+var Game = require('./app/models/game');
 var Mongo = require('./app/models/database');
 var db = new Mongo();
 
@@ -33,11 +34,11 @@ if ('development' == app.get('env')) {
 
 app.get('/', controllers.index);
 app.get('/room/:id', controllers.play);
-app.post('/join', controllers.join);
 
 sio.listen(app.get('port'));
 
 io.on('connection', function (socket) {
+  new Game(io, socket).run();
   // socket.on('join', function(room) {
   //   if (room) {
   //     db.connect(function(connection) {

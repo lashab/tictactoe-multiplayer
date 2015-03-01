@@ -37,14 +37,14 @@ Player.prototype.playersValidate = function(player) {
 }
 
 Player.prototype.playerEnsureIndex = function(connection, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).setIndex({ player: 1 }, function(document) {
+  db.setCollection(connection, this.getPlayerCollection()).setIndex({ _rid: 1 }, function(document) {
     callback(document);
   });
   return this;
 }
 
-Player.prototype.getPlayersByRoomId = function(connection, room, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: room }, function(documents) {
+Player.prototype.getPlayersByRoomId = function(connection, _rid, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: parseInt(_rid) }, function(documents) {
     var players = [];
     documents.map(function(document) {
       players.push(document.name);

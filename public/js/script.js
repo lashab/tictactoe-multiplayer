@@ -255,58 +255,77 @@
     }
   };
 
+  var isWaiting = false;
+
   var Game = function(socket) {
     this.socket = socket;
   };
 
   Game.prototype.init = function() {
-
-    this.socket.emit('join', this.getRoomId());
-
-    $('.seats')
-      .fadeIn()
-      .show()
-      .next()
-        .toggleClass('col-md-10')
-      .end()
-    .end()
+    if (/^\/room\/\d+$/.test(window.location.pathname)) {
+      this.socket.emit('init', {
+        id: this.getRoomId()
+      });
+    }
+    // $('.seats')
+    //   .fadeIn()
+    //   .show()
+    //   .next()
+    //     .toggleClass('col-md-10')
+    //   .end()
+    // .end()
 
     return this;
+  }
+
+  Game.prototype._init = function(socket, that) {
+    return function(players) {
+      console.log(that.isWaiting);
+    }
   }
 
   Game.prototype.join = function() {
     var form = $('.id-join').length ? $('.id-join') : null;
     if (form) {
-      var _this = this;
+      var that = this;
       form.submit(function(e) {
         e.preventDefault();
         var name = $(this).find('input:text').val().replace(/(<([^>]+)>)/ig, null);
-        _this.socket.emit('join', {
-          player: name
+        that.socket.emit('join', {
+          name: name
         });
       });
     }
     return this;
   }
 
-  Game.prototype.execute = function(event) {
-    var map = {
-      join: '_join'
-    };
+  Game.prototype._join = function(socket) {
+    return function(room) {
+      window.location.replace(room.redirect);
+    }
+  }
 
+  Game.prototype._waiting = function(socket, that) {
+    return function() {
+      that.isWaiting = true;
+    }
+  }
+
+  Game.prototype.execute = function(event) {
+    var socket = this.socket;
+    var map = {
+      join: '_join',
+      init: '_init',
+      waiting: '_waiting',
+      hello: '_hello'
+    };
     var callback = map[event] && $.isFunction(this[map[event]]) 
       ? this[map[event]] 
         : (function () { 
           throw new Error(event + ' ' + 'function not found')
         })();
-        
-    this.socket.on(event, callback);
-
+    socket.on(event, callback(socket, this));
     return this;
-  }
-
-  Game.prototype._join = function() {
-    console.log('hello world');
   }
 
   Game.prototype.getRoomId = function() {
@@ -314,39 +333,51 @@
     return path.split('/')[2];
   }
 
+  Game.prototype._hello = function() {
+    return function() {
+      console.log('hello');
+    }
+  }
+
   Game.prototype.run = function() {
     //Client to server.
-    this.join();
+    this
+      .join()
+      .init();
 
     //Server to client.
-    this.execute('join');
+    this
+      .execute('join')
+      .execute('init')
+      .execute('waiting')
+      .execute('hello');
   }
 
   $(function() {
 
     var game = new Game(io());
-    var sio = io();
+    //var sio = io();
 
     game.run();
 
-    sio.on('get', function(options) {
-      play(canvas.item( options.key ), {
-        evented: true
-      });
-    });
+    // sio.on('get', function(options) {
+    //   play(canvas.item( options.key ), {
+    //     evented: true
+    //   });
+    // });
 
-    canvas.on({
-      'mouse:down': function(e) {
-        play(e.target, {
-          evented: false
-        }, function(key) {
-          sio.emit('set', { 
-            key: key,
-            room: game.getRoomId()
-          });
-        })
-      }
-    });
+    // canvas.on({
+    //   'mouse:down': function(e) {
+    //     play(e.target, {
+    //       evented: false
+    //     }, function(key) {
+    //       sio.emit('set', { 
+    //         key: key,
+    //         room: game.getRoomId()
+    //       });
+    //     })
+    //   }
+    // });
     
     canvas.renderAll();
   });
@@ -365,7 +396,5 @@
     //     .show()
     //   .end()
     // });
-
-    return this;
 
 })();

@@ -2,8 +2,6 @@
 
 var join = require('path').join;
 var url = require('url');
-var Game = require('../models/game');
-var Player = require('../models/player');
 var Template = require('../models/template');
 var Room = require('../models/room');
 var Mongo = require('../models/database');
@@ -29,18 +27,6 @@ exports.play = function(req, res) {
       connection.close();
     });
   });
-}
-
-exports.join = function(req, res) {
-  if (req.body.name) {
-    var game = new Game();
-    game.join(req.body.name, function(room) {
-      res.redirect(join('room', room.toString()));
-    });
-  }
-  else {
-    res.redirect('/');
-  }
 }
 
 exports.leave = function(req, res) {}
