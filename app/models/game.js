@@ -19,11 +19,8 @@ Game.prototype = {
           socket.join(_room_id);
           var _room = new Room();
           _room.getPlayersByRoomId(connection, _room_id, function(players) {
-            if (players.length > 1) {
-
-            }
-            else {
-              io.in(_room_id).emit('waiting');
+            if (players.length === 1) {
+              io.in(_room_id).emit('waiting', players.length);
             }
             io.in(_room_id).emit('init', players);
           });
@@ -31,7 +28,7 @@ Game.prototype = {
       }
     }
   },
-  join: function(socket) {
+  join: function(io, socket) {
     return function(player) {
       db.connect(function(connection) {
         var room = new Room();
@@ -46,6 +43,7 @@ Game.prototype = {
             }).addRoom(connection, function(document) {
               if (document) {
                 var _rid = document[0]._id;
+                // socket.join(_rid);
                 console.log('Room #%d created', _rid); //LOG
                 room.setPlayer({
                   _rid: _rid,
@@ -81,7 +79,8 @@ Game.prototype = {
                   if (_rid) {
                     room.updateRoomById(connection, _rid, function(document) {
                       if (document) {
-                        var _rid = document._id; 
+                        var _rid = document._id;
+                        // socket.join(_rid);
                         room.setPlayer({
                           _rid: _rid,
                           name: player.name,

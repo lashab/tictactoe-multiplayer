@@ -255,8 +255,6 @@
     }
   };
 
-  var isWaiting = false;
-
   var Game = function(socket) {
     this.socket = socket;
   };
@@ -267,20 +265,24 @@
         id: this.getRoomId()
       });
     }
-    // $('.seats')
-    //   .fadeIn()
-    //   .show()
-    //   .next()
-    //     .toggleClass('col-md-10')
-    //   .end()
-    // .end()
-
     return this;
   }
 
   Game.prototype._init = function(socket, that) {
     return function(players) {
-      console.log(that.isWaiting);
+      console.log(players);
+      players.map(function(player, position) {
+        $('.id-seat-' + position).children('img')
+          .prop('src', '../images/default.png')
+          .next()
+            .children()
+            .text(player)
+            .end()
+          .end()
+        .end()
+        .fadeIn()
+        .show()
+      });
     }
   }
 
@@ -305,9 +307,14 @@
     }
   }
 
-  Game.prototype._waiting = function(socket, that) {
-    return function() {
-      that.isWaiting = true;
+  Game.prototype._waiting = function(socket) {
+    return function(player) {
+      $('.layer').addClass('fade').addClass('in');
+      $('.id-seat-' + player).children('img')
+        .prop('src', '../images/loading.gif')
+      .end()
+      .fadeIn()
+      .show();
     }
   }
 
@@ -317,7 +324,6 @@
       join: '_join',
       init: '_init',
       waiting: '_waiting',
-      hello: '_hello'
     };
     var callback = map[event] && $.isFunction(this[map[event]]) 
       ? this[map[event]] 
@@ -333,12 +339,6 @@
     return path.split('/')[2];
   }
 
-  Game.prototype._hello = function() {
-    return function() {
-      console.log('hello');
-    }
-  }
-
   Game.prototype.run = function() {
     //Client to server.
     this
@@ -350,7 +350,6 @@
       .execute('join')
       .execute('init')
       .execute('waiting')
-      .execute('hello');
   }
 
   $(function() {
