@@ -1,5 +1,94 @@
-(function() {
+(function($) {
   'use strict';
+
+  var Canvas = function(canvas) {
+    this.__canvas = new fabric.Canvas(canvas);
+    this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
+    this.__canvas.setHeight(window.innerHeight);
+    this.x = this.__canvas.getWidth() / 3;
+    this.y = this.__canvas.getHeight() / 3;
+  }
+
+  Canvas.prototype.Line = function(coords) {
+    return new fabric.Line(coords, {
+      stroke: 'black',
+      strokeWidth: 1,
+      selectable: false,
+      evented: false
+    });
+  }
+
+  Canvas.prototype.Circle = function(top, left, radius) {
+    return new fabric.Circle({
+      top: top,
+      left: left,
+      radius: radius,
+      fill: '#fff',
+      stroke: 'black',
+      strokeWidth: 1,
+      originX: 'center',
+      originY: 'center',
+      selectable: false,
+      evented: false
+    });
+  }
+
+  Canvas.prototype.Group = function(groups) {
+    return new fabric.Group(groups, {
+      hasBorders: false,
+      hasControls: false,
+      lockMovementX: true,
+      lockMovementY: true,
+      selectable: false,
+      evented: false
+    })
+  }
+
+  Canvas.prototype.draw = function() {
+    this.__canvas.add(
+      this.Group([
+        this.Line([this.x, 0, this.x, this.y]),
+        this.Line([0, this.y, this.x, this.y])
+      ]),
+      this.Group([
+        this.Line([this.x * 2, 0, this.x * 2, this.y]),
+        this.Line([this.x * 2, this.y, this.x, this.y])
+      ]),
+      this.Group([
+        this.Line([this.x * 3, 0, this.x * 3, this.y]),
+        this.Line([this.x * 3, this.y, this.x * 2, this.y])
+      ]),
+      this.Group([
+        this.Line([this.x, this.y, this.x, this.y * 2]),
+        this.Line([0, this.y * 2, this.x, this.y * 2])
+      ]),
+      this.Group([
+        this.Line([this.x * 2, this.y, this.x * 2, this.y * 2]),
+        this.Line([this.x, this.y * 2, this.x * 2, this.y * 2])
+      ]),
+      this.Group([this.Line([
+        this.x * 3, this.y, this.x * 3, this.y * 2]),
+        this.Line([this.x * 3, this.y * 2, this.x * 2, this.y * 2])
+      ]),
+      this.Group([
+        this.Line([this.x, this.y * 2, this.x, this.y * 3]),
+        this.Line([0, this.y * 3, this.x, this.y * 3])
+      ]),
+      this.Group([
+        this.Line([this.x * 2, this.y * 2, this.x * 2, this.y * 3]),
+        this.Line([this.x, this.y * 3, this.x * 2, this.y * 3])
+      ]),
+      this.Group([this.Line([
+        this.x * 3, this.y * 2, this.x * 3, this.y * 3]),
+        this.Line([this.x * 2, this.y * 3, this.x * 3, this.y * 3])
+      ])
+    );
+  }
+
+  var c = new Canvas('tictactoe-test');
+  c.draw();
+
+  // console.log(Cakkkkkkkkkkkkkkkkkiiikkkkkknvas);
 
   var canvas = new fabric.Canvas('tictactoe');
 
@@ -43,11 +132,11 @@
     }
     , group: function(groups) {
       var options = {
-        selectable: false,
         hasBorders: false,
         hasControls: false,
         lockMovementX: true,
         lockMovementY: true,
+        selectable: false,
         evented: false
       };
       return new this.fabric.Group(groups, options);
@@ -270,7 +359,6 @@
 
   Game.prototype._init = function(socket, that) {
     return function(players) {
-      console.log(players);
       players.map(function(player, position) {
         $('.id-seat-' + position).children('img')
           .prop('src', '../images/default.png')
@@ -332,6 +420,10 @@
         })();
     socket.on(event, callback(socket, this));
     return this;
+  }
+
+  Game.prototype.play = function() {
+
   }
 
   Game.prototype.getRoomId = function() {
@@ -396,4 +488,4 @@
     //   .end()
     // });
 
-})();
+})(jQuery);
