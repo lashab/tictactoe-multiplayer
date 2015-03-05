@@ -1,12 +1,13 @@
 (function($) {
   'use strict';
 
-  var Canvas = function(canvas) {
+  var Canvas = function(socket, canvas) {
     this.__canvas = new fabric.Canvas(canvas);
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
     this.x = this.__canvas.getWidth() / 3;
     this.y = this.__canvas.getHeight() / 3;
+    this.socket = socket;
   }
 
   Canvas.prototype.Line = function(coords) {
@@ -83,10 +84,125 @@
         this.Line([this.x * 2, this.y * 3, this.x * 3, this.y * 3])
       ])
     );
+    return this;
   }
 
-  var c = new Canvas('tictactoe-test');
-  c.draw();
+  Canvas.prototype.drawFigure = function() {
+
+  }
+
+  Canvas.prototype.process = function() {
+    this.__canvas.on({
+      'mouse:down': function(e) {
+        this.drawFigure(e.target, {
+          evented: false
+        }, function(key, room) {
+          this.socket.emit('figure', { 
+            key: key,
+            room: room
+          });
+        })
+      }
+    });
+  }
+
+  var Game = function(socket, canvas) {
+    Canvas.call(this, socket, canvas);
+  };
+
+  Game.prototype = Object.create(Canvas.prototype);
+
+  Game.prototype.init = function() {
+    if (/^\/room\/\d+$/.test(window.location.pathname)) {
+      this.socket.emit('init', {
+        id: this.getRoomId()
+      });
+    }
+    return this;
+  }
+
+  Game.prototype._init = function(socket, that) {
+    return function(players) {
+      players.map(function(player, position) {
+        $('.id-seat-' + position).children('img')
+          .prop('src', '../images/default.png')
+          .next()
+            .children()
+            .text(player)
+            .end()
+          .end()
+        .end()
+        .fadeIn()
+        .show()
+      });
+    }
+  }
+
+  Game.prototype.join = function() {
+    var form = $('.id-join').length ? $('.id-join') : null;
+    if (form) {
+      var that = this;
+      form.submit(function(e) {
+        e.preventDefault();
+        var name = $(this).find('input:text').val().replace(/(<([^>]+)>)/ig, null);
+        that.socket.emit('join', {
+          name: name
+        });
+      });
+    }
+    return this;
+  }
+
+  Game.prototype._join = function(socket) {
+    return function(room) {
+      window.location.replace(room.redirect);
+    }
+  }
+
+  Game.prototype._waiting = function(socket) {
+    return function(player) {
+      $('.layer').addClass('fade').addClass('in');
+      $('.id-seat-' + player).children('img')
+        .prop('src', '../images/loading.gif')
+      .end()
+      .fadeIn()
+      .show();
+    }
+  }
+
+  Game.prototype.execute = function(event) {
+    var socket = this.socket;
+    var map = {
+      join: '_join',
+      init: '_init',
+      waiting: '_waiting',
+    };
+    var callback = map[event] && $.isFunction(this[map[event]]) 
+      ? this[map[event]] 
+        : (function () { 
+          throw new Error(event + ' ' + 'function not found')
+        })();
+    socket.on(event, callback(socket, this));
+    return this;
+  }
+
+  Game.prototype.getRoomId = function() {
+    var path = window.location.pathname;
+    return path.split('/')[2];
+  }
+
+  Game.prototype.run = function() {
+    //Client to server.
+    this
+      .join()
+      .init();
+
+    //Server to client.
+    this
+      .execute('join')
+      .execute('init')
+      .execute('waiting');
+  }
 
   // console.log(Cakkkkkkkkkkkkkkkkkiiikkkkkknvas);
 
@@ -240,19 +356,19 @@
         value: ~~figure
       });
 
-      while ( j !== -1 ) {
-        if ( isNaN( canvas.item(j).get( _group )[ property ] ) ) {
-          canvas.item( j ).set( 'evented', options.evented );
+      while (j !== -1) {
+        if (isNaN(canvas.item(j).get(_group)[property])) {
+          canvas.item(j).set('evented', options.evented);
         }
         j--;
       }
 
-      for ( var i in combinations ) {
+      for (var i in combinations) {
         var combination = combinations[i];
-        var a = canvas.item( combination[0] ).get( _group )[ property ];
-        var b = canvas.item( combination[1] ).get(_group)[ property ];
-        var c = canvas.item( combination[2] ).get(_group)[ property ];
-        if ( ( !isNaN( a ) && !isNaN( b ) && !isNaN( c ) ) && ( a === b && b === c ) ) {
+        var a = canvas.item( combination[0] ).get(_group)[property];
+        var b = canvas.item( combination[1] ).get(_group)[property];
+        var c = canvas.item( combination[2] ).get(_group)[property];
+        if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c)) {
           game = {
             over: true,
             won: combination
@@ -287,7 +403,7 @@
             x2: _c_groupOriginCenter.x,
             y2: _c_groupOriginCenter.y
           };
-          for ( i in coords ) {
+          for (i in coords) {
             coords_default[i] = coords[i];
           }
           return coords_default;
@@ -322,14 +438,14 @@
           });
         }
 
-        if( coords ) {
+        if(coords) {
           canvas.add(Draw.group([Draw.line([coords.x1, coords.y1, coords.x2, coords.y2])]));
         }
 
         var count = canvas.getObjects().length - 1;
 
         setTimeout(function() {
-          while ( count !== _group_c ) {
+          while (count !== _group_c) {
             canvas.fxRemove(canvas.item(count));
             count--;
           }
@@ -338,154 +454,21 @@
 
       }
 
-      if ( callback && typeof callback === 'function' ) {
-        callback.call( this, key );
+      if (callback && $.isFunction(callback)) {
+        callback.call(this, key);
       }
     }
   };
 
-  var Game = function(socket) {
-    this.socket = socket;
-  };
-
-  Game.prototype.init = function() {
-    if (/^\/room\/\d+$/.test(window.location.pathname)) {
-      this.socket.emit('init', {
-        id: this.getRoomId()
-      });
-    }
-    return this;
-  }
-
-  Game.prototype._init = function(socket, that) {
-    return function(players) {
-      players.map(function(player, position) {
-        $('.id-seat-' + position).children('img')
-          .prop('src', '../images/default.png')
-          .next()
-            .children()
-            .text(player)
-            .end()
-          .end()
-        .end()
-        .fadeIn()
-        .show()
-      });
-    }
-  }
-
-  Game.prototype.join = function() {
-    var form = $('.id-join').length ? $('.id-join') : null;
-    if (form) {
-      var that = this;
-      form.submit(function(e) {
-        e.preventDefault();
-        var name = $(this).find('input:text').val().replace(/(<([^>]+)>)/ig, null);
-        that.socket.emit('join', {
-          name: name
-        });
-      });
-    }
-    return this;
-  }
-
-  Game.prototype._join = function(socket) {
-    return function(room) {
-      window.location.replace(room.redirect);
-    }
-  }
-
-  Game.prototype._waiting = function(socket) {
-    return function(player) {
-      $('.layer').addClass('fade').addClass('in');
-      $('.id-seat-' + player).children('img')
-        .prop('src', '../images/loading.gif')
-      .end()
-      .fadeIn()
-      .show();
-    }
-  }
-
-  Game.prototype.execute = function(event) {
-    var socket = this.socket;
-    var map = {
-      join: '_join',
-      init: '_init',
-      waiting: '_waiting',
-    };
-    var callback = map[event] && $.isFunction(this[map[event]]) 
-      ? this[map[event]] 
-        : (function () { 
-          throw new Error(event + ' ' + 'function not found')
-        })();
-    socket.on(event, callback(socket, this));
-    return this;
-  }
-
-  Game.prototype.play = function() {
-
-  }
-
-  Game.prototype.getRoomId = function() {
-    var path = window.location.pathname;
-    return path.split('/')[2];
-  }
-
-  Game.prototype.run = function() {
-    //Client to server.
-    this
-      .join()
-      .init();
-
-    //Server to client.
-    this
-      .execute('join')
-      .execute('init')
-      .execute('waiting')
-  }
-
   $(function() {
 
-    var game = new Game(io());
-    //var sio = io();
-
-    game.run();
+    new Game(io(), 'tictactoe-test').run();
 
     // sio.on('get', function(options) {
     //   play(canvas.item( options.key ), {
     //     evented: true
     //   });
     // });
-
-    // canvas.on({
-    //   'mouse:down': function(e) {
-    //     play(e.target, {
-    //       evented: false
-    //     }, function(key) {
-    //       sio.emit('set', { 
-    //         key: key,
-    //         room: game.getRoomId()
-    //       });
-    //     })
-    //   }
-    // });
-    
-    canvas.renderAll();
   });
-
-    //   this.socket.on('join', function(player) {
-    //   console.log(player);
-    //   var image_default = '../images/default.png';
-    //   var caption = $('<div/>', { class: 'caption' }).append($('<h4/>', { class: 'text-center', text: player.name }));
-    //   $('.id-seat-2')
-    //     .hide()
-    //     .children('img')
-    //       .prop('src', image_default)
-    //     .end()
-    //     .append(caption)
-    //     .fadeIn()
-    //     .show()
-    //   .end()
-    // });
 
 })(jQuery);
