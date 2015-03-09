@@ -7,7 +7,6 @@ var canvas = new fabric.Canvas('tictactoe');
   var y = canvas.getHeight() / 3;
 
   var figure = true;
-  var _box = {};
 
   function Draw() {
     this.fabric = fabric;

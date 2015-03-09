@@ -8,6 +8,7 @@
     this.x = this.__canvas.getWidth() / 3;
     this.y = this.__canvas.getHeight() / 3;
     this.socket = socket;
+    this.which = true;
   }
 
   Canvas.prototype.initialize = function() {
@@ -107,18 +108,52 @@
       top: object.getTop(),
       left: object.getLeft(),
       width: object.getWidth(),
-      height: object.getHeight()
+      height: object.getHeight(),
+      radius: object.getWidth() / 3,
+      gap: object.getWidth() / 4,
+      center: object.getPointByOrigin('center', 'center')
     }
   }
 
-  Canvas.prototype.drawFigure = function(which) {
+  Canvas.prototype.drawFigure = function(data) {
+    if (this.which) {
+      var top = data.top;
+      var left = data.left;
+      var width = data.width;
+      var height = data.height;
+      var gap = data.gap;
+      var cross = this.drawGroup([
+        this.drawLine([left + gap, top + gap, left + width - gap, top + height - gap]),
+        this.drawLine([left + width - gap, top + gap, left + gap, top + height - gap])
+      ]);
+      this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
+      this.which = false;
+    }
+    else {
+      var centerX = data.center.x;
+      var centerY = data.center.y;
+      var radius = data.radius;
+      var circle = this.drawCircle(centerY, centerX, radius);
+      this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
+      this.which = true;
+    }
+  }
 
+  Canvas.prototype.figureFadeIn = function(figure, from, to, duration) {
+    var that = this;
+    figure.set('opacity', from);
+    figure.animate('opacity', to, {
+      duration: duration,
+      onChange: this.__canvas.renderAll.bind(this.__canvas)
+    });
+    return figure;
   }
 
   Canvas.prototype.play = function(e, options) {
     if ($.type(e.target) !== 'undefined') {
       var target = e.target.toggle('evented');
-      console.log(this.getData(that_cube));
+      var data = this.getData(target);
+      this.drawFigure(data);
       // console.log(that_cube.getBoundingRect())
     }
   }
