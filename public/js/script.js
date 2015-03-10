@@ -1,7 +1,7 @@
 (function($) {
   'use strict';
 
-  var Canvas = function(socket, canvas) {
+  var Game = function(socket, canvas) {
     this.__canvas = new fabric.Canvas(canvas);
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
@@ -11,22 +11,20 @@
     this.which = true;
   }
 
-  Canvas.prototype.initialize = function() {
-    this.__canvas.forEachObject(function(object, index) {
-      if (object.get('type') === 'group') {
-        object.set({
-          cube: {
-            key: index,
-            value: NaN 
-          },
-          evented: true,
-        });
-      }
-    });
+  Game.prototype.init = function() {
+    if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
+      this.socket.emit('init', {
+        id: this.getRoomId()
+      });
+    }
+    this
+      .drawGame()
+      .ready()
+      .process();
     return this;
   }
 
-  Canvas.prototype.drawLine = function(coords) {
+  Game.prototype.drawLine = function(coords) {
     return new fabric.Line(coords, {
       stroke: 'black',
       strokeWidth: 1,
@@ -35,7 +33,7 @@
     });
   }
 
-  Canvas.prototype.drawCircle = function(top, left, radius) {
+  Game.prototype.drawCircle = function(top, left, radius) {
     return new fabric.Circle({
       top: top,
       left: left,
@@ -50,7 +48,7 @@
     });
   }
 
-  Canvas.prototype.drawGroup = function(groups) {
+  Game.prototype.drawGroup = function(groups) {
     return new fabric.Group(groups, {
       hasBorders: false,
       hasControls: false,
@@ -61,7 +59,7 @@
     });
   }
 
-  Canvas.prototype.drawGame = function() {
+  Game.prototype.drawGame = function() {
     this.__canvas.add(
       this.drawGroup([
         this.drawLine([this.x, 0, this.x, this.y]),
@@ -103,19 +101,7 @@
     return this;
   }
 
-  Canvas.prototype.getData = function(object) {
-    return {
-      top: object.getTop(),
-      left: object.getLeft(),
-      width: object.getWidth(),
-      height: object.getHeight(),
-      radius: object.getWidth() / 3,
-      gap: object.getWidth() / 4,
-      center: object.getPointByOrigin('center', 'center')
-    }
-  }
-
-  Canvas.prototype.drawFigure = function(data) {
+  Game.prototype.drawFigure = function(data) {
     if (this.which) {
       var top = data.top;
       var left = data.left;
@@ -137,9 +123,10 @@
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
       this.which = true;
     }
+    return this;
   }
 
-  Canvas.prototype.figureFadeIn = function(figure, from, to, duration) {
+  Game.prototype.figureFadeIn = function(figure, from, to, duration) {
     var that = this;
     figure.set('opacity', from);
     figure.animate('opacity', to, {
@@ -149,16 +136,103 @@
     return figure;
   }
 
-  Canvas.prototype.play = function(e, options) {
+  Game.prototype.over = function(target) {
+    var j = this.count;
+    var values = [];
+    var game = {};
+    var index = target.get('square').index;
+    var combinations = {
+      0: [ 0, 1, 2 ],
+      1: [ 3, 4, 5 ],
+      2: [ 6, 7, 8 ],
+      3: [ 0, 3, 6 ],
+      4: [ 1, 4, 7 ],
+      5: [ 2, 5, 8 ],
+      6: [ 0, 4, 8 ],
+      7: [ 2, 4, 6 ]
+    };
+    target.set('square', {
+      index: index,
+      value: ~~this.which
+    });
+
+    while (j !== -1) {
+      var square = this.__canvas.item(j);
+      var value = square.get('square').value;
+      // if (isNaN(value)) {
+      //   square.set('evented', true);
+      // }
+      if (isNaN(value)) {
+        values.push(value);
+      }
+      j--;
+    }
+
+    if (!values.length) {
+      game.over = true;
+      game.isWinner = false;
+    }
+
+    for (var i in combinations) {
+      var combination = combinations[i];
+      var a = this.__canvas.item(combination[0]).get('square').value;
+      var b = this.__canvas.item(combination[1]).get('square').value;
+      var c = this.__canvas.item(combination[2]).get('square').value;
+      if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c)) {
+        game = {
+          over: true,
+          isWinner: true,
+          won: combination
+        } 
+      }
+    }
+
+    if (game.over && game.isWinner) {
+      alert('someone won the game');
+    }
+    else if (game.over && !game.isWinner) {
+      this.restart();
+    }
+
+  }
+
+  Game.prototype.ready = function() {
+    this.count = this.countCanvasObjects();
+    this.__canvas.forEachObject(function(object, index) {
+      if (object.get('type') === 'group') {
+        object.set({
+          square: {
+            index: index,
+            value: NaN 
+          },
+          evented: true,
+        });
+      }
+    });
+    return this;
+  }
+
+  Game.prototype.play = function(e, options) {
     if ($.type(e.target) !== 'undefined') {
       var target = e.target.toggle('evented');
-      var data = this.getData(target);
-      this.drawFigure(data);
-      // console.log(that_cube.getBoundingRect())
+      var data = this.getObjectsData(target);
+      this.drawFigure(data).over(target);
     }
   }
 
-  Canvas.prototype.process = function() {
+  Game.prototype.restart = function() {
+    var count = this.countCanvasObjects();
+    var that = this;
+    setTimeout(function() {
+      while (count !== that.count) {
+        that.__canvas.fxRemove(that.__canvas.item(count));
+        count--;
+      }
+      that.ready();
+    }, 1000);
+  }
+
+  Game.prototype.process = function() {
     var that = this;
     this.__canvas.on({
       'mouse:down': function(e) {
@@ -169,23 +243,20 @@
     });
   }
 
-  var Game = function(socket, canvas) {
-    Canvas.call(this, socket, canvas);
-  };
-
-  Game.prototype = Object.create(Canvas.prototype);
-
-  Game.prototype.init = function() {
-    if (/^\/room\/\d+$/.test(window.location.pathname)) {
-      this.socket.emit('init', {
-        id: this.getRoomId()
-      });
+  Game.prototype.getObjectsData = function(object) {
+    return {
+      top: object.getTop(),
+      left: object.getLeft(),
+      width: object.getWidth(),
+      height: object.getHeight(),
+      radius: object.getWidth() / 3,
+      gap: object.getWidth() / 4,
+      center: object.getPointByOrigin('center', 'center')
     }
-    this
-      .drawGame()
-      .initialize()
-      .process();
-    return this;
+  }
+
+  Game.prototype.countCanvasObjects = function() {
+    return this.__canvas.getObjects().length - 1;
   }
 
   Game.prototype._init = function(socket, that) {
