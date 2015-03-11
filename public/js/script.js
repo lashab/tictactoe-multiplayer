@@ -94,7 +94,8 @@
         this.drawLine([this.x, this.y * 3, this.x * 2, this.y * 3])
       ]),
       this.drawGroup([this.drawLine([
-        this.x * 3, this.y * 2, this.x * 3, this.y * 3]),
+          this.x * 3, this.y * 2, this.x * 3, this.y * 3
+        ]),
         this.drawLine([this.x * 2, this.y * 3, this.x * 3, this.y * 3])
       ])
     );
@@ -126,6 +127,74 @@
     return this;
   }
 
+  Game.prototype.drawCrossOut = function(win) {
+    var a = win[0];
+    var b = win[2];
+    var c = b - a;
+
+    var _a_group = this.__canvas.item(a);
+    var _c_group = this.__canvas.item(b);
+
+    var _a_groupWidth = _a_group.getWidth() / 2.5;
+    var _c_groupWidth = _c_group.getWidth() / 2.5;
+
+    var _a_groupHeight = _a_group.getHeight() / 2.5;
+    var _c_groupHeight = _c_group.getHeight() / 2.5;
+
+    var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
+    var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
+
+    var coords = null;
+
+    var setCoords = function(coords) {
+      var coords_default = {
+        x1: _a_groupOriginCenter.x,
+        y1: _a_groupOriginCenter.y,
+        x2: _c_groupOriginCenter.x,
+        y2: _c_groupOriginCenter.y
+      };
+      for (var i in coords) {
+        coords_default[i] = coords[i];
+      }
+      return coords_default;
+    }
+
+    if (c === 2) {
+      coords = setCoords({
+        x1: _a_groupOriginCenter.x - _a_groupWidth,
+        x2: _c_groupOriginCenter.x + _c_groupWidth
+      });
+    }
+    else if (c === 4) {
+      coords = setCoords({
+        x1: _a_groupOriginCenter.x + _a_groupWidth,
+        y1: _a_groupOriginCenter.y - _a_groupHeight,
+        x2: _c_groupOriginCenter.x - _c_groupWidth,
+        y2: _c_groupOriginCenter.y + _c_groupHeight
+      });
+    }
+    else if (c === 6) {
+      coords = setCoords({
+        y1: _a_groupOriginCenter.y - _a_groupHeight,
+        y2: _c_groupOriginCenter.y + _a_groupHeight
+      });
+    }
+    else if (c === 8) {
+      coords = setCoords({
+        x1: _a_groupOriginCenter.x - _a_groupWidth,
+        y1: _a_groupOriginCenter.y - _a_groupHeight,
+        x2: _c_groupOriginCenter.x + _c_groupWidth,
+        y2: _c_groupOriginCenter.y + _c_groupHeight
+      });
+    }
+
+    if (coords) {
+      this.__canvas.add(this.drawGroup([this.drawLine([coords.x1, coords.y1, coords.x2, coords.y2])]));
+      return true;
+    }
+    return false;
+  }
+
   Game.prototype.figureFadeIn = function(figure, from, to, duration) {
     var that = this;
     figure.set('opacity', from);
@@ -142,14 +211,14 @@
     var game = {};
     var index = target.get('square').index;
     var combinations = {
-      0: [ 0, 1, 2 ],
-      1: [ 3, 4, 5 ],
-      2: [ 6, 7, 8 ],
-      3: [ 0, 3, 6 ],
-      4: [ 1, 4, 7 ],
-      5: [ 2, 5, 8 ],
-      6: [ 0, 4, 8 ],
-      7: [ 2, 4, 6 ]
+      0: [0, 1, 2],
+      1: [3, 4, 5],
+      2: [6, 7, 8],
+      3: [0, 3, 6],
+      4: [1, 4, 7],
+      5: [2, 5, 8],
+      6: [0, 4, 8],
+      7: [2, 4, 6]
     };
     target.set('square', {
       index: index,
@@ -183,12 +252,14 @@
           over: true,
           isWinner: true,
           won: combination
-        } 
+        }
       }
     }
 
     if (game.over && game.isWinner) {
-      alert('someone won the game');
+      if (this.drawCrossOut(game.won)) {
+        this.restart();
+      }
     }
     else if (game.over && !game.isWinner) {
       this.restart();
@@ -203,7 +274,7 @@
         object.set({
           square: {
             index: index,
-            value: NaN 
+            value: NaN
           },
           evented: true,
         });
@@ -225,10 +296,13 @@
     var that = this;
     setTimeout(function() {
       while (count !== that.count) {
-        that.__canvas.fxRemove(that.__canvas.item(count));
+        that.__canvas.fxRemove(that.__canvas.item(count), {
+          onComplete: function() {
+            that.ready();
+          }
+        });
         count--;
       }
-      that.ready();
     }, 1000);
   }
 
@@ -265,13 +339,13 @@
         $('.id-seat-' + position).children('img')
           .prop('src', '../images/default.png')
           .next()
-            .children()
-            .text(player)
-            .end()
+          .children()
+          .text(player)
           .end()
-        .end()
-        .fadeIn()
-        .show()
+          .end()
+          .end()
+          .fadeIn()
+          .show()
       });
     }
   }
@@ -302,9 +376,9 @@
       $('.layer').addClass('fade').addClass('in');
       $('.id-seat-' + player).children('img')
         .prop('src', '../images/loading.gif')
-      .end()
-      .fadeIn()
-      .show();
+        .end()
+        .fadeIn()
+        .show();
     }
   }
 
@@ -315,11 +389,9 @@
       init: '_init',
       waiting: '_waiting',
     };
-    var callback = map[event] && $.isFunction(this[map[event]]) 
-      ? this[map[event]] 
-        : (function () { 
-          throw new Error(event + ' ' + 'function not found')
-        })();
+    var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
+      throw new Error(event + ' ' + 'function not found')
+    })();
     socket.on(event, callback(socket, this));
     return this;
   }
