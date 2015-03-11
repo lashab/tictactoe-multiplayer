@@ -13,14 +13,14 @@
 
   Game.prototype.init = function() {
     if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
+      this
+        .drawGame()
+        .ready()
+        .process();
       this.socket.emit('init', {
         id: this.getRoomId()
       });
     }
-    this
-      .drawGame()
-      .ready()
-      .process();
     return this;
   }
 
@@ -205,7 +205,7 @@
     return figure;
   }
 
-  Game.prototype.over = function(target) {
+  Game.prototype.$play = function(target, evented, callback) {
     var j = this.count;
     var values = [];
     var game = {};
@@ -228,10 +228,8 @@
     while (j !== -1) {
       var square = this.__canvas.item(j);
       var value = square.get('square').value;
-      // if (isNaN(value)) {
-      //   square.set('evented', true);
-      // }
       if (isNaN(value)) {
+        square.set('evented', evented);
         values.push(value);
       }
       j--;
@@ -265,6 +263,13 @@
       this.restart();
     }
 
+    if (callback && $.isFunction(callback)) {
+      callback.call(this, {
+        room: this.getRoomId(),
+        index: index
+      });
+    }
+
   }
 
   Game.prototype.ready = function() {
@@ -285,9 +290,12 @@
 
   Game.prototype.play = function(e, options) {
     if ($.type(e.target) !== 'undefined') {
+      var that = this;
       var target = e.target.toggle('evented');
       var data = this.getObjectsData(target);
-      this.drawFigure(data).over(target);
+      this.drawFigure(data).$play(target, false, function(data) {
+        that.socket.emit('play', data);
+      });
     }
   }
 
@@ -310,9 +318,7 @@
     var that = this;
     this.__canvas.on({
       'mouse:down': function(e) {
-        that.play(e, {
-          evented: false
-        });
+        that.play(e);
       }
     });
   }
@@ -382,12 +388,20 @@
     }
   }
 
+  Game.prototype._play = function(socket, that) {
+    return function(data) {
+      var square = that.__canvas.item(data.index);
+      that.drawFigure(that.getObjectsData(square)).$play(square, true);
+    } 
+  } 
+
   Game.prototype.execute = function(event) {
     var socket = this.socket;
     var map = {
       join: '_join',
       init: '_init',
       waiting: '_waiting',
+      play: '_play'
     };
     var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
       throw new Error(event + ' ' + 'function not found')
@@ -407,13 +421,14 @@
       .init()
       .execute('join')
       .execute('init')
-      .execute('waiting');
+      .execute('waiting')
+      .execute('play');
 
     this.__canvas.renderAll();
   }
 
   $(function() {
-    new Game(io(), 'tictactoe-test').run();
+    new Game(io(), 'tictactoe').run();
   });
 
 })(jQuery);

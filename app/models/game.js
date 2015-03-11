@@ -11,9 +11,10 @@ function Game(io, socket) {
 
 Game.prototype = {
   constructor: Game,
-  init: function(io, socket) {
+  init: function(io, socket, that) {
     return function(room) {
       if (room) {
+        that.room = room;
         var _room_id = room.id;
         db.connect(function(connection) {
           socket.join(_room_id);
@@ -43,7 +44,6 @@ Game.prototype = {
             }).addRoom(connection, function(document) {
               if (document) {
                 var _rid = document[0]._id;
-                // socket.join(_rid);
                 console.log('Room #%d created', _rid); //LOG
                 room.setPlayer({
                   _rid: _rid,
@@ -80,7 +80,6 @@ Game.prototype = {
                     room.updateRoomById(connection, _rid, function(document) {
                       if (document) {
                         var _rid = document._id;
-                        // socket.join(_rid);
                         room.setPlayer({
                           _rid: _rid,
                           name: player.name,
@@ -110,25 +109,34 @@ Game.prototype = {
       });
     }
   },
+  play: function(io, socket, that) {
+    return function(data) {
+      if (that.room) {
+        socket.broadcast.in(that.room.id).emit('play', data);
+      }
+    }
+  },
   execute: function(event) {
     var io = this.io;
     var socket = this.socket;
     var map = {
       init: 'init',
-      join: 'join'
+      join: 'join',
+      play: 'play'
     };
     var callback = map[event] && typeof this[map[event]] === 'function' 
       ? this[map[event]] 
         : (function () { 
           throw new Error(event + ' ' + 'function not found')
         })();
-    socket.on(event, callback(io, socket));
+    socket.on(event, callback(io, socket, this));
     return this;
   },
   run: function() {
     this
       .execute('join')
-      .execute('init');
+      .execute('init')
+      .execute('play');
   }
 }
 module.exports = Game;
