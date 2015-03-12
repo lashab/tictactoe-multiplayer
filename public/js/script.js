@@ -102,8 +102,8 @@
     return this;
   }
 
-  Game.prototype.drawFigure = function(data) {
-    if (this.which) {
+  Game.prototype.drawFigure = function(data, which) {
+    if (which) {
       var top = data.top;
       var left = data.left;
       var width = data.width;
@@ -114,7 +114,6 @@
         this.drawLine([left + width - gap, top + gap, left + gap, top + height - gap])
       ]);
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
-      this.which = false;
     }
     else {
       var centerX = data.center.x;
@@ -122,7 +121,6 @@
       var radius = data.radius;
       var circle = this.drawCircle(centerY, centerX, radius);
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
-      this.which = true;
     }
     return this;
   }
@@ -188,7 +186,7 @@
       });
     }
 
-    if (coords) {
+    if (coords.length) {
       this.__canvas.add(this.drawGroup([this.drawLine([coords.x1, coords.y1, coords.x2, coords.y2])]));
       return true;
     }
@@ -220,10 +218,11 @@
       6: [0, 4, 8],
       7: [2, 4, 6]
     };
+
     target.set('square', {
       index: index,
       value: ~~this.which
-    });
+    }).set('evented', false);
 
     while (j !== -1) {
       var square = this.__canvas.item(j);
@@ -264,12 +263,18 @@
     }
 
     if (callback && $.isFunction(callback)) {
-      callback.call(this, {
+      var data = {
         room: this.getRoomId(),
-        index: index
-      });
+        index: index,
+        figures: {}
+      }
+      data['figures'][index] = this.which;
+      callback.call(this, data);
     }
 
+    this.which = this.which ? false : true;
+
+    return this;
   }
 
   Game.prototype.ready = function() {
@@ -291,9 +296,9 @@
   Game.prototype.play = function(e, options) {
     if ($.type(e.target) !== 'undefined') {
       var that = this;
-      var target = e.target.toggle('evented');
+      var target = e.target;
       var data = this.getObjectsData(target);
-      this.drawFigure(data).$play(target, false, function(data) {
+      this.drawFigure(data, this.which).$play(target, false, function(data) {
         that.socket.emit('play', data);
       });
     }
@@ -340,8 +345,19 @@
   }
 
   Game.prototype._init = function(socket, that) {
-    return function(players) {
-      players.map(function(player, position) {
+    return function(room) {
+      console.log(room);
+      room.figures.map(function(figure, position) {
+        var index = Object.keys(figure)[0];
+        var square = that.__canvas.item(index);
+        console.log(typeof figure[index])
+        that.drawFigure(that.getObjectsData(square), figure[index]);
+        square.set('square', {
+          index: index,
+          value: ~~figure[index]
+        }).set('evented', false);
+      });
+      room.players.map(function(player, position) {
         $('.id-seat-' + position).children('img')
           .prop('src', '../images/default.png')
           .next()
@@ -391,7 +407,7 @@
   Game.prototype._play = function(socket, that) {
     return function(data) {
       var square = that.__canvas.item(data.index);
-      that.drawFigure(that.getObjectsData(square)).$play(square, true);
+      that.drawFigure(that.getObjectsData(square), that.which).$play(square, true);
     } 
   } 
 

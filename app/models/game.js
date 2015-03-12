@@ -14,16 +14,22 @@ Game.prototype = {
   init: function(io, socket, that) {
     return function(room) {
       if (room) {
-        that.room = room;
-        var _room_id = room.id;
         db.connect(function(connection) {
-          socket.join(_room_id);
           var _room = new Room();
-          _room.getPlayersByRoomId(connection, _room_id, function(players) {
-            if (players.length === 1) {
-              io.in(_room_id).emit('waiting', players.length);
-            }
-            io.in(_room_id).emit('init', players);
+          var _room_id = room.id;
+          _room.getRoomById(connection, _room_id, function(document) {
+            _room.getPlayersByRoomId(connection, _room_id, function(players) {
+              socket.join(_room_id);
+              if (players.length === 1) {
+                io.in(_room_id).emit('waiting', players.length);
+              }
+              io.in(_room_id).emit('init', {
+                players: players,
+                figures: document.figures
+              });
+              that.room = room;
+              connection.close();
+            });
           });
         });
       }
@@ -111,8 +117,15 @@ Game.prototype = {
   },
   play: function(io, socket, that) {
     return function(data) {
-      if (that.room) {
-        socket.broadcast.in(that.room.id).emit('play', data);
+      if (that.room && data) {
+        db.connect(function(connection) {
+          var room = new Room();
+          room.pushRoomDrawnFiguresSaveState(connection, that.room.id, data.figures, function(document) {
+            console.log(document);
+            socket.broadcast.in(that.room.id).emit('play', data);
+            connection.close();
+          });
+        });
       }
     }
   },
