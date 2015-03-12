@@ -85,14 +85,6 @@ Room.prototype.updateRoomById = function(connection, _id, callback) {
   });
 }
 
-Room.prototype.pushRoomDrawnFiguresSaveState = function(connection, _id, figures, callback) {
-  if (typeof figures === 'object') {
-    db.setCollection(connection, this.getRoomCollection()).modify({ _id: parseInt(_id) }, [], { $push: { figures: figures } }, { new: true }, function(document) {
-      callback(document);
-    });
-  }
-}
-
 module.exports = Room;
 
 
