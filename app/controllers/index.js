@@ -17,14 +17,12 @@ exports.index = function(req, res) {
 
 exports.play = function(req, res) {
   db.connect(function(connection) {
-    var template = new Template('../views/tictactoe.ejs');
+    var template = new Template('../views/room.ejs');
     var room = new Room();
-    room.getPlayersByRoomId(connection, room.getRoomIdByPath(req.path), function(players) {
-      res.render('index', { 
-        title: 'Tic Tac Toe',
-        body: template.render({ players: players })
-      });
-      connection.close();
+    res.render('index', { 
+      title: 'Tic Tac Toe',
+      body: template.render(),
+      $class: 'rooms'
     });
   });
 }

@@ -21,17 +21,16 @@ Game.prototype.init = function(io, socket, that) {
       db.connect(function(connection) {
         that.getRoomById(connection, room, function(document) {
           that.getPlayersByRoomId(connection, room, function(players) {
-            console.log(players);
-            socket.join(room);
+            socket.join(room);;
+            socket.emit('init', {
+              room: document
+            });
             if (players.length === 1) {
-              io.in(room).emit('waiting', players.length);
+              socket.emit('waiting', players.length);
             }
-            io.in(room).emit('init', {
-              room: document,
+            io.in(room).emit('players', {
               players: players
             });
-            socket.emit('activate')
-            that.room = room;
             connection.close();
           });
         });
@@ -125,21 +124,21 @@ Game.prototype.join = function(io, socket, that) {
 
 Game.prototype.play = function(io, socket, that) {
   return function(game) {
-    if (that.room && game) {
-      db.connect(function(connection) {
-        that.pushDrawnFigures(connection, that.room.id, game.figures, function(document) {
-          socket.broadcast.in(that.room.id).emit('play', game);
-          if (game.over) {
-            that.removeDrawnFigures(connection, that.room.id, function(document) {
-              connection.close();
-            });
-          }
-          else {
-            connection.close();
-          }
-        });
-      });
-    }
+    var room = game.roomid;
+     socket.broadcast.in(room).emit('play', game);
+      // db.connect(function(connection) {
+      //   that.pushDrawnFigures(connection, room, game.figures, function(document) {
+      //     socket.broadcast.in(room).emit('play', game);
+      //     if (game.over) {
+      //       that.removeDrawnFigures(connection, room, function(document) {
+      //         connection.close();
+      //       });
+      //     }
+      //     else {
+      //       connection.close();
+      //     }
+      //   });
+      // });
   }
 }
 

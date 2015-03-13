@@ -50,7 +50,7 @@ Player.prototype.getPlayersByRoomId = function(connection, _rid, callback) {
     var players = [];
     documents.map(function(document) {
       players.push({
-        names: document.name,
+        name: document.name,
         active: document.active
       });
     })

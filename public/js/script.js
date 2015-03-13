@@ -25,17 +25,25 @@
       if (!$.isEmptyObject(room)) {
         that
           .setRoom(room.room)
-          .setPlayers(room.players)
           .drawGame()
-          .drawSavedFigures()
-          .addPlayers()
-          .ready(false)
+          .ready()
           .manipulate();
       }
     }
   }
 
+  Game.prototype._players = function(socket, that) {
+    return function(room) {
+      if (!$.isEmptyObject(room)) {
+        that
+          .setPlayers(room.players)
+          .addPlayers()
+      }
+    }
+  }
+
   Game.prototype.setRoom = function(room) {
+    $('.rooms.fade-effect').addClass('whole-in');
     this.room = room;
     return this;
   }
@@ -53,31 +61,45 @@
     return this.players;
   }
 
-  Game.prototype.setActivePlayer = function(position) {
-    this.position = position;
-    this.socket.emit('activate', position);
-    return this;
+  Game.prototype.getActivePlayer = function() {
+    var players = this.getPlayers();
+    var position = NaN;
+    players.map(function(player, index) {
+      if (player.active) {
+        position = index;
+      }
+    });
+    if (!isNaN(position)) {
+      return position;
+    }
+    return false;
   }
 
-  Game.prototype.getActivePlayer = function() {
-    return this.position;
+  Game.prototype.setActivePlayer = function() {
+    var player = this.getActivePlayer();
+    $('.id-seat-' + player).addClass('whole-in');
+    if (!this.isWaiting) {
+      $('div[class*="id-seat-"]').filter(function(index) {
+        return index !== player;
+      }).removeClass('whole-in');
+    }
   }
 
   Game.prototype.addPlayers = function(room) {
     var players = this.getPlayers();
-    players.map(function(player, position) {
-      $('.id-seat-' + position)
+    players.map(function(player, position) {;
+        $('.id-seat-' + position)
         .children('img')
           .prop('src', '../images/default.png')
           .next()
             .children()
-              .text(player)
+              .text(player.name)
             .end()
           .end()
         .end()
-        .fadeIn()
-        .show();
+        .addClass('show');
     });
+    this.setActivePlayer();
     return this;
   }
 
@@ -183,6 +205,7 @@
   }
 
   Game.prototype.drawSavedFigures = function(room) {
+    var that = this;
     var room = this.getRoom();
     room.figures.map(function(figure) {
       var index = Object.keys(figure)[0];
@@ -329,7 +352,7 @@
 
     if (callback && $.isFunction(callback)) {
       var data = {
-        index: index,
+        roomid: this.getRoomId(),
         figures: {},
         over: game.over
       }
@@ -337,12 +360,10 @@
       callback.call(this, data);
     }
 
-    this.which = this.which ? false : true;
-
     return this;
   }
 
-  Game.prototype.ready = function(evented) {
+  Game.prototype.ready = function() {
     this.count = this.countCanvasObjects();
     this.__canvas.forEachObject(function(object, index) {
       if (object.get('type') === 'group') {
@@ -351,7 +372,7 @@
             index: index,
             value: NaN
           },
-          evented: evented,
+          evented: true,
         });
       }
     });
@@ -434,28 +455,23 @@
     }
   }
 
-  Game.prototype._waiting = function(socket) {
+  Game.prototype._waiting = function(socket, that) {
     return function(player) {
       $('.layer').addClass('fade').addClass('in');
       $('.id-seat-' + player).children('img')
         .prop('src', '../images/loading.gif')
         .end()
-        .fadeIn()
-        .show();
+        .addClass('whole-in')
+        .addClass('show')
+      that.isWaiting = true;
     }
   }
 
   Game.prototype._play = function(socket, that) {
     return function(data) {
-      var square = that.__canvas.item(data.index);
+      var square = that.__canvas.item(Object.keys(data.figures));
       that.drawFigure(that.getObjectsData(square), that.which).play(square, true);
     } 
-  }
-
-  Game.prototype._activate = function(socket, that) {
-    return function() {
-      that.ready(true).manipulate();
-    }
   }
 
   Game.prototype.execute = function(event) {
@@ -465,7 +481,7 @@
       init: '_init',
       waiting: '_waiting',
       play: '_play',
-      activate: '_activate'
+      players: '_players'
     };
     var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
       throw new Error(event + ' ' + 'function not found')
@@ -486,8 +502,8 @@
       .execute('join')
       .execute('init')
       .execute('waiting')
-      .execute('play')
-      .execute('activate');
+      .execute('players')
+      .execute('play');
 
     this.__canvas.renderAll();
   }
