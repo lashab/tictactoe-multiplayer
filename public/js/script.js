@@ -77,27 +77,26 @@
 
   Game.prototype.setActivePlayer = function() {
     var player = this.getActivePlayer();
-    $('.id-seat-' + player).addClass('whole-in');
-    if (!this.isWaiting) {
-      $('div[class*="id-seat-"]').filter(function(index) {
-        return index !== player;
-      }).removeClass('whole-in');
-    }
+    $('.id-player-' + player).addClass('whole-in');
+    $('div[class*="id-player-"]').filter(function(index) {
+      return index !== player;
+    }).removeClass('whole-in');
   }
 
   Game.prototype.addPlayers = function(room) {
     var players = this.getPlayers();
-    players.map(function(player, position) {;
-        $('.id-seat-' + position)
-        .children('img')
-          .prop('src', '../images/default.png')
-          .next()
-            .children()
-              .text(player.name)
-            .end()
+    if (players.length > 1) $('.players.wait').removeClass('wait');
+    players.map(function(player, position) {
+      $('.id-player-' + position)
+      .children('img')
+        .prop('src', '../images/default.png')
+        .next()
+          .children()
+            .text(player.name)
           .end()
         .end()
-        .addClass('show');
+      .end()
+      .addClass('show');
     });
     this.setActivePlayer();
     return this;
@@ -457,13 +456,11 @@
 
   Game.prototype._waiting = function(socket, that) {
     return function(player) {
-      $('.layer').addClass('fade').addClass('in');
-      $('.id-seat-' + player).children('img')
+      $('.id-player-' + player).children('img')
         .prop('src', '../images/loading.gif')
         .end()
-        .addClass('whole-in')
+        .addClass('wait')
         .addClass('show')
-      that.isWaiting = true;
     }
   }
 

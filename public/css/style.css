@@ -35,7 +35,5 @@ html, body {
   background-color: #000;
 }
 
-.seats {
-  opacity: 0.6;
-  display: none;
-}
+.players {display: none;}
+.players:not(.wait) {opacity: 0.7}
