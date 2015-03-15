@@ -5,8 +5,6 @@
     this.__canvas = new fabric.Canvas(canvas);
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
-    this.x = this.__canvas.getWidth() / 3;
-    this.y = this.__canvas.getHeight() / 3;
     this.socket = socket;
     this.which = true;
   }
@@ -138,43 +136,45 @@
   }
 
   Game.prototype.drawGame = function() {
+    var x = this.__canvas.getWidth() / 3;
+    var y = this.__canvas.getHeight() / 3;
     this.__canvas.add(
       this.drawGroup([
-        this.drawLine([this.x, 0, this.x, this.y]),
-        this.drawLine([0, this.y, this.x, this.y])
+        this.drawLine([x, 0, x, y]),
+        this.drawLine([0, y, x, y])
       ]),
       this.drawGroup([
-        this.drawLine([this.x * 2, 0, this.x * 2, this.y]),
-        this.drawLine([this.x * 2, this.y, this.x, this.y])
+        this.drawLine([x * 2, 0, x * 2, y]),
+        this.drawLine([x * 2, y, x, y])
       ]),
       this.drawGroup([
-        this.drawLine([this.x * 3, 0, this.x * 3, this.y]),
-        this.drawLine([this.x * 3, this.y, this.x * 2, this.y])
+        this.drawLine([x * 3, 0, x * 3, y]),
+        this.drawLine([x * 3, y, x * 2, y])
       ]),
       this.drawGroup([
-        this.drawLine([this.x, this.y, this.x, this.y * 2]),
-        this.drawLine([0, this.y * 2, this.x, this.y * 2])
+        this.drawLine([x, y, x, y * 2]),
+        this.drawLine([0, y * 2, x, y * 2])
       ]),
       this.drawGroup([
-        this.drawLine([this.x * 2, this.y, this.x * 2, this.y * 2]),
-        this.drawLine([this.x, this.y * 2, this.x * 2, this.y * 2])
+        this.drawLine([x * 2, y, x * 2, y * 2]),
+        this.drawLine([x, y * 2, x * 2, y * 2])
       ]),
       this.drawGroup([
-        this.drawLine([this.x * 3, this.y, this.x * 3, this.y * 2]),
-        this.drawLine([this.x * 3, this.y * 2, this.x * 2, this.y * 2])
+        this.drawLine([x * 3, y, x * 3, y * 2]),
+        this.drawLine([x * 3, y * 2, x * 2, y * 2])
       ]),
       this.drawGroup([
-        this.drawLine([this.x, this.y * 2, this.x, this.y * 3]),
-        this.drawLine([0, this.y * 3, this.x, this.y * 3])
+        this.drawLine([x, y * 2, x, y * 3]),
+        this.drawLine([0, y * 3, x, y * 3])
       ]),
       this.drawGroup([
-        this.drawLine([this.x * 2, this.y * 2, this.x * 2, this.y * 3]),
-        this.drawLine([this.x, this.y * 3, this.x * 2, this.y * 3])
+        this.drawLine([x * 2, y * 2, x * 2, y * 3]),
+        this.drawLine([x, y * 3, x * 2, y * 3])
       ]),
       this.drawGroup([this.drawLine([
-          this.x * 3, this.y * 2, this.x * 3, this.y * 3
+          x * 3, y * 2, x * 3, y * 3
         ]),
-        this.drawLine([this.x * 2, this.y * 3, this.x * 3, this.y * 3])
+        this.drawLine([x * 2, y * 3, x * 3, y * 3])
       ])
     );
     return this;

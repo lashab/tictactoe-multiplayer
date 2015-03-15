@@ -45,8 +45,8 @@ Player.prototype.playerEnsureIndex = function(connection, callback) {
   return this;
 }
 
-Player.prototype.getPlayersByRoomId = function(connection, _rid, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: parseInt(_rid) }, function(documents) {
+Player.prototype.getPlayersByRoomId = function(connection, _id, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: parseInt(_id) }, function(documents) {
     var players = [];
     documents.map(function(document) {
       players.push({
@@ -64,6 +64,12 @@ Player.prototype.addPlayer = function(connection, callback) {
     callback(document);
   });
   return this;
+}
+
+Player.prototype.switchActivePlayer = function(connection, _id, callback) {
+  db.setCollection(connection, this.getPlayerCollection()).select({_rid: parseInt(_id)}, function(documents) {
+    callback(documents);
+  });
 }
 
 module.exports = Player;

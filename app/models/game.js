@@ -126,6 +126,16 @@ Game.prototype.play = function(io, socket, that) {
   return function(game) {
     var room = game.roomid;
      socket.broadcast.in(room).emit('play', game);
+     db.connect(function(connection) {
+      that.switchActivePlayer(connection, room, function(documents) {
+        documents.map(function(document) {
+          document.active = document.active ? false : true;
+          db.save(document, function(document) {
+            
+          });
+        })
+      });
+     });
       // db.connect(function(connection) {
       //   that.pushDrawnFigures(connection, room, game.figures, function(document) {
       //     socket.broadcast.in(room).emit('play', game);
