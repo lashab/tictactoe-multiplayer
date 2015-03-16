@@ -52,6 +52,12 @@ Database.prototype = {
       callback(documents);
     });
   },
+  save: function(document, callback) {
+    this.getCollection().save(document, function(err, documents) {
+      if (err) throw err;
+      callback(documents);
+    });
+  },
   insert: function(document, callback) {
     this.getCollection().insert(document, function(err, documents) {
       if (err) throw err;

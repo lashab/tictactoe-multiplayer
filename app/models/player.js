@@ -67,8 +67,15 @@ Player.prototype.addPlayer = function(connection, callback) {
 }
 
 Player.prototype.switchActivePlayer = function(connection, _id, callback) {
+  var that = this;
   db.setCollection(connection, this.getPlayerCollection()).select({_rid: parseInt(_id)}, function(documents) {
-    callback(documents);
+    documents.map(function(document) {
+      document.active = document.active ? false : true;
+      db.setCollection(connection, that.getPlayerCollection()).save(document, function(document) {});
+    })
+    if (documents.length) {
+      callback(documents);
+    }
   });
 }
 

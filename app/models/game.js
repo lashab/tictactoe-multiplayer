@@ -125,15 +125,13 @@ Game.prototype.join = function(io, socket, that) {
 Game.prototype.play = function(io, socket, that) {
   return function(game) {
     var room = game.roomid;
-     socket.broadcast.in(room).emit('play', game);
      db.connect(function(connection) {
       that.switchActivePlayer(connection, room, function(documents) {
-        documents.map(function(document) {
-          document.active = document.active ? false : true;
-          db.save(document, function(document) {
-            
-          });
-        })
+        io.in(room).emit('switch', documents);
+        var figures = game.figures;
+        var index = Object.keys(figures);
+        game.figure = figures[index] ? false : true;
+        socket.broadcast.in(room).emit('play', game);
       });
      });
       // db.connect(function(connection) {

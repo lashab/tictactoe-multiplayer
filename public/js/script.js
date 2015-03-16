@@ -6,7 +6,6 @@
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
     this.socket = socket;
-    this.which = true;
   }
 
   Game.prototype.init = function() {
@@ -98,6 +97,18 @@
     });
     this.setActivePlayer();
     return this;
+  }
+
+  Game.prototype.setActiveFigure = function(figure) {
+    this.figure = figure;
+    return this;
+  }
+
+  Game.prototype.getActiveFigure = function(figure) {
+    if (figure) {
+      this.setActiveFigure(figure);
+    }
+    return this.figure;
   }
 
   Game.prototype.drawLine = function(coords) {
@@ -295,6 +306,7 @@
   }
 
   Game.prototype.play = function(target, evented, callback) {
+    var active = this.getActiveFigure();
     var j = this.count;
     var values = [];
     var game = { over: false };
@@ -310,7 +322,7 @@
       7: [2, 4, 6]
     };
 
-    this.setSquareState(target, index, this.which);
+    this.setSquareState(target, index, active);
 
     while (j !== -1) {
       var square = this.__canvas.item(j);
@@ -355,14 +367,17 @@
         figures: {},
         over: game.over
       }
-      data['figures'][index] = this.which;
+      data['figures'][index] = active;
       callback.call(this, data);
     }
+
+    this.setActiveFigure(!active);
 
     return this;
   }
 
   Game.prototype.ready = function() {
+    this.setActiveFigure(true);
     this.count = this.countCanvasObjects();
     this.__canvas.forEachObject(function(object, index) {
       if (object.get('type') === 'group') {
@@ -400,9 +415,11 @@
         if ($.type(e.target) !== 'undefined') {
           var target = e.target;
           var data = that.getObjectsData(target);
-          that.drawFigure(data, that.which).play(target, false, function(data) {
-            that.socket.emit('play', data);
-          });
+          that
+            .drawFigure(data, that.getActiveFigure())
+            .play(target, false, function(data) {
+              that.socket.emit('play', data);
+            });
         }
       }
     });
@@ -467,8 +484,17 @@
   Game.prototype._play = function(socket, that) {
     return function(data) {
       var square = that.__canvas.item(Object.keys(data.figures));
-      that.drawFigure(that.getObjectsData(square), that.which).play(square, true);
+      that
+        .drawFigure(that.getObjectsData(square), that.getActiveFigure())
+        .play(square, true);
     } 
+  }
+
+  Game.prototype._switch = function(socket, that) {
+    return function(players) {
+      that.setPlayers(players)
+        .setActivePlayer();
+    }
   }
 
   Game.prototype.execute = function(event) {
@@ -478,7 +504,8 @@
       init: '_init',
       waiting: '_waiting',
       play: '_play',
-      players: '_players'
+      players: '_players',
+      switch: '_switch'
     };
     var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
       throw new Error(event + ' ' + 'function not found')
@@ -500,7 +527,8 @@
       .execute('init')
       .execute('waiting')
       .execute('players')
-      .execute('play');
+      .execute('play')
+      .execute('switch');
 
     this.__canvas.renderAll();
   }
