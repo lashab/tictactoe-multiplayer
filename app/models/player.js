@@ -14,10 +14,7 @@ Player.prototype.setPlayer = function(player) {
   this.player = {
     _rid: player._rid,
     name: this.playersValidate(player.name),
-    video: player.video,
-    active: player.active,
-    status: player.status,
-    score: player.score
+    active: player.active
   };
   return this;
 }
@@ -47,20 +44,13 @@ Player.prototype.playerEnsureIndex = function(connection, callback) {
 
 Player.prototype.getPlayersByRoomId = function(connection, _id, callback) {
   db.setCollection(connection, this.getPlayerCollection()).select({ _rid: parseInt(_id) }, function(documents) {
-    var players = [];
-    documents.map(function(document) {
-      players.push({
-        name: document.name,
-        active: document.active
-      });
-    })
-    callback(players);
+    callback(documents);
   });
   return this;
 };
 
 Player.prototype.addPlayer = function(connection, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).insert(this.getPlayer(), function(document) {
+  db.setCollection(connection, this.getPlayerCollection()).save(this.getPlayer(), function(document) {
     callback(document);
   });
   return this;

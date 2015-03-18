@@ -1,20 +1,18 @@
-  
+'use strict';
 /**
  * Module dependencies.
  */
 var express = require('express')
-  , controllers = require('./app/controllers')
   , http = require('http')
   , path = require('path')
   , url = require('url')
-  , join = path.join;
+  , join = path.join
 
-var app = express();
-var sio = require('http').Server(app);
-var io = require('socket.io')(sio);
-var Game = require('./app/models/game');
-var Mongo = require('./app/models/database');
-var db = new Mongo();
+  , app = express()
+  , sio = require('http').Server(app)
+  , io = require('socket.io')(sio)
+  , Controllers = require('./app/controllers')
+  , Game = require('./app/models/game');
 
 // all environments
 app.set('port', process.env.PORT || 3000);
@@ -32,44 +30,13 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.get('/', controllers.index);
-app.get('/room/:id', controllers.play);
+app.get('/', Controllers.index);
+app.get('/room/:id', Controllers.play);
 
 sio.listen(app.get('port'));
 
 io.on('connection', function (socket) {
   new Game(io, socket).run();
-  // socket.on('join', function(room) {
-  //   if (room) {
-  //     db.connect(function(connection) {
-  //       db.setCollection(connection, 'rooms').selectOne({_id: parseInt(room)}, function(document) {
-  //         db.setCollection(connection, 'players').select({_rid: document.players}, function(documents) {
-  //           var size = documents.length;
-  //           var status = document.status;
-  //           socket.join(room);
-  //           if (size > 1 && !status) {
-  //             db.setCollection(connection, 'rooms').modify({_id: parseInt(room)}, [], {$set: {status: 1}}, {new: true}, function(document) {
-  //               console.log(document);
-  //               socket.broadcast.in(room).emit('join', documents[1]);
-  //               connection.close();
-  //             });
-  //           }
-  //         });
-  //       });
-  //     });
-  //     // db.selectOne('rooms', {_id: parseInt(room)}, function(document, connection) {
-  //     //   if (document.users.length > 1) {
-  //     //     socket.broadcast.emit('join', document.users);
-  //     //   }
-  //     //   connection.close();
-  //     // });
-  //   }
-  // });
-
-
-  // socket.on('set', function(data) {
-  //   socket.broadcast.in(data.room).emit('get', data);
-  // });
 });
 
 

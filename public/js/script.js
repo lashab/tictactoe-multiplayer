@@ -24,6 +24,7 @@
           .setRoom(room.room)
           .drawGame()
           .ready()
+          .stateFigures()
           .manipulate();
       }
     }
@@ -35,6 +36,7 @@
         that
           .setPlayers(room.players)
           .addPlayers()
+          .setActivePlayer()
       }
     }
   }
@@ -73,10 +75,10 @@
   }
 
   Game.prototype.setActivePlayer = function() {
-    var player = this.getActivePlayer();
-    $('.id-player-' + player).addClass('whole-in');
+    var position = this.getActivePlayer();
+    $('.id-player-' + position).addClass('whole-in');
     $('div[class*="id-player-"]').filter(function(index) {
-      return index !== player;
+      return index !== position;
     }).removeClass('whole-in');
   }
 
@@ -95,7 +97,6 @@
       .end()
       .addClass('show');
     });
-    this.setActivePlayer();
     return this;
   }
 
@@ -192,7 +193,8 @@
   }
 
   Game.prototype.drawFigure = function(data, which) {
-    if (which) {
+    var figure = this.getActiveFigure();
+    if (figure) {
       var top = data.top;
       var left = data.left;
       var width = data.width;
@@ -214,14 +216,14 @@
     return this;
   }
 
-  Game.prototype.drawSavedFigures = function(room) {
+  Game.prototype.stateFigures = function(room) {
     var that = this;
     var room = this.getRoom();
     room.figures.map(function(figure) {
       var index = Object.keys(figure)[0];
       var value = figure[index];
       var target = that.__canvas.item(index);
-      that.drawFigure(that.getObjectsData(target), figure[index])
+      that.drawFigure(that.getFigureData(target), figure[index])
         .setSquareState(target, index, value);
     });
     return this;
@@ -364,6 +366,7 @@
     if (callback && $.isFunction(callback)) {
       var data = {
         roomid: this.getRoomId(),
+        figure: active,
         figures: {},
         over: game.over
       }
@@ -371,24 +374,23 @@
       callback.call(this, data);
     }
 
-    this.setActiveFigure(!active);
+    this.setActiveFigure(~~!active);
 
     return this;
   }
 
   Game.prototype.ready = function() {
-    this.setActiveFigure(true);
+    var room = this.getRoom();
+    this.setActiveFigure(room.figure);
     this.count = this.countCanvasObjects();
     this.__canvas.forEachObject(function(object, index) {
-      if (object.get('type') === 'group') {
-        object.set({
-          square: {
-            index: index,
-            value: NaN
-          },
-          evented: true,
-        });
-      }
+      object.set({
+        square: {
+          index: index,
+          value: NaN
+        },
+        evented: true,
+      });
     });
     return this;
   }
@@ -414,7 +416,7 @@
       'mouse:down': function(e) {
         if ($.type(e.target) !== 'undefined') {
           var target = e.target;
-          var data = that.getObjectsData(target);
+          var data = that.getFigureData(target);
           that
             .drawFigure(data, that.getActiveFigure())
             .play(target, false, function(data) {
@@ -426,7 +428,7 @@
     return this;
   }
 
-  Game.prototype.getObjectsData = function(object) {
+  Game.prototype.getFigureData = function(object) {
     return {
       top: object.getTop(),
       left: object.getLeft(),
@@ -472,12 +474,13 @@
   }
 
   Game.prototype._waiting = function(socket, that) {
-    return function(player) {
-      $('.id-player-' + player).children('img')
+    return function(position) {
+      $('.id-player-' + position)
+      .children('img')
         .prop('src', '../images/loading.gif')
-        .end()
-        .addClass('wait')
-        .addClass('show')
+      .end()
+      .addClass('wait')
+      .addClass('show')
     }
   }
 
@@ -485,7 +488,7 @@
     return function(data) {
       var square = that.__canvas.item(Object.keys(data.figures));
       that
-        .drawFigure(that.getObjectsData(square), that.getActiveFigure())
+        .drawFigure(that.getFigureData(square), that.getActiveFigure())
         .play(square, true);
     } 
   }

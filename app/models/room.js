@@ -1,9 +1,9 @@
 'use strict';
 
-var join = require('path').join; 
-var Mongo = require(join(__dirname, 'database'));
-var Player = require(join(__dirname, 'player'));
-var db = new Mongo();
+var join = require('path').join
+  , Player = require(join(__dirname, 'player'))
+  , Mongo = require(join(__dirname, 'database'))
+  , db = new Mongo();
 
 var Room = function() {
   Player.call(this);
@@ -12,14 +12,11 @@ var Room = function() {
 
 Room.prototype = Object.create(Player.prototype);
 
-Room.prototype.constructor = Room;
-
 Room.prototype.setRoom = function(room) {
   this.room = {
     _id: room._id,
-    players: room._id,
     available: room.available,
-    status: room.status,
+    figure: 1,
     figures: []
   };
   return this;
@@ -50,7 +47,7 @@ Room.prototype.countRooms = function(connection, callback) {
 }
 
 Room.prototype.addRoom = function(connection, callback) {
-  db.setCollection(connection, this.getRoomCollection()).insert(this.getRoom(), function(document) {
+  db.setCollection(connection, this.getRoomCollection()).save(this.getRoom(), function(document) {
     callback(document);
   });
   return this;
@@ -77,12 +74,6 @@ Room.prototype.getRandomRoom = function(documents, callback) {
   });
   callback(ids[Math.floor(Math.random() * ids.length)]);
   return this;
-}
-
-Room.prototype.updateRoomById = function(connection, _id, callback) {
-  db.setCollection(connection, this.getRoomCollection()).modify({ _id: _id }, [], { $set: { available: false } }, { new: true }, function (document) {
-    callback(document);
-  });
 }
 
 module.exports = Room;
