@@ -1,13 +1,11 @@
 'use strict';
 
-var join = require('path').join
-  , Player = require(join(__dirname, 'player'))
-  , Mongo = require(join(__dirname, 'database'))
-  , db = new Mongo();
+var join = require('path').join;
+var Player = require(join(__dirname, 'player'));
 
 var Room = function() {
   Player.call(this);
-  this.roomCollection = 'rooms';
+  this.rooms = 'rooms';
 }
 
 Room.prototype = Object.create(Player.prototype);

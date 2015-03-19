@@ -2,21 +2,25 @@
 /**
  * Module dependencies.
  */
-var express = require('express')
-  , http = require('http')
-  , path = require('path')
-  , url = require('url')
-  , join = path.join
+var express = require('express');
+var http = require('http');
+var path = require('path');
+var url = require('url');
+var join = path.join;
 
-  , app = express()
-  , sio = require('http').Server(app)
-  , io = require('socket.io')(sio)
-  , Controllers = require('./app/controllers')
-  , Game = require('./app/models/game');
+var app = express();
+var sio = require('http').Server(app);
+var io = require('socket.io')(sio);
+
+var Game = require(join(__dirname, 'app/models/game'));
+var Routes = require(join(__dirname, 'app/routes'));
+
+var config = require('config');
 
 // all environments
-app.set('port', process.env.PORT || 3000);
-app.set('views', __dirname + '/app/views');
+app.set('port', process.env.PORT || config.get('tictactoe.port'));
+app.set('views', join(__dirname, config.get('tictactoe.views.path')));
+app.set('title', config.get('tictactoe.title'));
 app.set('view engine', 'ejs');
 app.use(express.favicon());
 app.use(express.logger('dev'));
@@ -28,13 +32,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // development only
 if ('development' == app.get('env')) {
   app.use(express.errorHandler());
+  app.locals.delimiters = '{{ }}';
 }
 
-app.get('/', Controllers.index);
-app.get('/room/:id', Controllers.play);
+// Routes
+Routes(app);
 
 sio.listen(app.get('port'));
-
+ 
+// SocketIO 
 io.on('connection', function (socket) {
   new Game(io, socket).run();
 });

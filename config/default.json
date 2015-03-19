@@ -1,9 +1,12 @@
 {
   "tictactoe": {
+    "title": "Tic Tac Toe",
+    "views": {
+      "path": "app/views"
+    }, 
     "db": {
-      "host": "localhost",
-      "port": 27017,
-      "name": "tictactoe"
-    }
+      "url": "mongodb://localhost/tictactoe"
+    },
+    "port": 3000
   }
 }

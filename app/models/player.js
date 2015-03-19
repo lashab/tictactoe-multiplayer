@@ -2,17 +2,15 @@
 
 var join = require('path').join;
 var validator = require('validator');
-var Mongo = require(join(__dirname, 'database'));
 var Room = require(join(__dirname, 'room'));
-var db = new Mongo();
 
 var Player = function() {
-  this.playerCollection = 'players';
+  this.players = 'players';
 }
 
 Player.prototype.setPlayer = function(player) {
   this.player = {
-    _rid: player._rid,
+    room: player.room,
     name: this.playersValidate(player.name),
     active: player.active
   };
@@ -21,14 +19,6 @@ Player.prototype.setPlayer = function(player) {
 
 Player.prototype.getPlayer = function() {
   return this.player;
-}
-
-Player.prototype.setPlayerCollection = function(collection) {
-  this.playerCollection = collection;
-}
-
-Player.prototype.getPlayerCollection = function() {
-  return this.playerCollection;
 }
 
 Player.prototype.playersValidate = function(player) {
