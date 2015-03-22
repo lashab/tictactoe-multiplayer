@@ -4,7 +4,7 @@
     "views": {
       "path": "app/views"
     }, 
-    "db": {
+    "mongodb": {
       "url": "mongodb://localhost/tictactoe"
     },
     "port": 3000

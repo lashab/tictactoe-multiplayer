@@ -5,7 +5,7 @@ var validator = require('validator');
 var Room = require(join(__dirname, 'room'));
 
 var Player = function() {
-  this.players = 'players';
+  this.p_collection = 'players';
 }
 
 Player.prototype.setPlayer = function(player) {
@@ -25,36 +25,45 @@ Player.prototype.playersValidate = function(player) {
   return validator.escape(validator.trim(player));
 }
 
-Player.prototype.playerEnsureIndex = function(connection, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).setIndex({ _rid: 1 }, function(document) {
-    callback(document);
-  });
-  return this;
-}
+// Player.prototype.playerEnsureIndex = function(connection, callback) {
+//   db.setCollection(connection, this.getPlayerCollection()).setIndex({ _rid: 1 }, function(document) {
+//     callback(document);
+//   });
+//   return this;
+// }
 
-Player.prototype.getPlayersByRoomId = function(connection, _id, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).select({ _rid: parseInt(_id) }, function(documents) {
-    callback(documents);
+Player.prototype.getPlayersByRoomId = function(db, id, callback) {
+  var collection = db.collection(this.p_collection);
+  collection.find({
+    rid: parseInt(id)
+  }, function(err, players) {
+    if (err) throw err;
+    callback(db, players);
   });
-  return this;
 };
 
-Player.prototype.addPlayer = function(connection, callback) {
-  db.setCollection(connection, this.getPlayerCollection()).save(this.getPlayer(), function(document) {
-    callback(document);
+Player.prototype.addPlayer = function(db, callback) {
+  var collection = db.collection(this.p_collection);
+  collection.save(this.getPlayer(), function(err, document) {
+    if (err) throw err;
+    callback(db, document);
   });
-  return this;
 }
 
-Player.prototype.switchActivePlayer = function(connection, _id, callback) {
-  var that = this;
-  db.setCollection(connection, this.getPlayerCollection()).select({_rid: parseInt(_id)}, function(documents) {
-    documents.map(function(document) {
-      document.active = document.active ? false : true;
-      db.setCollection(connection, that.getPlayerCollection()).save(document, function(document) {});
+Player.prototype.switchActivePlayer = function(db, id, callback) {
+  var collection = db.collection(this.p_collection);
+  collection.find({
+    rid: parseInt(_id)
+  }, function(err, players) {
+    if (err) throw err;
+    players.map(function(player) {
+      player.active = player.active ? false : true;
+      collection.save(player, function(err) {
+        if (err) throw err;
+      });
     })
-    if (documents.length) {
-      callback(documents);
+    if (players.length) {
+      callback(db, players);
     }
   });
 }

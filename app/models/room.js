@@ -5,7 +5,7 @@ var Player = require(join(__dirname, 'player'));
 
 var Room = function() {
   Player.call(this);
-  this.rooms = 'rooms';
+  this.r_collection = 'rooms';
 }
 
 Room.prototype = Object.create(Player.prototype);
@@ -24,54 +24,44 @@ Room.prototype.getRoom = function() {
   return this.room;
 }
 
-Room.prototype.getRoomIdByPath = function(path) {
-  return parseInt(path.split('/')[2]);
-}
-
-Room.prototype.setRoomCollection = function(collection) {
-  this.roomCollection = collection;
-  return this;
-}
-
-Room.prototype.getRoomCollection = function() {
-  return this.roomCollection;
-}
-
-Room.prototype.countRooms = function(connection, callback) {
-  db.setCollection(connection, this.getRoomCollection()).count(function(count) {
-    callback(count);
+Room.prototype.countRooms = function(db, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.count(function(err, count) {
+    if (err) throw err;
+    callback(db, count);
   });
-  return this;
 }
 
-Room.prototype.addRoom = function(connection, callback) {
-  db.setCollection(connection, this.getRoomCollection()).save(this.getRoom(), function(document) {
-    callback(document);
+Room.prototype.addRoom = function(db, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.save(this.getRoom(), function(err, document) {
+    if (err) throw err;
+    callback(db, document);
   });
-  return this;
 }
 
-Room.prototype.getRoomById = function(connection, _id, callback) {
-  db.setCollection(connection, this.getRoomCollection()).selectOne({ _id: parseInt(_id) }, function(document) {
-    callback(document);
+Room.prototype.getRoomById = function(db, id, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.findOne({ _id: parseInt(id) }, function(err, room) {
+    if (err) throw err;
+    callback(db, room);
   });
-  return this; 
 }
 
-Room.prototype.getAvailableRooms = function(connection, callback) {
-  db.setCollection(connection, this.getRoomCollection()).select({ available: true }, function(documents) {
-    callback(documents);
+Room.prototype.getAvailableRooms = function(db, callback) {
+  var collection = db.connection(this.r_collection);
+  collection.find({ available: true }, function(err, rooms) {
+    if (err) throw err;
+    callback(db, rooms);
   });
-  return this;
 }
 
-Room.prototype.getRandomRoom = function(documents, callback) {
+Room.prototype.getRandomRoom = function(rooms, callback) {
   var ids = [];
-  documents.map(function(document) {
-    ids.push(document._id);
+  rooms.map(function(room) {
+    ids.push(room._id);
   });
   callback(ids[Math.floor(Math.random() * ids.length)]);
-  return this;
 }
 
 module.exports = Room;

@@ -1,25 +1,25 @@
 'use strict';
 
 var join = require('path').join
-  , Room = require(join(__dirname, 'room'))
-  , Mongo = require(join(__dirname, 'database'))
-  , db = new Mongo();
+var Room = require(join(__dirname, 'room'));
 
-function Game(io, socket) {
+function Game(io, socket, app, db) {
   Room.call(this);
   this.io = io;
   this.socket = socket;
+  this.app = app;
+  this.db = db;
 };
 
 Game.prototype = Object.create(Room.prototype);
 
-Game.prototype.init = function(io, socket, that) {
+Game.prototype.init = function(io, socket, app, db, self) {
   return function(room) {
     if (room.id) {
       var room = room.id;
-      db.connect(function(connection) {
-        that.getRoomById(connection, room, function(document) {
-          that.getPlayersByRoomId(connection, room, function(players) {
+      db.connect(app.get('mongodb'), function(db) {
+        self.getRoomById(db, room, function(document) {
+          self.getPlayersByRoomId(db, room, function(players) {
             socket.join(room);
             socket.emit('init', {
               room: document
@@ -30,7 +30,7 @@ Game.prototype.init = function(io, socket, that) {
             io.in(room).emit('players', {
               players: players
             });
-            connection.close();
+            db.close();
           });
         });
       });
@@ -38,68 +38,67 @@ Game.prototype.init = function(io, socket, that) {
   }
 }
 
-Game.prototype.join = function(io, socket, that) {
+Game.prototype.join = function(io, socket, app, db, self) {
   return function(player) {
-    db.connect(function(connection) {
-      that.countRooms(connection, function(count) {
+    db.connect(app.get('mongodb'), function(db) {
+      self.countRooms(db, function(db, count) {
         var create = function(ensure) {
           var ensure = ensure || false;
-          var _id = count + 1;
-          that.setRoom({
-            _id: _id,
+          var id = count + 1;
+          self.setRoom({
+            _id: id,
             available: true
-          }).addRoom(connection, function(document) {
-            if (document) {
-              console.log('Room #%d created', _id); //LOG
-              that.setPlayer({
-                _rid: _id,
+          }).addRoom(db, function(db, isRoom) {
+            if (isRoom) {
+              console.log('Room #%d created', id); //LOG
+              self.setPlayer({
+                rid: id,
                 name: player.name,
                 active: true
-              }).addPlayer(connection, function(document) {
-                if (document) {
+              }).addPlayer(db, function(db, isPlayer) {
+                if (isPlayer) {
                   console.log('%s has joined', player.name); //LOG
                   if (ensure) {
-                    that.playerEnsureIndex(connection, function(document) {
+                    var collection = db.collection(self.p_collection);
+                    collection.ensureIndex({ rid: 1 }, function(err, document) {
+                      if (err) throw err;
                       if (document) {
                         console.log('created index for %s', document); //LOG
-                        socket.emit('join', {
-                          redirect: join('room', _id.toString())
-                        });
-                        connection.close();
+                        db.close();   
                       }
                     });
                   }
                   else {
-                    socket.emit('join', {
-                      redirect: join('room', _id.toString())
-                    });
-                    connection.close();
+                    db.close();
                   }
+                  socket.emit('join', {
+                    redirect: join('room', id.toString())
+                  });
                 }
               });
             }
           });
         }
         if (count) {
-          that.getAvailableRooms(connection, function(documents) {
-            if (documents.length) {
-              that.getRandomRoom(documents, function(_id) {
-                that.setRoom({
-                  _id: _id,
+          self.getAvailableRooms(db, function(db, rooms) {
+            if (rooms.length) {
+              self.getRandomRoom(rooms, function(id) {
+                self.setRoom({
+                  _id: id,
                   available: false
-                }).addRoom(connection, function(document) {
-                  if (document) {                 
-                    that.setPlayer({
-                      _rid: _id,
+                }).addRoom(db, function(db, isRoom) {
+                  if (isRoom) {                 
+                    self.setPlayer({
+                      rid: id,
                       name: player.name,
                       active: false
-                    }).addPlayer(connection, function(document) {
-                      if (document) {
+                    }).addPlayer(db, function(db, isplayer) {
+                      if (isPlayer) {
                         console.log('%s has joined', player.name); //LOG
                         socket.emit('join', {
                           redirect: join('room', _id.toString())
                         });
-                        connection.close();
+                        db.close();
                       }
                     });
                   }
@@ -119,7 +118,7 @@ Game.prototype.join = function(io, socket, that) {
   }
 }
 
-Game.prototype.play = function(io, socket, that) {
+Game.prototype.play = function(self) {
   return function(game) {
     db.connect(function(connection) {
       var room = game.roomid;
@@ -144,7 +143,7 @@ Game.prototype.play = function(io, socket, that) {
   }
 }
 
-Game.prototype.pushDrawnFigures = function(connection, _id, figures, callback) {
+Game.prototype.pushDrawnFigures = function() {
   if (typeof figures === 'object') {
     db.setCollection(connection, this.getRoomCollection()).modify({
       _id: parseInt(_id)
@@ -160,7 +159,7 @@ Game.prototype.pushDrawnFigures = function(connection, _id, figures, callback) {
   }
 }
 
-Game.prototype.removeDrawnFigures = function(connection, _id, callback) {
+Game.prototype.removeDrawnFigures = function() {
   db.setCollection(connection, this.getRoomCollection()).modify({
     _id: parseInt(_id)
   }, [], {
@@ -175,7 +174,6 @@ Game.prototype.removeDrawnFigures = function(connection, _id, callback) {
 }
 
 Game.prototype.execute = function(event) {
-  var io = this.io;
   var socket = this.socket;
   var map = {
     init: 'init',
@@ -185,7 +183,7 @@ Game.prototype.execute = function(event) {
   var callback = map[event] && typeof this[map[event]] === 'function' ? this[map[event]] : (function() {
     throw new Error(event + ' ' + 'function not found')
   })();
-  socket.on(event, callback(io, socket, this));
+  socket.on(event, callback(this.io, socket, this.app, this.db, this));
   return this;
 }
 

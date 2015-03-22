@@ -4,7 +4,6 @@ var join = require('path').join;
 var template = require(join(__dirname, 'helpers/template'));
 
 module.exports = function(app) {
-
   app.get('/', function(req, res) {
     res.render('index', {
       title: app.get('title'),
