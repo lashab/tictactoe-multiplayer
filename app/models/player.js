@@ -25,18 +25,11 @@ Player.prototype.playersValidate = function(player) {
   return validator.escape(validator.trim(player));
 }
 
-// Player.prototype.playerEnsureIndex = function(connection, callback) {
-//   db.setCollection(connection, this.getPlayerCollection()).setIndex({ _rid: 1 }, function(document) {
-//     callback(document);
-//   });
-//   return this;
-// }
-
 Player.prototype.getPlayersByRoomId = function(db, id, callback) {
   var collection = db.collection(this.p_collection);
   collection.find({
-    rid: parseInt(id)
-  }, function(err, players) {
+    room: parseInt(id)
+  }).toArray(function(err, players) {
     if (err) throw err;
     callback(db, players);
   });
@@ -53,8 +46,8 @@ Player.prototype.addPlayer = function(db, callback) {
 Player.prototype.switchActivePlayer = function(db, id, callback) {
   var collection = db.collection(this.p_collection);
   collection.find({
-    rid: parseInt(_id)
-  }, function(err, players) {
+    room: parseInt(id)
+  }).toArray(function(err, players) {
     if (err) throw err;
     players.map(function(player) {
       player.active = player.active ? false : true;

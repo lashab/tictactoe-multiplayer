@@ -17,9 +17,10 @@ Game.prototype.init = function(io, socket, app, db, self) {
   return function(room) {
     if (room.id) {
       var room = room.id;
-      db.connect(app.get('mongodb'), function(db) {
-        self.getRoomById(db, room, function(document) {
-          self.getPlayersByRoomId(db, room, function(players) {
+      db.connect(app.get('mongodb'), function(err, db) {
+        if (err) throw err;
+        self.getRoomById(db, room, function(db, document) {
+          self.getPlayersByRoomId(db, room, function(db, players) {
             socket.join(room);
             socket.emit('init', {
               room: document
@@ -40,7 +41,8 @@ Game.prototype.init = function(io, socket, app, db, self) {
 
 Game.prototype.join = function(io, socket, app, db, self) {
   return function(player) {
-    db.connect(app.get('mongodb'), function(db) {
+    db.connect(app.get('mongodb'), function(err, db) {
+      if (err) throw err;
       self.countRooms(db, function(db, count) {
         var create = function(ensure) {
           var ensure = ensure || false;
@@ -52,7 +54,7 @@ Game.prototype.join = function(io, socket, app, db, self) {
             if (isRoom) {
               console.log('Room #%d created', id); //LOG
               self.setPlayer({
-                rid: id,
+                room: id,
                 name: player.name,
                 active: true
               }).addPlayer(db, function(db, isPlayer) {
@@ -60,7 +62,7 @@ Game.prototype.join = function(io, socket, app, db, self) {
                   console.log('%s has joined', player.name); //LOG
                   if (ensure) {
                     var collection = db.collection(self.p_collection);
-                    collection.ensureIndex({ rid: 1 }, function(err, document) {
+                    collection.ensureIndex({ room: 1 }, function(err, document) {
                       if (err) throw err;
                       if (document) {
                         console.log('created index for %s', document); //LOG
@@ -89,14 +91,14 @@ Game.prototype.join = function(io, socket, app, db, self) {
                 }).addRoom(db, function(db, isRoom) {
                   if (isRoom) {                 
                     self.setPlayer({
-                      rid: id,
+                      room: id,
                       name: player.name,
                       active: false
-                    }).addPlayer(db, function(db, isplayer) {
+                    }).addPlayer(db, function(db, isPlayer) {
                       if (isPlayer) {
                         console.log('%s has joined', player.name); //LOG
                         socket.emit('join', {
-                          redirect: join('room', _id.toString())
+                          redirect: join('room', id.toString())
                         });
                         db.close();
                       }
@@ -118,58 +120,78 @@ Game.prototype.join = function(io, socket, app, db, self) {
   }
 }
 
-Game.prototype.play = function(self) {
+Game.prototype.play = function(io, socket, app, db, self) {
   return function(game) {
-    db.connect(function(connection) {
+    db.connect(app.get('mongodb'), function(err, db) {
+      if (err) throw err;
       var room = game.roomid;
-      that.switchActivePlayer(connection, room, function(players) {
+      self.switchActivePlayer(db, room, function(db, players) {
         var figures = game.figures;
         io.in(room).emit('switch', players);
-        that.pushDrawnFigures(connection, room, figures, function(document) {
-          var index = Object.keys(figures);
-          game.figure = figures[index] ? false : true;
-          socket.broadcast.in(room).emit('play', game);
-          if (game.over) {
-            that.removeDrawnFigures(connection, room, function(document) {
-              connection.close();
-            });
-          }
-          else {
-            connection.close();
-          }
+        self.pushFigures(db, room, figures, function(db, document) {
+          game.figure = game.figure ? 0 : 1;
+          self.setActiveFigure(db, room, game.figure, function(db, document) {
+            socket.broadcast.in(room).emit('play', game);
+            if (game.over) {
+              self.removeFigures(db, room, function(db, document) {
+                db.close();
+              });
+            }
+            else {
+              db.close();
+            }
+          });
         });
       });
     });
   }
 }
 
-Game.prototype.pushDrawnFigures = function() {
-  if (typeof figures === 'object') {
-    db.setCollection(connection, this.getRoomCollection()).modify({
-      _id: parseInt(_id)
-    }, [], {
-      $push: {
-        figures: figures
-      }
-    }, {
-      new: true
-    }, function(document) {
-      callback(document);
-    });
-  }
+Game.prototype.pushFigures = function(db, room, figures, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.findAndModify({
+    _id: parseInt(room)
+  }, [], {
+    $push: {
+      figures: figures
+    }
+  }, {
+    new: true
+  }, function(err, room) {
+    if (err) throw err;
+    callback(db, room);
+  });
 }
 
-Game.prototype.removeDrawnFigures = function() {
-  db.setCollection(connection, this.getRoomCollection()).modify({
-    _id: parseInt(_id)
+Game.prototype.removeFigures = function(db, room, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.findAndModify({
+    _id: parseInt(room)
   }, [], {
     $set: {
       figures: []
     }
   }, {
     new: true
-  }, function(document) {
-    callback(document);
+  }, function(err, room) {
+    if (err) throw err;
+    callback(db, room);
+  });
+}
+
+Game.prototype.setActiveFigure = function(db, room, figure, callback) {
+  var collection = db.collection(this.r_collection);
+  collection.findAndModify({
+    _id: parseInt(room)
+  }, [], {
+    $set: {
+      figure: figure
+    }
+  }, {
+    new: true
+  }, function(err, room) {
+    if (err) throw err;
+    callback(db, room);
   });
 }
 

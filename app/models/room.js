@@ -49,8 +49,8 @@ Room.prototype.getRoomById = function(db, id, callback) {
 }
 
 Room.prototype.getAvailableRooms = function(db, callback) {
-  var collection = db.connection(this.r_collection);
-  collection.find({ available: true }, function(err, rooms) {
+  var collection = db.collection(this.r_collection);
+  collection.find({ available: true }).toArray(function(err, rooms) {
     if (err) throw err;
     callback(db, rooms);
   });

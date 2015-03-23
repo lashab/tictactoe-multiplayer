@@ -192,8 +192,7 @@
     return this;
   }
 
-  Game.prototype.drawFigure = function(data, which) {
-    var figure = this.getActiveFigure();
+  Game.prototype.drawFigure = function(data, figure) {
     if (figure) {
       var top = data.top;
       var left = data.left;
@@ -223,7 +222,7 @@
       var index = Object.keys(figure)[0];
       var value = figure[index];
       var target = that.__canvas.item(index);
-      that.drawFigure(that.getFigureData(target), figure[index])
+      that.drawFigure(that.getFigureData(target), value)
         .setSquareState(target, index, value);
     });
     return this;
@@ -308,7 +307,7 @@
   }
 
   Game.prototype.play = function(target, evented, callback) {
-    var active = this.getActiveFigure();
+    var figure = this.getActiveFigure();
     var j = this.count;
     var values = [];
     var game = { over: false };
@@ -324,7 +323,7 @@
       7: [2, 4, 6]
     };
 
-    this.setSquareState(target, index, active);
+    this.setSquareState(target, index, figure);
 
     while (j !== -1) {
       var square = this.__canvas.item(j);
@@ -366,15 +365,15 @@
     if (callback && $.isFunction(callback)) {
       var data = {
         roomid: this.getRoomId(),
-        figure: active,
+        figure: figure,
         figures: {},
         over: game.over
       }
-      data['figures'][index] = active;
+      data['figures'][index] = figure;
       callback.call(this, data);
     }
 
-    this.setActiveFigure(~~!active);
+    this.setActiveFigure(~~!figure);
 
     return this;
   }
