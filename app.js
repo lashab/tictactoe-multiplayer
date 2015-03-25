@@ -2,19 +2,25 @@
 /**
  * Module dependencies.
  */
-var express = require('express');
-var http = require('http');
-var join = require('path').join;
-var url = require('url');
-var config = require('config');
+ var express = require('express');
+ var http = require('http');
+ var join = require('path').join;
+ var url = require('url');
+ var config = require('config');
 
-var app = express();
-var sio = require('http').Server(app);
-var io = require('socket.io')(sio);
-var db = require('mongodb').MongoClient;
+ var app = express();
+ var sio = http.Server(app);
+ var io = require('socket.io')(sio);
 
-var routes = require(join(__dirname, 'app/routes'));
-var Game = require(join(__dirname, 'app/models/game'));
+ var routes = require(join(__dirname, 'app/routes'));
+ var Game = require(join(__dirname, 'app/models/game'));
+
+ var session = require('express-session');
+ var cookieParser = require('cookie-parser');
+ var Cookies = require('cookies');
+
+ var MongoStore = require('connect-mongo')(session);
+ var MongoSessionStore = new MongoStore({url: config.get('tictactoe.mongodb.url')});
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -24,6 +30,14 @@ app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
 app.use(express.favicon());
 app.use(express.logger('dev'));
+app.use(cookieParser('foo'));
+app.use(session({
+  store: MongoSessionStore,
+  key: 'connect.sid',
+  secret: 'foo',
+  resave: true,
+  saveUninitialized: true
+}));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(app.router);
@@ -38,10 +52,9 @@ if ('development' == app.get('env')) {
 routes(app);
 
 sio.listen(app.get('port'));
- 
-// SocketIO 
+
 io.on('connection', function (socket) {
-  new Game(io, socket, app, db).run();
+  new Game(app, io, socket).run();
 });
 
 

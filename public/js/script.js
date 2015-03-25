@@ -11,7 +11,8 @@
   Game.prototype.init = function() {
     if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
       this.socket.emit('init', {
-        id: this.getRoomId()
+        room: this.getRoomId(),
+        player: this.getPlayerId()
       });
     }
     return this;
@@ -24,7 +25,7 @@
           .setRoom(room.room)
           .drawGame()
           .ready()
-          .stateFigures()
+          .setActiveFigure(that.getRoom().figure)
           .manipulate();
       }
     }
@@ -105,10 +106,7 @@
     return this;
   }
 
-  Game.prototype.getActiveFigure = function(figure) {
-    if (figure) {
-      this.setActiveFigure(figure);
-    }
+  Game.prototype.getActiveFigure = function() {
     return this.figure;
   }
 
@@ -380,16 +378,21 @@
 
   Game.prototype.ready = function() {
     var room = this.getRoom();
-    this.setActiveFigure(room.figure);
     this.count = this.countCanvasObjects();
     this.__canvas.forEachObject(function(object, index) {
       object.set({
         square: {
           index: index,
           value: NaN
-        },
-        evented: true,
+        }
       });
+    });
+    return this;
+  }
+
+  Game.prototype.activateSquares = function() {
+    this.__canvas.forEachObject(function(object, index) {
+      object.set('evented', true);
     });
     return this;
   }
@@ -451,27 +454,6 @@
     return this;
   }
 
-  Game.prototype.join = function() {
-    var form = $('.id-join').length ? $('.id-join') : null;
-    if (form) {
-      var that = this;
-      form.submit(function(e) {
-        e.preventDefault();
-        var name = $(this).find('input:text').val().replace(/(<([^>]+)>)/ig, null);
-        that.socket.emit('join', {
-          name: name
-        });
-      });
-    }
-    return this;
-  }
-
-  Game.prototype._join = function(socket) {
-    return function(room) {
-      window.location.replace(room.redirect);
-    }
-  }
-
   Game.prototype._waiting = function(socket, that) {
     return function(position) {
       $('.id-player-' + position)
@@ -480,6 +462,12 @@
       .end()
       .addClass('wait')
       .addClass('show')
+    }
+  }
+
+  Game.prototype._ready = function(socket, that) {
+    return function() {
+      that.activateSquares();
     }
   }
 
@@ -502,11 +490,12 @@
   Game.prototype.execute = function(event) {
     var socket = this.socket;
     var map = {
-      join: '_join',
       init: '_init',
       waiting: '_waiting',
-      play: '_play',
       players: '_players',
+      activate: '_ready',
+      ready: '_ready',
+      play: '_play',
       switch: '_switch'
     };
     var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
@@ -518,17 +507,25 @@
 
   Game.prototype.getRoomId = function() {
     var path = window.location.pathname;
-    return path.split('/')[2];
+    if (path) {
+      return path.split('/')[2];
+    }
+  }
+
+  Game.prototype.getPlayerId = function() {
+    var data = Cookies.getItem('player');
+    if (data) {
+      return data.split(':')[1].replace(/['"]+/g, '');
+    }
   }
 
   Game.prototype.run = function() {
     this
-      .join()
       .init()
-      .execute('join')
       .execute('init')
       .execute('waiting')
       .execute('players')
+      .execute('ready')
       .execute('play')
       .execute('switch');
 

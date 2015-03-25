@@ -1,22 +1,115 @@
 'use strict';
 
+/**
+ * Module dependencies.
+ */
 var join = require('path').join
 var Room = require(join(__dirname, 'room'));
+var db = require('mongodb').MongoClient;
+var objectID = require('mongodb').ObjectID;
 
-function Game(io, socket, app, db) {
+function Game(app, io, socket) {
   Room.call(this);
-  this.io = io;
-  this.socket = socket;
   this.app = app;
-  this.db = db;
+  this.io = io || null;
+  this.socket = socket || null;
 };
 
 Game.prototype = Object.create(Room.prototype);
 
-Game.prototype.init = function(io, socket, app, db, self) {
-  return function(room) {
-    if (room.id) {
-      var room = room.id;
+Game.prototype.join = function(player, cb) {
+  var self = this;
+  var app = this.app;
+  db.connect(app.get('mongodb'), function(err, db) {
+    if (err) throw err;
+    self.countRooms(db, function(db, count) {
+      var create = function(ensure) {
+        var ensure = ensure || false;
+        var id = count + 1;
+        self.setRoom({
+          _id: id,
+          available: true
+        }).addRoom(db, function(db, isRoom) {
+          if (isRoom) {
+            console.log('Room #%d created', id); //LOG
+            var _id = new objectID();
+            self.setPlayer({
+              _id: _id,
+              room: id,
+              name: player,
+              active: true
+            }).addPlayer(db, function(db, isPlayer) {
+              if (isPlayer) {
+                console.log('%s has joined', player); //LOG
+                if (ensure) {
+                  var collection = db.collection(self.p_collection);
+                  collection.ensureIndex({
+                    room: 1
+                  }, function(err, document) {
+                    if (err) throw err;
+                    if (document) {
+                      console.log('created index for %s', document); //LOG
+                      db.close();
+                    }
+                  });
+                }
+                else {
+                  db.close();
+                }
+                cb({
+                  player: _id,
+                  path: join('room', id.toString())
+                });
+              }
+            });
+          }
+        });
+      }
+      if (count) {
+        self.getAvailableRooms(db, function(db, rooms) {
+          if (rooms.length) {
+            self.getRandomRoom(rooms, function(id) {
+              self.setRoom({
+                _id: id,
+                available: false
+              }).addRoom(db, function(db, isRoom) {
+                if (isRoom) {
+                  var _id = new objectID();
+                  self.setPlayer({
+                    _id: _id,
+                    room: id,
+                    name: player,
+                    active: false
+                  }).addPlayer(db, function(db, isPlayer) {
+                    if (isPlayer) {
+                      console.log('%s has joined', player); //LOG
+                      db.close();
+                      cb({
+                        player: _id,
+                        path: join('room', id.toString())
+                      });
+                    }
+                  });
+                }
+              });
+            });
+          }
+          else {
+            create();
+          }
+        });
+      }
+      else {
+        create(true);
+      }
+    });
+  });
+}
+
+Game.prototype.init = function(io, socket, app, self) {
+  return function(data) {
+    if (data.room) {
+      var room = data.room;
       db.connect(app.get('mongodb'), function(err, db) {
         if (err) throw err;
         self.getRoomById(db, room, function(db, document) {
@@ -31,6 +124,16 @@ Game.prototype.init = function(io, socket, app, db, self) {
             io.in(room).emit('players', {
               players: players
             });
+            var client = false;
+            var emit = 'ready';
+            players.map(function(_player) {
+              if (_player._id.toString() === data.player && _player.active) {
+                client = true; 
+              }
+            });
+            if (client) {
+              socket.emit(emit);
+            }
             db.close();
           });
         });
@@ -39,88 +142,7 @@ Game.prototype.init = function(io, socket, app, db, self) {
   }
 }
 
-Game.prototype.join = function(io, socket, app, db, self) {
-  return function(player) {
-    db.connect(app.get('mongodb'), function(err, db) {
-      if (err) throw err;
-      self.countRooms(db, function(db, count) {
-        var create = function(ensure) {
-          var ensure = ensure || false;
-          var id = count + 1;
-          self.setRoom({
-            _id: id,
-            available: true
-          }).addRoom(db, function(db, isRoom) {
-            if (isRoom) {
-              console.log('Room #%d created', id); //LOG
-              self.setPlayer({
-                room: id,
-                name: player.name,
-                active: true
-              }).addPlayer(db, function(db, isPlayer) {
-                if (isPlayer) {
-                  console.log('%s has joined', player.name); //LOG
-                  if (ensure) {
-                    var collection = db.collection(self.p_collection);
-                    collection.ensureIndex({ room: 1 }, function(err, document) {
-                      if (err) throw err;
-                      if (document) {
-                        console.log('created index for %s', document); //LOG
-                        db.close();   
-                      }
-                    });
-                  }
-                  else {
-                    db.close();
-                  }
-                  socket.emit('join', {
-                    redirect: join('room', id.toString())
-                  });
-                }
-              });
-            }
-          });
-        }
-        if (count) {
-          self.getAvailableRooms(db, function(db, rooms) {
-            if (rooms.length) {
-              self.getRandomRoom(rooms, function(id) {
-                self.setRoom({
-                  _id: id,
-                  available: false
-                }).addRoom(db, function(db, isRoom) {
-                  if (isRoom) {                 
-                    self.setPlayer({
-                      room: id,
-                      name: player.name,
-                      active: false
-                    }).addPlayer(db, function(db, isPlayer) {
-                      if (isPlayer) {
-                        console.log('%s has joined', player.name); //LOG
-                        socket.emit('join', {
-                          redirect: join('room', id.toString())
-                        });
-                        db.close();
-                      }
-                    });
-                  }
-                });
-              });
-            }
-            else {
-              create();
-            }
-          });
-        }
-        else {
-          create(true);
-        }
-      });
-    });
-  }
-}
-
-Game.prototype.play = function(io, socket, app, db, self) {
+Game.prototype.play = function(io, socket, app, self) {
   return function(game) {
     db.connect(app.get('mongodb'), function(err, db) {
       if (err) throw err;
@@ -147,7 +169,7 @@ Game.prototype.play = function(io, socket, app, db, self) {
   }
 }
 
-Game.prototype.pushFigures = function(db, room, figures, callback) {
+Game.prototype.pushFigures = function(db, room, figures, cb) {
   var collection = db.collection(this.r_collection);
   collection.findAndModify({
     _id: parseInt(room)
@@ -159,11 +181,11 @@ Game.prototype.pushFigures = function(db, room, figures, callback) {
     new: true
   }, function(err, room) {
     if (err) throw err;
-    callback(db, room);
+    cb(db, room);
   });
 }
 
-Game.prototype.removeFigures = function(db, room, callback) {
+Game.prototype.removeFigures = function(db, room, cb) {
   var collection = db.collection(this.r_collection);
   collection.findAndModify({
     _id: parseInt(room)
@@ -175,11 +197,11 @@ Game.prototype.removeFigures = function(db, room, callback) {
     new: true
   }, function(err, room) {
     if (err) throw err;
-    callback(db, room);
+    cb(db, room);
   });
 }
 
-Game.prototype.setActiveFigure = function(db, room, figure, callback) {
+Game.prototype.setActiveFigure = function(db, room, figure, cb) {
   var collection = db.collection(this.r_collection);
   collection.findAndModify({
     _id: parseInt(room)
@@ -191,7 +213,7 @@ Game.prototype.setActiveFigure = function(db, room, figure, callback) {
     new: true
   }, function(err, room) {
     if (err) throw err;
-    callback(db, room);
+    cb(db, room);
   });
 }
 
@@ -199,19 +221,17 @@ Game.prototype.execute = function(event) {
   var socket = this.socket;
   var map = {
     init: 'init',
-    join: 'join',
     play: 'play'
   };
-  var callback = map[event] && typeof this[map[event]] === 'function' ? this[map[event]] : (function() {
+  var cb = map[event] && typeof this[map[event]] === 'function' ? this[map[event]] : (function() {
     throw new Error(event + ' ' + 'function not found')
   })();
-  socket.on(event, callback(this.io, socket, this.app, this.db, this));
+  socket.on(event, cb(this.io, socket, this.app, this));
   return this;
 }
 
 Game.prototype.run = function() {
   this
-    .execute('join')
     .execute('init')
     .execute('play');
 }

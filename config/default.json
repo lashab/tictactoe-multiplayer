@@ -3,7 +3,7 @@
     "title": "Tic Tac Toe",
     "views": {
       "path": "app/views"
-    }, 
+    },
     "mongodb": {
       "url": "mongodb://localhost/tictactoe"
     },

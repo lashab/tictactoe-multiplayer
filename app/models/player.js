@@ -10,6 +10,7 @@ var Player = function() {
 
 Player.prototype.setPlayer = function(player) {
   this.player = {
+    _id: player._id,
     room: player.room,
     name: this.playersValidate(player.name),
     active: player.active
@@ -25,25 +26,25 @@ Player.prototype.playersValidate = function(player) {
   return validator.escape(validator.trim(player));
 }
 
-Player.prototype.getPlayersByRoomId = function(db, id, callback) {
+Player.prototype.getPlayersByRoomId = function(db, id, cb) {
   var collection = db.collection(this.p_collection);
   collection.find({
     room: parseInt(id)
   }).toArray(function(err, players) {
     if (err) throw err;
-    callback(db, players);
+    cb(db, players);
   });
 };
 
-Player.prototype.addPlayer = function(db, callback) {
+Player.prototype.addPlayer = function(db, cb) {
   var collection = db.collection(this.p_collection);
   collection.save(this.getPlayer(), function(err, document) {
     if (err) throw err;
-    callback(db, document);
+    cb(db, document);
   });
 }
 
-Player.prototype.switchActivePlayer = function(db, id, callback) {
+Player.prototype.switchActivePlayer = function(db, id, cb) {
   var collection = db.collection(this.p_collection);
   collection.find({
     room: parseInt(id)
@@ -56,7 +57,7 @@ Player.prototype.switchActivePlayer = function(db, id, callback) {
       });
     })
     if (players.length) {
-      callback(db, players);
+      cb(db, players);
     }
   });
 }

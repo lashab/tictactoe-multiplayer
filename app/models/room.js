@@ -32,36 +32,36 @@ Room.prototype.countRooms = function(db, callback) {
   });
 }
 
-Room.prototype.addRoom = function(db, callback) {
+Room.prototype.addRoom = function(db, cb) {
   var collection = db.collection(this.r_collection);
   collection.save(this.getRoom(), function(err, document) {
     if (err) throw err;
-    callback(db, document);
+    cb(db, document);
   });
 }
 
-Room.prototype.getRoomById = function(db, id, callback) {
+Room.prototype.getRoomById = function(db, id, cb) {
   var collection = db.collection(this.r_collection);
   collection.findOne({ _id: parseInt(id) }, function(err, room) {
     if (err) throw err;
-    callback(db, room);
+    cb(db, room);
   });
 }
 
-Room.prototype.getAvailableRooms = function(db, callback) {
+Room.prototype.getAvailableRooms = function(db, cb) {
   var collection = db.collection(this.r_collection);
   collection.find({ available: true }).toArray(function(err, rooms) {
     if (err) throw err;
-    callback(db, rooms);
+    cb(db, rooms);
   });
 }
 
-Room.prototype.getRandomRoom = function(rooms, callback) {
+Room.prototype.getRandomRoom = function(rooms, cb) {
   var ids = [];
   rooms.map(function(room) {
     ids.push(room._id);
   });
-  callback(ids[Math.floor(Math.random() * ids.length)]);
+  cb(ids[Math.floor(Math.random() * ids.length)]);
 }
 
 module.exports = Room;
