@@ -7,7 +7,6 @@ var debug = require('debug')('room');
 
 module.exports = {
   collection: 'rooms',
-
   /**
    * getCollection() returns rooms collection.
    *
@@ -18,7 +17,6 @@ module.exports = {
     var collection = db.collection(this.collection);
     return collection;
   },
-
   /**
    * init() returns default room options
    * merged with provided options.
@@ -36,7 +34,7 @@ module.exports = {
       // check whether default options
       // have provided property.
       if (!defaults.hasOwnProperty(i)) {
-        defaults[i] = options[i];   
+        defaults[i] = options[i];
       }
       else {
         // don't push existent property
@@ -46,7 +44,6 @@ module.exports = {
     }
     return defaults;
   },
-
   /**
    * count() counts rooms.
    *
@@ -70,9 +67,9 @@ module.exports = {
       return callback(null, db, count);
     });
   },
-
   /**
-   * add() adds new room.
+   * add() adds new room
+   * or updates existent one.
    *
    * @param <Object> db
    * @param <Object> options
@@ -83,9 +80,9 @@ module.exports = {
     // get collection.
     var collection = this.getCollection(db);
     // initialize room.
-    var room_options = this.init(options);
+    var _options = this.init(options);
     // save room.
-    collection.save(room_options, function(err, check) {
+    collection.save(_options, function(err, check) {
       // if error happens pass it to
       // the callback and return.
       if (err) {
@@ -95,9 +92,8 @@ module.exports = {
       // with check argument to test 
       // whether the data is being saved.
       return callback(null, db, check);
-    }); 
+    });
   },
-
   /**
    * getRoomById() returns the room
    * with specified id.
@@ -131,7 +127,6 @@ module.exports = {
       return callback(null, db, room);
     });
   },
-
   /**
    * getRandomAvailableRoom() returns 
    * random available room.
@@ -166,8 +161,33 @@ module.exports = {
         // get random room.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
-      // No available room(s) found.
+      // no available room(s) found.
       return callback(null, db, null);
+    });
+  },
+  /**
+   * run() processes room.
+   *
+   * @param <Object> db
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  run: function(db, callback) {
+    // this object.
+    var _this = this;
+    //count rooms.
+    this.count(db, null, function(err, db, count) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      if (count) {
+        // _this.getRandomAvailableRoom()
+        console.log(count);
+        console.log(typeof count);
+      }
+      return callback(err, db, count);
     });
   }
 };
