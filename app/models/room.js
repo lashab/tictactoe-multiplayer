@@ -1,79 +1,173 @@
 'use strict';
-
+/**
+ * Module dependencies.
+ */
 var join = require('path').join;
-var Player = require(join(__dirname, 'player'));
+var debug = require('debug')('room');
 
-var Room = function() {
-  Player.call(this);
-  this.r_collection = 'rooms';
-}
+module.exports = {
+  collection: 'rooms',
 
-Room.prototype = Object.create(Player.prototype);
+  /**
+   * getCollection() returns rooms collection.
+   *
+   * @param <Object> db
+   * @return <Object> collection
+   */
+  getCollection: function(db) {
+    var collection = db.collection(this.collection);
+    return collection;
+  },
 
-Room.prototype.setRoom = function(room) {
-  this.room = {
-    _id: room._id,
-    available: room.available,
-    figure: 1,
-    figures: []
-  };
-  return this;
-}
+  /**
+   * init() returns default room options
+   * merged with provided options.
+   *
+   * @param <Object> options
+   * @return <Object> defaults
+   */
+  init: function(options) {
+    // default options.
+    var defaults = {
+      figure: 1,
+      figures: []
+    };
+    for (var i in options) {
+      // check whether default options
+      // have provided property.
+      if (!defaults.hasOwnProperty(i)) {
+        defaults[i] = options[i];   
+      }
+      else {
+        // don't push existent property
+        // debug if it happens.
+        debug('Property %s already exists', i);
+      }
+    }
+    return defaults;
+  },
 
-Room.prototype.getRoom = function() {
-  return this.room;
-}
+  /**
+   * count() counts rooms.
+   *
+   * @param <Object> db
+   * @param <Object> query
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  count: function(db, query, callback) {
+    //optional query variable.
+    var query = query || {};
+    // get collection.
+    var collection = this.getCollection(db);
+    collection.count(query, function(err, count) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // otherwise return rooms count.
+      return callback(null, db, count);
+    });
+  },
 
-Room.prototype.countRooms = function(db, callback) {
-  var collection = db.collection(this.r_collection);
-  collection.count(function(err, count) {
-    if (err) throw err;
-    callback(db, count);
-  });
-}
+  /**
+   * add() adds new room.
+   *
+   * @param <Object> db
+   * @param <Object> options
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  add: function(db, options, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // initialize room.
+    var room_options = this.init(options);
+    // save room.
+    collection.save(room_options, function(err, check) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // otherwise return the callback 
+      // with check argument to test 
+      // whether the data is being saved.
+      return callback(null, db, check);
+    }); 
+  },
 
-Room.prototype.addRoom = function(db, cb) {
-  var collection = db.collection(this.r_collection);
-  collection.save(this.getRoom(), function(err, document) {
-    if (err) throw err;
-    cb(db, document);
-  });
-}
+  /**
+   * getRoomById() returns the room
+   * with specified id.
+   *
+   * @param <Object> db
+   * @param <Number|String> id
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  getRoomById: function(db, id, callback) {
+    // if the id type is a string
+    // cast it to the number.
+    if (typeof id === 'string') {
+      // Bitshifting casting is 
+      // a lot faster.
+      id = id >> 0;
+    }
+    // get collection.
+    var collection = this.getCollection(db);
+    // find room.
+    collection.findOne({
+      _id: id,
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // otherwise return last
+      // added room object.
+      return callback(null, db, room);
+    });
+  },
 
-Room.prototype.getRoomById = function(db, id, cb) {
-  var collection = db.collection(this.r_collection);
-  collection.findOne({ _id: parseInt(id) }, function(err, room) {
-    if (err) throw err;
-    cb(db, room);
-  });
-}
-
-Room.prototype.getAvailableRooms = function(db, cb) {
-  var collection = db.collection(this.r_collection);
-  collection.find({ available: true }).toArray(function(err, rooms) {
-    if (err) throw err;
-    cb(db, rooms);
-  });
-}
-
-Room.prototype.getRandomRoom = function(rooms, cb) {
-  var ids = [];
-  rooms.map(function(room) {
-    ids.push(room._id);
-  });
-  cb(ids[Math.floor(Math.random() * ids.length)]);
-}
-
-module.exports = Room;
-
-
-
-
-
-
-
-
-
-
-
-
+  /**
+   * getRandomAvailableRoom() returns 
+   * random available room.
+   *
+   * @param <Object> db
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  getRandomAvailableRoom: function(db, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // prepare query.
+    var query = {
+      available: true
+    };
+    // find available room.
+    collection.find(query).toArray(function(err, rooms) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // object ids.
+      var ids = [];
+      // if available room(s) found.
+      if (rooms.length) {
+        // loop through available rooms.
+        rooms.map(function(room, index) {
+          // push object ids.
+          ids.push(room._id);
+        });
+        // get random room.
+        return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
+      }
+      // No available room(s) found.
+      return callback(null, db, null);
+    });
+  }
+};
