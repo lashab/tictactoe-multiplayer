@@ -77,6 +77,7 @@ module.exports = {
    * @return <Function> callback
    */
   add: function(db, options, callback) {
+    console.log(options);
     // get collection.
     var collection = this.getCollection(db);
     // initialize room.
@@ -166,28 +167,74 @@ module.exports = {
     });
   },
   /**
-   * run() processes room.
+   * open() opens room.
    *
    * @param <Object> db
    * @param <Function> callback
    * @return <Function> callback
    */
-  run: function(db, callback) {
-    // this object.
+  open: function(db, callback) {
     var _this = this;
-    //count rooms.
+    // count rooms.
     this.count(db, null, function(err, db, count) {
       // if error happens pass it to
       // the callback and return.
       if (err) {
         return callback(err);
       }
-      if (count) {
-        // _this.getRandomAvailableRoom()
-        console.log(count);
-        console.log(typeof count);
+      // increment id.
+      var id = count + 1;
+      // anonymous function for creating
+      // or updating existent room.
+      var add = function(db, id, available) {
+        // if id is a existent room id then
+        // it will update room and makes
+        // the room unavailable else it
+        // will create new room.
+        _this.add(db, {
+          _id: id,
+          available: available
+        }, function(err, db, check) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+          // if it succeeds pass the
+          // id within the callback.
+          if (check) {
+            return callback(null, db, id);
+          }
+        });
       }
-      return callback(err, db, count);
+      // if count is more than zero go
+      // through avaiable rooms else
+      // create very first room.
+      if (count) {
+        // if available room found
+        // make this room unavailable
+        // else create another room.
+        _this.getRandomAvailableRoom(db, function(err, db, room) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+          // available room exists.
+          if (room) {
+            // update existent room.
+            add(db, room, false);
+          }
+          else {
+            // add another new room.
+            add(db, id, true);
+          }
+        });
+      }
+      else {
+        // fresh room.
+        add(db, id, true);
+      }
     });
   }
 };
