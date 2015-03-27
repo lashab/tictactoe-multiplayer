@@ -8,33 +8,35 @@ var debug = require('debug')('room');
 module.exports = {
   collection: 'rooms',
   /**
-   * getCollection() returns rooms collection.
+   * get rooms collection.
    *
    * @param <Object> db
    * @return <Object> collection
    */
   getCollection: function(db) {
+    // get collection.
     var collection = db.collection(this.collection);
     return collection;
   },
   /**
-   * init() returns room data merged
-   * with provided data.
+   * initialize rooms data merged
+   * with default data.
    *
-   * @param <Object> options
+   * @param <Object> data
    * @return <Function> callback
    */
-  init: function(options, callback) {
+  init: function(data, callback) {
     // default data.
     var room = {
       figure: 1,
       figures: []
     };
-    for (var i in options) {
+    // loop through data.
+    for (var i in data) {
       // check whether the default data
       // has provided property.
       if (!room.hasOwnProperty(i)) {
-        room[i] = options[i];
+        room[i] = data[i];
       }
       else {
         // don't push existent property
@@ -47,7 +49,7 @@ module.exports = {
     return callback(room);
   },
   /**
-   * count() counts rooms.
+   * count rooms.
    *
    * @param <Object> db
    * @param <Object> query
@@ -55,7 +57,7 @@ module.exports = {
    * @return <Function> callback
    */
   count: function(db, query, callback) {
-    //optional query variable.
+    // optional query variable.
     var query = query || {};
     // get collection.
     var collection = this.getCollection(db);
@@ -70,8 +72,8 @@ module.exports = {
     });
   },
   /**
-   * add() adds new room
-   * or updates existent one.
+   * adds new or updates 
+   * existent room.
    *
    * @param <Object> db
    * @param <Object> room
@@ -83,7 +85,7 @@ module.exports = {
     var collection = this.getCollection(db);
     // initialize room.
     this.init(room, function(room) {
-    // save room.
+      // save room.
       collection.save(room, function(err, check) {
         // if error happens pass it to
         // the callback and return.
@@ -95,15 +97,14 @@ module.exports = {
         if (check) {
           return callback(null, db, room);
         }
-        // otherwise pass the emtpy
-        // data to the callback.
+        // otherwise pass the null
+        // to the callback.
         return callback(null, db, null);
       });
     });
   },
   /**
-   * getRoomById() returns the room
-   * with specified id.
+   * get room by id.
    *
    * @param <Object> db
    * @param <Number|String> id
@@ -135,8 +136,7 @@ module.exports = {
     });
   },
   /**
-   * getRandomAvailableRoom() returns 
-   * random available room.
+   * get random avaiable room.
    *
    * @param <Object> db
    * @param <Function> callback
@@ -165,7 +165,8 @@ module.exports = {
           // push object ids.
           ids.push(room._id);
         });
-        // get random room.
+        // pass random room
+        // to the callback.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
       // pass null if there is no
@@ -174,7 +175,7 @@ module.exports = {
     });
   },
   /**
-   * open() opens room.
+   * opens room.
    *
    * @param <Object> db
    * @param <Function> callback

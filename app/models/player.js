@@ -90,7 +90,7 @@ module.exports = {
    * @param <Function> callback
    * @return <Function> callback
    */
-  in: function(db, player, room, callback) {
+  in : function(db, player, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // add new player.

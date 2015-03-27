@@ -18,32 +18,41 @@
  var Game = require(join(__dirname, 'app/models/game'));
  var Room = require(join(__dirname, 'app/models/room'));
  var Player = require(join(__dirname, 'app/models/player'));
- // Room.init({ id: 1, figure: 2});
- // Room.collection_get();
+
 var db = require('mongodb').MongoClient;
 db.connect(config.get('tictactoe.mongodb.url'), function(err, db) {
-  // Room.open(db, function(err, db, room, fresh) {
-  //   if (fresh) {
-  //     console.log('this is fresh room.');
-  //   }
-  //   console.log(room);
-  // })
   Room.open(db, function(err, db, room) {
     if (err) {
-      //debug err
+      // debug 
       console.log(err);
     }
     if (room) {
-      if (room.fresh) {
-        console.log('its fresh room by id %d', room._id);
-      }
-      else {
-        console.log('its room by id %d', room._id);
-      }
-      console.log(room);
+      Player.in(db, {
+        room: room._id,
+        name: 'lasha',
+        active: room.available ? true : false
+      }, room, function(err, index, db, player) {
+        if (err) {
+          // debug
+          console.log(err);
+        }
+        if (index) {
+          console.log('fresh player added!');
+          console.log('added index to %s', index);
+          console.log(player);
+        }
+        else if(player) {
+          console.log('new player added!');
+          console.log(player);
+        }
+        else {
+          console.log('no player added');
+        }
+      });
     }
     else {
-      console.log('smthng goes wrong');
+      // debug
+      console.log('no room added!');
     }
   });
 });
