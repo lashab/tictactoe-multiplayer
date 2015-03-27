@@ -15,7 +15,7 @@ function Game(app, io, socket) {
   this.socket = socket || null;
 };
 
-Game.prototype = Object.create(Room.prototype);
+// Game.prototype = Object.create(Room.prototype);
 
 Game.prototype.join = function(player, cb) {
   var self = this;

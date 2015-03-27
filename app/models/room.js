@@ -18,23 +18,23 @@ module.exports = {
     return collection;
   },
   /**
-   * init() returns default room options
-   * merged with provided options.
+   * init() returns room data merged
+   * with provided data.
    *
    * @param <Object> options
-   * @return <Object> defaults
+   * @return <Function> callback
    */
-  init: function(options) {
-    // default options.
-    var defaults = {
+  init: function(options, callback) {
+    // default data.
+    var room = {
       figure: 1,
       figures: []
     };
     for (var i in options) {
-      // check whether default options
-      // have provided property.
-      if (!defaults.hasOwnProperty(i)) {
-        defaults[i] = options[i];
+      // check whether the default data
+      // has provided property.
+      if (!room.hasOwnProperty(i)) {
+        room[i] = options[i];
       }
       else {
         // don't push existent property
@@ -42,7 +42,9 @@ module.exports = {
         debug('Property %s already exists', i);
       }
     }
-    return defaults;
+    // passes the room data 
+    // to the callback.
+    return callback(room);
   },
   /**
    * count() counts rooms.
@@ -63,7 +65,7 @@ module.exports = {
       if (err) {
         return callback(err);
       }
-      // otherwise return rooms count.
+      // pass count to the callback.
       return callback(null, db, count);
     });
   },
@@ -72,27 +74,31 @@ module.exports = {
    * or updates existent one.
    *
    * @param <Object> db
-   * @param <Object> options
+   * @param <Object> room
    * @param <Function> callback
    * @return <Function> callback
    */
-  add: function(db, options, callback) {
-    console.log(options);
+  add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // initialize room.
-    var _options = this.init(options);
+    this.init(room, function(room) {
     // save room.
-    collection.save(_options, function(err, check) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      // otherwise return the callback 
-      // with check argument to test 
-      // whether the data is being saved.
-      return callback(null, db, check);
+      collection.save(room, function(err, check) {
+        // if error happens pass it to
+        // the callback and return.
+        if (err) {
+          return callback(err);
+        }
+        // if succeeds pass the room
+        // data to the callback.
+        if (check) {
+          return callback(null, db, room);
+        }
+        // otherwise pass the emtpy
+        // data to the callback.
+        return callback(null, db, null);
+      });
     });
   },
   /**
@@ -123,8 +129,8 @@ module.exports = {
       if (err) {
         return callback(err);
       }
-      // otherwise return last
-      // added room object.
+      // pass the room data
+      // to the callback.
       return callback(null, db, room);
     });
   },
@@ -162,7 +168,8 @@ module.exports = {
         // get random room.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
-      // no available room(s) found.
+      // pass null if there is no
+      // any avaiable room.
       return callback(null, db, null);
     });
   },
@@ -186,34 +193,40 @@ module.exports = {
       var id = count + 1;
       // anonymous function for creating
       // or updating existent room.
-      var add = function(db, id, available) {
+      var add = function(db, _room) {
         // if id is a existent room id then
         // it will update room and makes
         // the room unavailable else it
         // will create new room.
         _this.add(db, {
-          _id: id,
-          available: available
-        }, function(err, db, check) {
+          _id: _room.id,
+          available: _room.available
+        }, function(err, db, room) {
           // if error happens pass it to
           // the callback and return.
           if (err) {
             return callback(err);
           }
-          // if it succeeds pass the
-          // id within the callback.
-          if (check) {
-            return callback(null, db, id);
+          // if room saved pass the room
+          // data to the callback.
+          if (room) {
+            // append fresh property to
+            // the room data.
+            room['fresh'] = _room.hasOwnProperty('fresh') ? _room.fresh : false
+            return callback(null, db, room);
           }
+          // otherwise pass the null
+          // to the callback.
+          return callback(null, db, null);
         });
       }
       // if count is more than zero go
       // through avaiable rooms else
       // create very first room.
       if (count) {
-        // if available room found
-        // make this room unavailable
-        // else create another room.
+        // if available room found make
+        // this room unavailable else
+        // create another room.
         _this.getRandomAvailableRoom(db, function(err, db, room) {
           // if error happens pass it to
           // the callback and return.
@@ -223,17 +236,27 @@ module.exports = {
           // available room exists.
           if (room) {
             // update existent room.
-            add(db, room, false);
+            add(db, {
+              id: room,
+              available: false
+            });
           }
           else {
             // add another new room.
-            add(db, id, true);
+            add(db, {
+              id: id,
+              available: true
+            });
           }
         });
       }
       else {
         // fresh room.
-        add(db, id, true);
+        add(db, {
+          id: id,
+          available: true,
+          fresh: true
+        });
       }
     });
   }
