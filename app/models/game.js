@@ -5,8 +5,7 @@
  */
 var join = require('path').join
 var Room = require(join(__dirname, 'room'));
-var db = require('mongodb').MongoClient;
-var objectID = require('mongodb').ObjectID;
+var player = require(join(__dirname, 'player'));
 
 function Game(app, io, socket) {
   Room.call(this);
