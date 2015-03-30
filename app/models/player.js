@@ -3,6 +3,7 @@
  * Module dependencies.
  */
 var join = require('path').join;
+var debug = require('debug')('player');
 
 module.exports = {
   collection: 'players',
@@ -43,8 +44,9 @@ module.exports = {
         debug('Property %s already exists', i);
       }
     }
-    // passes the player data 
-    // to the callback.
+    // pass the player data
+    // to the callback and
+    // return.
     return callback(player);
   },
   /**
@@ -70,12 +72,14 @@ module.exports = {
           return callback(err);
         }
         // if succeeds pass the player
-        // data to the callback.
+        // data to the callback and
+        // return.
         if (check) {
           return callback(null, db, player);
         }
-        // otherwise pass the null
-        // to the callback.
+        // if fails pass the null
+        // to the callback and
+        // return.
         return callback(null, db, null);
       });
     });
@@ -101,10 +105,10 @@ module.exports = {
         return callback(err);
       }
       // if its fresh room
-      // set index to the
+      // add index to the
       // room property.
       if (room.fresh) {
-        // set index.
+        // add index.
         collection.ensureIndex({
           room: 1
         }, function(err, index) {
@@ -113,44 +117,54 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          // if fresh player is added
-          // pass setted index and 
-          // player object to the 
-          // callback.
-          if (index && player) {
-            return callback(null, index, db, player);
+          // debug added index.
+          if (index) {
+            debug('index has been added for %s.', index);
           }
-          // otherwise pass null
-          // to the callback.
-          return callback(null, null, db, null);
+          else {
+            // if the index has not been added
+            // add debug string, passing null
+            // to the callback and return.
+            debug('index has not been added.');
+            return callback(null, db, null);
+          }
         });
       }
+      // if player has been added add
+      // debug string, passing player
+      // object to the callback and
+      // return. 
+      if (player) {
+        // if player is a fresh player
+        // append 'fresh' word to 
+        // the debug string.
+        var fresh = room.fresh ? 'fresh' : '';
+        debug('%s player %s has been added.', fresh, player.name);
+        return callback(null, db, player);
+      }
       else {
-        // if new player added
-        // pass player to the
-        // callback. 
-        if (player) {
-          return callback(null, null, db, player);
-        }
-        else {
-          // if new player is not
-          // added pass the null
-          // to the callback.
-          return callback(null, null, db, null);
-        }
+        // if player has not been added
+        // add debug string, passing 
+        // null to the callback and
+        // return.
+        debug('player hasn\'t been added.');
+        return callback(null, db, null);
       }
     });
   },
   /**
-   * get players data by 
-   * room id.
+   * get players by room path.
    *
    * @param <Object> db
    * @param <Number|String> id
    * @param <Function> callback
    * @return <Function> callback
    */
-  getPlayersByRoom: function(db, id, callback) {
+  getPlayersByRoomPath: function(db, path, callback) {
+    // split path with '/' symbol.
+    var path = path.split('/');
+    // extract room id. 
+    var id = path[path.length - 1];
     // if the id type is a string
     // cast it to the number.
     if (typeof id === 'string') {
@@ -163,15 +177,16 @@ module.exports = {
     // find room.
     collection.find({
       room: id,
-    }).toArray(function(err, room) {
+    }).toArray(function(err, players) {
       // if error happens pass it to
       // the callback and return.
       if (err) {
         return callback(err);
       }
-      // otherwise pass room object
-      // to the callback.
-      return callback(null, db, room);
+      // pass players object to
+      // the callback and
+      // return.
+      return callback(null, db, players);
     });
   },
   /**
@@ -182,7 +197,7 @@ module.exports = {
    * @param <Function> callback
    * @return <Function> callback
    */
-  switchActive: function(db, id, callback) {
+  switch: function(db, id, callback) {
     var _this = this;
     // get players by room.
     this.getPlayersByRoom(db, id, function(err, db, players) {
@@ -209,7 +224,7 @@ module.exports = {
           });
         });
         // pass updated players object 
-        // to the callback.
+        // to the callback and return.
         return callback(null, db, players);
       }
     });

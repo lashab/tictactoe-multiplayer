@@ -2,60 +2,38 @@
 /**
  * Module dependencies.
  */
- var http = require('http');
- var join = require('path').join;
- var url = require('url');
- var config = require('config');
+var http = require('http');
+var join = require('path').join;
+var url = require('url');
 
- var express = require('express');
- var app = express();
- var server = http.Server(app);
- var io = require('socket.io')(server);
+var express = require('express');
+var app = express();
+var server = http.Server(app);
+var io = require('socket.io')(server);
+var config = require('config');
+var cookieParser = require('cookie-parser');
+var database = require('mongodb').MongoClient;
 
- var cookieParser = require('cookie-parser');
+var Routes = require(join(__dirname, 'app/routes'));
+var Game = require(join(__dirname, 'app/models/game'));
+var Room = require(join(__dirname, 'app/models/room'));
 
- var Routes = require(join(__dirname, 'app/routes'));
- var Game = require(join(__dirname, 'app/models/game'));
- var Room = require(join(__dirname, 'app/models/room'));
- var Player = require(join(__dirname, 'app/models/player'));
+// database.connect(config.get('tictactoe.mongodb.url'), function(err, db) {
+//   Room.open(db, function(err, db, room) {
+//     if (err) {
+//       console.log('aq ar var'); 
+//       console.log(err);
+//     }
 
-var db = require('mongodb').MongoClient;
-db.connect(config.get('tictactoe.mongodb.url'), function(err, db) {
-  Room.open(db, function(err, db, room) {
-    if (err) {
-      // debug 
-      console.log(err);
-    }
-    if (room) {
-      Player.in(db, {
-        room: room._id,
-        name: 'lasha',
-        active: room.available ? true : false
-      }, room, function(err, index, db, player) {
-        if (err) {
-          // debug
-          console.log(err);
-        }
-        if (index) {
-          console.log('fresh player added!');
-          console.log('added index to %s', index);
-          console.log(player);
-        }
-        else if(player) {
-          console.log('new player added!');
-          console.log(player);
-        }
-        else {
-          console.log('no player added');
-        }
-      });
-    }
-    else {
-      // debug
-      console.log('no room added!');
-    }
-  });
-});
+//     if (room) {
+//       console.log('aq var');
+//     }
+//     else {
+//       console.log('aq ar var');
+//     }
+
+//   });
+// });
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -77,7 +55,7 @@ if ('development' == app.get('env')) {
 }
 
 // Routes
-Routes(app);
+Routes(app, database);
 
 // Server listens to port.
 server.listen(app.get('port'));

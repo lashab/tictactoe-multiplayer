@@ -44,8 +44,9 @@ module.exports = {
         debug('Property %s already exists', i);
       }
     }
-    // passes the room data 
-    // to the callback.
+    // pass room data to
+    // the callback and
+    // return.
     return callback(room);
   },
   /**
@@ -67,7 +68,8 @@ module.exports = {
       if (err) {
         return callback(err);
       }
-      // pass count to the callback.
+      // pass count to the callback
+      // and return.
       return callback(null, db, count);
     });
   },
@@ -93,12 +95,14 @@ module.exports = {
           return callback(err);
         }
         // if succeeds pass the room
-        // data to the callback.
+        // data to the callback and
+        // return.
         if (check) {
           return callback(null, db, room);
         }
-        // otherwise pass the null
-        // to the callback.
+        // if fails pass the null
+        // to the callback and
+        // return.
         return callback(null, db, null);
       });
     });
@@ -130,8 +134,9 @@ module.exports = {
       if (err) {
         return callback(err);
       }
-      // pass the room data
-      // to the callback.
+      // pass the room data to
+      // the callback and
+      // return.
       return callback(null, db, room);
     });
   },
@@ -165,12 +170,14 @@ module.exports = {
           // push object ids.
           ids.push(room._id);
         });
-        // pass random room
-        // to the callback.
+        // pass random room to
+        // the callback and 
+        // return.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
-      // pass null if there is no
-      // any avaiable room.
+      // if there is no avaiable
+      // room pass null to the
+      // callback and return.
       return callback(null, db, null);
     });
   },
@@ -208,16 +215,21 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          // if room saved pass the room
-          // data to the callback.
+          // if the new room has been created 
+          // or existent one has been updated
+          // pass the room object to the
+          // callback and return. 
           if (room) {
             // append fresh property to
             // the room data.
             room['fresh'] = _room.hasOwnProperty('fresh') ? _room.fresh : false
             return callback(null, db, room);
           }
-          // otherwise pass the null
-          // to the callback.
+          // if the new room hasn't been created
+          // or existent room hasn't been 
+          // updated add debug string and
+          // pass null to the callback.
+          debug('something went wrong no new rooms created or updated.');
           return callback(null, db, null);
         });
       }
@@ -236,14 +248,18 @@ module.exports = {
           }
           // available room exists.
           if (room) {
+            // add debug string and
             // update existent room.
+            debug('room %d has been closed.', room);
             add(db, {
               id: room,
               available: false
             });
           }
           else {
-            // add another new room.
+            // add debug string and
+            // another new room.
+            debug('room %d has been created.', id);
             add(db, {
               id: id,
               available: true
@@ -252,7 +268,9 @@ module.exports = {
         });
       }
       else {
+        // add debug string and
         // fresh room.
+        debug('fresh room %d has been created.', id);
         add(db, {
           id: id,
           available: true,
