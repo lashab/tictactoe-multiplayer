@@ -89,8 +89,10 @@ module.exports = {
         });
         // get players by room id.
         Player.getPlayersByRoomId(db, id, function(err, db, players) {
-          // set default image.
-          var image_default = join('..', 'images', 'default.png');
+          // define active player
+          // defaults to empty
+          // object.
+          var _player = {};
           // set loader image path.
           var loader = join('..', 'images', 'loading.gif');
           // if error happens pass it to
@@ -112,6 +114,38 @@ module.exports = {
             }
             // emit client players object.
             io.in(id).emit('add players', players);
+            // check whether the data has
+            // player property with the
+            // value player id.
+            if (data.hasOwnProperty('player') && data.player) {
+              // map each player.
+              players.map(function(player, index) {
+                // if player ids matches
+                // and player is active
+                // set active variable
+                // to true.
+                if (('' + player._id === data.player) && player.active) {
+                  // set active player
+                  // push activeness
+                  // and position.
+                  _player = {
+                    isActive: true,
+                    position: index
+                  };
+                }
+              });
+              // if active is true
+              // notify client to
+              // activate.
+              if (_player.isActive) {
+                socket.emit('set active player', _player.position);
+              }
+            }
+            else {
+              // debug if the data do not have property
+              // player with the value player id.
+              debug('player property couldn\'t be found.');
+            }
           }
           else {
             // debug if players could not
@@ -124,7 +158,7 @@ module.exports = {
         // debug if the data do not have
         // property room with the value
         // room id.
-        debug('room couldn\'t be found.');
+        debug('room property couldn\'t be found.');
       }
     });
   }

@@ -45,28 +45,6 @@
     return this.players;
   }
 
-  Game.prototype.getActivePlayer = function() {
-    var players = this.getPlayers();
-    var position = NaN;
-    players.map(function(player, index) {
-      if (player.active) {
-        position = index;
-      }
-    });
-    if (!isNaN(position)) {
-      return position;
-    }
-    return false;
-  }
-
-  Game.prototype.setActivePlayer = function() {
-    var position = this.getActivePlayer();
-    $('.id-player-' + position).addClass('whole-in');
-    $('div[class*="id-player-"]').filter(function(index) {
-      return index !== position;
-    }).removeClass('whole-in');
-  }
-
   Game.prototype.setActiveFigure = function(figure) {
     this.figure = figure;
     return this;
@@ -466,18 +444,22 @@
     // get players.
     var players = this.getPlayers();
     if (players.length > 1) $('.players.wait').removeClass('wait');
+    // map each player and
+    // add image and name.
     players.map(function(player, position) {
       $('.id-player-' + position)
-      .children('img')
-        .prop('src', '../images/default.png')
-        .next()
-          .children()
-            .text(player.name)
+        .children('img')
+        // TODO: remove image path from client.
+        .prop('src', '../images/default.png') 
+          .next()
+            .children()
+              .text(player.name)
+            .end()
           .end()
         .end()
-      .end()
       .addClass('show');
     });
+    
     return this;
   }
 
@@ -496,7 +478,27 @@
         .prop('src', waiting.loader)
         .end()
       .addClass('wait')
-      .addClass('show');      
+      .addClass('show');
+
+    return this;
+  }
+
+  /**
+   * sets active player.
+   *
+   * @param <Object> waiting
+   * @return <Object> this
+   */
+  Game.prototype.setActivePlayer = function(position) {
+    // set opacity 1 to
+    // active player.
+    $('.id-player-' + position).addClass('whole-in');
+    // set opacity 0.6 to
+    // non-active player
+    $('div[class*="id-player-"]').filter(function(index) {
+      return index !== position;
+    }).removeClass('whole-in');
+
     return this;
   }
 
@@ -538,7 +540,13 @@
     });
     // waiting for player event.
     socket.on('waiting for player', function(waiting) {
+      // waitinf for player.
       _this.waiting(waiting);
+    });
+    // set active player event.
+    socket.on('set active player', function(position) {
+      // set active player.
+      _this.setActivePlayer(position);
     });
   }
 
