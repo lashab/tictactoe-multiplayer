@@ -1,5 +1,7 @@
 'use strict';
-
+/**
+ * Module dependencies.
+ */
 var join = require('path').join;
 var fs = require('fs');
 var ejs = require('ejs');

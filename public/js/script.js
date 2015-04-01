@@ -1,16 +1,25 @@
 (function($) {
   'use strict';
 
-  var Game = function(socket, canvas) {
+  var Game = function(canvas) {
     this.__canvas = new fabric.Canvas(canvas);
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
-    this.socket = socket;
   }
-
-  Game.prototype.init = function() {
+  /**
+   * let the server know about
+   * this room.
+   *
+   * @param <Object> socket
+   * @return <Object> this
+   */
+  Game.prototype.room = function(socket) {
+    // check whether the regex
+    // matches to the given
+    // room path.
     if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
-      this.socket.emit('init', {
+      // emit server room and player id.
+      socket.emit('room', {
         room: this.getRoomId(),
         player: this.getPlayerId()
       });
@@ -18,32 +27,7 @@
     return this;
   }
 
-  Game.prototype._init = function(socket, that) {
-    return function(room) {
-      if (!$.isEmptyObject(room)) {
-        that
-          .setRoom(room.room)
-          .drawGame()
-          .ready()
-          .setActiveFigure(that.getRoom().figure)
-          .manipulate();
-      }
-    }
-  }
-
-  Game.prototype._players = function(socket, that) {
-    return function(room) {
-      if (!$.isEmptyObject(room)) {
-        that
-          .setPlayers(room.players)
-          .addPlayers()
-          .setActivePlayer()
-      }
-    }
-  }
-
   Game.prototype.setRoom = function(room) {
-    $('.rooms.fade-effect').addClass('whole-in');
     this.room = room;
     return this;
   }
@@ -81,24 +65,6 @@
     $('div[class*="id-player-"]').filter(function(index) {
       return index !== position;
     }).removeClass('whole-in');
-  }
-
-  Game.prototype.addPlayers = function(room) {
-    var players = this.getPlayers();
-    if (players.length > 1) $('.players.wait').removeClass('wait');
-    players.map(function(player, position) {
-      $('.id-player-' + position)
-      .children('img')
-        .prop('src', '../images/default.png')
-        .next()
-          .children()
-            .text(player.name)
-          .end()
-        .end()
-      .end()
-      .addClass('show');
-    });
-    return this;
   }
 
   Game.prototype.setActiveFigure = function(figure) {
@@ -454,17 +420,6 @@
     return this;
   }
 
-  Game.prototype._waiting = function(socket, that) {
-    return function(position) {
-      $('.id-player-' + position)
-      .children('img')
-        .prop('src', '../images/loading.gif')
-      .end()
-      .addClass('wait')
-      .addClass('show')
-    }
-  }
-
   Game.prototype._ready = function(socket, that) {
     return function() {
       that.activateSquares();
@@ -487,24 +442,6 @@
     }
   }
 
-  Game.prototype.execute = function(event) {
-    var socket = this.socket;
-    var map = {
-      init: '_init',
-      waiting: '_waiting',
-      players: '_players',
-      activate: '_ready',
-      ready: '_ready',
-      play: '_play',
-      switch: '_switch'
-    };
-    var callback = map[event] && $.isFunction(this[map[event]]) ? this[map[event]] : (function() {
-      throw new Error(event + ' ' + 'function not found')
-    })();
-    socket.on(event, callback(socket, this));
-    return this;
-  }
-
   Game.prototype.getRoomId = function() {
     var path = window.location.pathname;
     if (path) {
@@ -519,21 +456,94 @@
     }
   }
 
-  Game.prototype.run = function() {
-    this
-      .init()
-      .execute('init')
-      .execute('waiting')
-      .execute('players')
-      .execute('ready')
-      .execute('play')
-      .execute('switch');
+  /**
+   * add players.
+   *
+   * @param <Object> room
+   * @return <Object> this
+   */
+  Game.prototype.addPlayers = function(room) {
+    // get players.
+    var players = this.getPlayers();
+    if (players.length > 1) $('.players.wait').removeClass('wait');
+    players.map(function(player, position) {
+      $('.id-player-' + position)
+      .children('img')
+        .prop('src', '../images/default.png')
+        .next()
+          .children()
+            .text(player.name)
+          .end()
+        .end()
+      .end()
+      .addClass('show');
+    });
+    return this;
+  }
 
-    this.__canvas.renderAll();
+  /**
+   * waits for next player.
+   *
+   * @param <Object> waiting
+   * @return <Object> this
+   */
+  Game.prototype.waiting = function(waiting) {
+    // add loading animation 
+    // acoording to seat
+    // position.
+    $('.id-player-' + waiting.position)
+      .children('img')
+        .prop('src', waiting.loader)
+        .end()
+      .addClass('wait')
+      .addClass('show');      
+    return this;
+  }
+
+  /**
+   * run game.
+   *
+   * @param <Object> socket
+   * @return <Object> this
+   */
+  Game.prototype.run = function(socket) {
+    // define this object.
+    var _this = this;
+    // notify server about
+    // this room.
+    this.room(socket);
+    // init room event
+    socket.on('init room', function(room) {
+      _this
+        // set room object.
+        .setRoom(room)
+        // draws game.
+        .drawGame()
+        // ready figures.
+        .ready()
+        // set active figure.
+        .setActiveFigure(_this.getRoom().figure)
+        // make it clickable.
+        .manipulate();
+    });
+    // add players event.
+    socket.on('add players', function(players) {
+      _this
+        // set player object.
+        .setPlayers(players)
+        // add players.
+        .addPlayers()
+        // set active player.
+        .setActivePlayer();
+    });
+    // waiting for player event.
+    socket.on('waiting for player', function(waiting) {
+      _this.waiting(waiting);
+    });
   }
 
   $(function() {
-    new Game(io(), 'tictactoe').run();
+    new Game('tictactoe').run(io());
   });
 
 })(jQuery);

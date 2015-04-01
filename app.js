@@ -16,24 +16,6 @@ var database = require('mongodb').MongoClient;
 
 var Routes = require(join(__dirname, 'app/routes'));
 var Game = require(join(__dirname, 'app/models/game'));
-var Room = require(join(__dirname, 'app/models/room'));
-
-// database.connect(config.get('tictactoe.mongodb.url'), function(err, db) {
-//   Room.open(db, function(err, db, room) {
-//     if (err) {
-//       console.log('aq ar var'); 
-//       console.log(err);
-//     }
-
-//     if (room) {
-//       console.log('aq var');
-//     }
-//     else {
-//       console.log('aq ar var');
-//     }
-
-//   });
-// });
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -62,7 +44,19 @@ server.listen(app.get('port'));
 
 // SocketIO.
 io.on('connection', function (socket) {
-  //new Game(app, io, socket).run();
+  database.connect(app.get('mongodb'), function(err, db) {
+    // if error happens debug it.
+    if (err) {
+      debug(err);
+    }
+    // run game.
+    Game.run(db, io, socket, function(err) {
+      // if error happens debug it.
+      if (err) {
+        debug(err);
+      }
+    });
+  });
 });
 
 

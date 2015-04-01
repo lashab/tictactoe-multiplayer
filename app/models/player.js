@@ -153,18 +153,14 @@ module.exports = {
     });
   },
   /**
-   * get players by room path.
+   * get players by room id.
    *
    * @param <Object> db
    * @param <Number|String> id
    * @param <Function> callback
    * @return <Function> callback
    */
-  getPlayersByRoomPath: function(db, path, callback) {
-    // split path with '/' symbol.
-    var path = path.split('/');
-    // extract room id. 
-    var id = path[path.length - 1];
+  getPlayersByRoomId: function(db, id, callback) {
     // if the id type is a string
     // cast it to the number.
     if (typeof id === 'string') {
