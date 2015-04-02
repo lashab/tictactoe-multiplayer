@@ -306,7 +306,7 @@
 
     if (callback && $.isFunction(callback)) {
       var data = {
-        roomid: this.getRoomId(),
+        _id: this.getRoomId(),
         figure: figure,
         figures: {},
         over: game.over
@@ -356,17 +356,20 @@
     }, 1000);
   }
 
-  Game.prototype.manipulate = function() {
-    var that = this;
+  Game.prototype.manipulate = function(socket) {
+    var _this = this;
     this.__canvas.on({
       'mouse:down': function(e) {
         if ($.type(e.target) !== 'undefined') {
           var target = e.target;
-          var data = that.getFigureData(target);
-          that
-            .drawFigure(data, that.getActiveFigure())
+          // get figure data.
+          var data = _this.getFigureData(target);
+          _this
+            // draws figure.
+            .drawFigure(data, _this.getActiveFigure())
+            // play game.
             .play(target, false, function(data) {
-              that.socket.emit('play', data);
+              socket.emit('play', data);
             });
         }
       }
@@ -526,7 +529,7 @@
         // set active figure.
         .setActiveFigure(_this.getRoom().figure)
         // make it clickable.
-        .manipulate();
+        .manipulate(socket);
     });
     // add players event.
     socket.on('add players', function(players) {
@@ -535,8 +538,6 @@
         .setPlayers(players)
         // add players.
         .addPlayers()
-        // set active player.
-        .setActivePlayer();
     });
     // waiting for player event.
     socket.on('waiting for player', function(waiting) {
@@ -544,13 +545,36 @@
       _this.waiting(waiting);
     });
     // set active player event.
-    socket.on('set active player', function(position) {
+    socket.on('set active player', function(player) {
+      // get active player position.
+      var position = player.active ? player.position : ~~!player.position;
+      // if player is active
+      // allow this player
+      // to play game.
+      if (player.active) {
+        // make the squares(groups)
+        // clickable.
+        _this.activateSquares();
+      }
       // set active player.
       _this.setActivePlayer(position);
+    });
+    // switch active player event.
+    socket.on('switch active player', function(player) {
+      _this
+        // set player.
+        .setPlayers(player)
+        // set activeplayer.
+        .setActivePlayer(player.position);
+    });
+    // play event.
+    socket.on('play', function(data) {
+
     });
   }
 
   $(function() {
+    // instantiate game.
     new Game('tictactoe').run(io());
   });
 

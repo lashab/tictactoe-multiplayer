@@ -196,7 +196,11 @@ module.exports = {
   switch: function(db, id, callback) {
     var _this = this;
     // get players by room.
-    this.getPlayersByRoom(db, id, function(err, db, players) {
+    this.getPlayersByRoomId(db, id, function(err, db, players) {
+      // define active player
+      // defaults to empty
+      // object.
+      var _player = {};
       // if error happens pass it to
       // the callback and return.
       if (err) {
@@ -209,6 +213,13 @@ module.exports = {
         // loop through players.
         players.map(function(player) {
           // change active player.
+          if (player.active) {
+            player.active = false;
+          }
+          else {
+            player.active = true;
+            _player = player;
+          }
           player.active = player.active ? false : true;
           // update player.
           _this.add(db, player, function(err, db, check) {
@@ -221,7 +232,7 @@ module.exports = {
         });
         // pass updated players object 
         // to the callback and return.
-        return callback(null, db, players);
+        return callback(null, db, _player);
       }
     });
   }
