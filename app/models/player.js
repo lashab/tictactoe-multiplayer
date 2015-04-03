@@ -4,6 +4,7 @@
  */
 var join = require('path').join;
 var debug = require('debug')('player');
+var objectID = require('mongodb').ObjectID;
 
 module.exports = {
   collection: 'players',
@@ -150,6 +151,32 @@ module.exports = {
         debug('player hasn\'t been added.');
         return callback(null, db, null);
       }
+    });
+  },
+  /**
+   * get player by id.
+   *
+   * @param <Object> db
+   * @param <String> id
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  getPlayerById: function(db, id, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // find player.
+    collection.findOne({
+      _id: new objectID(id)
+    }, function(err, player) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // pass player object to
+      // the callback and
+      // return.
+      return callback(null, db, player);
     });
   },
   /**

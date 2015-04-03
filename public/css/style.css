@@ -29,7 +29,7 @@ body.rooms {
   transition: opacity .4s ease-in;
 }
 
-.players:not(.wait) {opacity: 0.6;}
+.players:not(.wait) {opacity: 0.5;}
 .players {display: none;}
 
 

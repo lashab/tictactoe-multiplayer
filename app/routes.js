@@ -16,7 +16,7 @@ module.exports = function(app, db) {
   });
 
   app.get('/room/:id', function(req, res) {
-    var id = req.params.id;
+    console.log(req.cookies.position);
     // render room.
     res.render('index', { 
       title: app.get('title'),
@@ -30,7 +30,7 @@ module.exports = function(app, db) {
     // successfuly otherwise back to the
     // homepage.
     if (req.body.name) {
-      // connects to the databade.
+      // open connection.
       db.connect(app.get('mongodb'), function(err, db) {
         // if error happens debug it.
         if (err) {
@@ -48,7 +48,7 @@ module.exports = function(app, db) {
           // to the homepage.
           if (room) {
             // set cookie.
-            res.cookie('player', room.player);
+            res.cookie('position', room.position);
             // do redirect.
             res.redirect(room.redirect);
             // close connection.

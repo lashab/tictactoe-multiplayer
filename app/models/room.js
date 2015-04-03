@@ -108,6 +108,55 @@ module.exports = {
     });
   },
   /**
+   * save or delete state.
+   *
+   * @param <Object> db
+   * @param <Object> id
+   * @param <Object> figures
+   * @param <String> action
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  state: function(db, id, figures, action, callback) {
+    // define update variable
+    // defaults to empty 
+    // object.
+    var update = {};
+    // define optional figures
+    // variable.
+    var figures = figures || [];
+    // if the id type is a string
+    // cast it to the number.
+    if (typeof id === 'string') {
+      // Bitshifting casting is 
+      // a lot faster.
+      id = id >> 0;
+    }
+    // get collection.
+    var collection = this.getCollection(db);
+    // prepare update.
+    update[action] = {
+      figures: figures
+    }
+    // find room by id and
+    // push figures.
+    collection.findAndModify({
+      _id: id
+    }, [], update, {
+      new: true
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // pass the room data to
+      // the callback and
+      // return.
+      return callback(null, db, room);
+    });
+  },
+  /**
    * get room by id.
    *
    * @param <Object> db

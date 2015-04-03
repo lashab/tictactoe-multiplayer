@@ -20,8 +20,7 @@
     if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
       // emit server room and player id.
       socket.emit('room', {
-        room: this.getRoomId(),
-        player: this.getPlayerId()
+        room: this.getRoomId()
       });
     }
     return this;
@@ -154,19 +153,6 @@
       var circle = this.drawCircle(centerY, centerX, radius);
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
     }
-    return this;
-  }
-
-  Game.prototype.stateFigures = function(room) {
-    var that = this;
-    var room = this.getRoom();
-    room.figures.map(function(figure) {
-      var index = Object.keys(figure)[0];
-      var value = figure[index];
-      var target = that.__canvas.item(index);
-      that.drawFigure(that.getFigureData(target), value)
-        .setSquareState(target, index, value);
-    });
     return this;
   }
 
@@ -401,12 +387,6 @@
     return this;
   }
 
-  Game.prototype._ready = function(socket, that) {
-    return function() {
-      that.activateSquares();
-    }
-  }
-
   Game.prototype._play = function(socket, that) {
     return function(data) {
       var square = that.__canvas.item(Object.keys(data.figures));
@@ -416,25 +396,60 @@
     } 
   }
 
-  Game.prototype._switch = function(socket, that) {
-    return function(players) {
-      that.setPlayers(players)
-        .setActivePlayer();
-    }
-  }
-
   Game.prototype.getRoomId = function() {
     var path = window.location.pathname;
     if (path) {
       return path.split('/')[2];
     }
   }
+  /**
+   * draws figures state.
+   *
+   * @return <Object> this
+   */
+  Game.prototype.drawStateFigures = function() {
+    var _this = this;
+    // get room object.
+    var room = this.getRoom();
+    // map figures, draw each
+    // figure, setting state.
+    room.figures.map(function(figure) {
+      // square index.
+      var index = Object.keys(figure)[0];
+      // figure value.
+      var value = figure[index];
+      // get square.
+      var target = _this.__canvas.item(index);
+      _this
+        // draw figures.
+        .drawFigure(_this.getFigureData(target), value)
+        // set square state.
+        .setSquareState(target, index, value);
+    });
 
-  Game.prototype.getPlayerId = function() {
-    var data = Cookies.getItem('player');
-    if (data) {
-      return data.split(':')[1].replace(/['"]+/g, '');
+    return this;
+  }
+
+  /**
+   * get player position.
+   *
+   * @return <Number> position|NaN
+   */
+  Game.prototype.getPlayerPosition = function() {
+    // get player position from cookie.
+    // cast it to the number.
+    var position = Cookies.getItem('position') >> 0;
+    // if cookie position type is
+    // number return cookie.
+    if ($.type(position) === 'number') {
+      return position;
     }
+    // debug if cookie position
+    // could not be found and
+    // return NaN.
+    console.log('cookie position couldn\'t be found.');
+
+    return NaN;
   }
 
   /**
@@ -472,13 +487,13 @@
    * @param <Object> waiting
    * @return <Object> this
    */
-  Game.prototype.waiting = function(waiting) {
+  Game.prototype.waiting = function(player) {
     // add loading animation 
     // acoording to seat
     // position.
-    $('.id-player-' + waiting.position)
+    $('.id-player-' + player.position)
       .children('img')
-        .prop('src', waiting.image)
+        .prop('src', player.image)
         .end()
       .addClass('wait')
       .addClass('show');
@@ -496,7 +511,7 @@
     // set opacity 1 to
     // active player.
     $('.id-player-' + position).addClass('whole-in');
-    // set opacity 0.6 to
+    // set opacity 0.5 to
     // non-active player
     $('div[class*="id-player-"]').filter(function(index) {
       return index !== position;
@@ -526,6 +541,8 @@
         .drawGame()
         // ready figures.
         .ready()
+        // figures state.
+        .drawStateFigures()
         // set active figure.
         .setActiveFigure(_this.getRoom().figure)
         // make it clickable.
@@ -534,41 +551,57 @@
     // add players event.
     socket.on('add players', function(players) {
       _this
-        // set player object.
+        // set players object.
         .setPlayers(players)
         // add players.
         .addPlayers()
     });
     // waiting for player event.
-    socket.on('waiting for player', function(waiting) {
+    socket.on('waiting for player', function(player) {
       // waitinf for player.
-      _this.waiting(waiting);
+      _this.waiting(player);
     });
     // set active player event.
-    socket.on('set active player', function(player) {
-      // get active player position.
-      var position = player.active ? player.position : ~~!player.position;
-      console.log(player);
-      // if player is active
-      // allow this player
-      // to play game.
-      if (player.active) {
-        // make the squares(groups)
-        // clickable.
-        _this.activateSquares();
+    socket.on('set active player', function(players) {
+      // get player position.
+      var position = _this.getPlayerPosition();
+      // check whether the position
+      // exists or not.
+      if (!isNaN(position)) {
+        // get player by position.
+        var player = players[position];
+        // tell both players who's
+        // active player.
+        position = player.active ? position : ~~!position;
+        // if player is active
+        // allow this player
+        // to play game.
+        if (player.active) {
+          // make the squares(groups)
+          // clickable.
+          _this.activateSquares();
+        }
+        // set active player.
+        _this.setActivePlayer(position);
       }
-      // set active player.
-      _this.setActivePlayer(position);
+      else {
+        // debug if position could
+        // not be found.
+        console.log('active player could not be setted.');
+      }
     });
     // switch active player event.
-    socket.on('switch active player', function(players) {
-        _this.
-          // set active player.
-          setActivePlayer(player.position);
+    socket.on('switch active player', function(player) {
+      _this.
+        // set active player.
+        setActivePlayer(player.position);
     });
     // play event.
     socket.on('play', function(data) {
-
+      var square = _this.__canvas.item(Object.keys(data.figures));
+      _this
+        .drawFigure(_this.getFigureData(square), _this.getActiveFigure())
+        .play(square, true);
     });
   }
 

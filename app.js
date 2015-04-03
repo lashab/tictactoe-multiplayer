@@ -36,7 +36,7 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-// Routes
+// Routes.
 Routes(app, database);
 
 // Server listens to port.

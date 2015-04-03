@@ -46,7 +46,7 @@ module.exports = {
             debug('%s has joined %d room', player.name, id);
             return callback(null, db, {
               redirect: join('room', '' + id),
-              player: player._id
+              position: player.position
             });
           }
           else {
@@ -145,8 +145,28 @@ module.exports = {
         // emit client to switch
         // active players.
         io.in(id).emit('switch active player', player);
-        socket.broadcast.in(id).emit('play', data);
       });
+      // save state
+      Room.state(db, id, data.figures, '$push', function(err, db, room) {
+        // if error happens pass it to
+        // the callback and return.
+        if (err) {
+          return callback(err);
+        }
+      });
+      // if game is over.
+      if (data.over) {
+        // dalete state
+        Room.state(db, id, null, '$set', function(err, db, room) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+        });
+      }
+      // emit client to play.
+      socket.broadcast.in(id).emit('play', data);
     });
   }
 };
@@ -178,37 +198,6 @@ module.exports = {
 //   }
 // }
 
-// Game.prototype.pushFigures = function(db, room, figures, cb) {
-//   var collection = db.collection(this.r_collection);
-//   collection.findAndModify({
-//     _id: parseInt(room)
-//   }, [], {
-//     $push: {
-//       figures: figures
-//     }
-//   }, {
-//     new: true
-//   }, function(err, room) {
-//     if (err) throw err;
-//     cb(db, room);
-//   });
-// }
-
-// Game.prototype.removeFigures = function(db, room, cb) {
-//   var collection = db.collection(this.r_collection);
-//   collection.findAndModify({
-//     _id: parseInt(room)
-//   }, [], {
-//     $set: {
-//       figures: []
-//     }
-//   }, {
-//     new: true
-//   }, function(err, room) {
-//     if (err) throw err;
-//     cb(db, room);
-//   });
-// }
 
 // Game.prototype.setActiveFigure = function(db, room, figure, cb) {
 //   var collection = db.collection(this.r_collection);
@@ -225,6 +214,3 @@ module.exports = {
 //     cb(db, room);
 //   });
 // }
-
-
-// module.exports = Game;
