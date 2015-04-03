@@ -90,12 +90,8 @@ module.exports = {
         });
         // get players by room id.
         Player.getPlayersByRoomId(db, id, function(err, db, players) {
-          // define active player
-          // defaults to empty
-          // object.
-          var _player = {};
           // set loader image path.
-          var loader = join('..', 'images', 'loading.gif');
+          var image = join('..', 'images', 'loading.gif');
           // if error happens pass it to
           // the callback and return.
           if (err) {
@@ -106,37 +102,22 @@ module.exports = {
             // if there is only one player
             // wait for another player.
             if (players.length === 1) {
-              // emit client player position
-              // and loader image path.
+              // emit client to wait next
+              // player pass player wait
+              // seat position and wait
+              // image.
               socket.emit('waiting for player', {
-                position: players.length,
-                loader: loader
+                position: ~~!players[0].position,
+                image: image
               });
             }
-            // emit client players object.
+            // emit client to add players
+            // pass players object.
             io.in(id).emit('add players', players);
-            // check whether the data has
-            // player property with the
-            // value player id.
-            if (data.hasOwnProperty('player') && data.player) {
-              // map each player.
-              players.map(function(player, index) {
-                // if player ids matches
-                // get player object.
-                if (('' + player._id === data.player)) {
-                  // set player object.
-                  _player = player;
-                }
-              });
-              // emit this player to client
-              // and set activeness.
-              socket.emit('set active player', _player);
-            }
-            else {
-              // debug if the data do not have property
-              // player with the value player id.
-              debug('player property couldn\'t be found.');
-            }
+            // emit client to set
+            // active player pass
+            // players object.
+            socket.emit('set active player', players);
           }
           else {
             // debug if players could not

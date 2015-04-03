@@ -16,6 +16,8 @@ module.exports = function(app, db) {
   });
 
   app.get('/room/:id', function(req, res) {
+    var id = req.params.id;
+    console.log(req.cookies.player);
     // render room.
     res.render('index', { 
       title: app.get('title'),

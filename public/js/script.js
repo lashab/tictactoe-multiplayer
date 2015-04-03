@@ -478,7 +478,7 @@
     // position.
     $('.id-player-' + waiting.position)
       .children('img')
-        .prop('src', waiting.loader)
+        .prop('src', waiting.image)
         .end()
       .addClass('wait')
       .addClass('show');
@@ -548,6 +548,7 @@
     socket.on('set active player', function(player) {
       // get active player position.
       var position = player.active ? player.position : ~~!player.position;
+      console.log(player);
       // if player is active
       // allow this player
       // to play game.
@@ -560,12 +561,10 @@
       _this.setActivePlayer(position);
     });
     // switch active player event.
-    socket.on('switch active player', function(player) {
-      _this
-        // set player.
-        .setPlayers(player)
-        // set activeplayer.
-        .setActivePlayer(player.position);
+    socket.on('switch active player', function(players) {
+        _this.
+          // set active player.
+          setActivePlayer(player.position);
     });
     // play event.
     socket.on('play', function(data) {

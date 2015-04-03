@@ -218,11 +218,12 @@ module.exports = {
           }
           else {
             player.active = true;
+            // set active player object.
             _player = player;
           }
-          player.active = player.active ? false : true;
+          // player.active = player.active ? false : true;
           // update player.
-          _this.add(db, player, function(err, db, check) {
+          _this.add(db, player, function(err, db, player) {
             // if error happens pass it to
             // the callback and return.
             if (err) {
