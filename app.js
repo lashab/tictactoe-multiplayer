@@ -16,6 +16,7 @@ var database = require('mongodb').MongoClient;
 
 var Routes = require(join(__dirname, 'app/routes'));
 var Game = require(join(__dirname, 'app/models/game'));
+var Room = require(join(__dirname, 'app/models/room'));
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));

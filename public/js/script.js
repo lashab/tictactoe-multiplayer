@@ -299,9 +299,6 @@
     }
 
     this.set('figure', ~~!figure);
-    this.__canvas.forEachObject(function(value, index) {
-      console.log(value);
-    });
 
     return this;
   }
@@ -533,7 +530,7 @@
   }
 
   /**
-   * run game.
+   * runs game.
    *
    * @param <Object> socket
    * @return <Object> this

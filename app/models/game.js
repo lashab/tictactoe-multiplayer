@@ -146,8 +146,16 @@ module.exports = {
         // active players.
         io.in(id).emit('switch active player', players);
       });
-      // save state
+      // save state.
       Room.state(db, id, data.figures, '$push', function(err, db, room) {
+        // if error happens pass it to
+        // the callback and return.
+        if (err) {
+          return callback(err);
+        }
+      });
+      // change figure.
+      Room.figureStateChange(db, id, data.figure, function(err, db, room) {
         // if error happens pass it to
         // the callback and return.
         if (err) {
@@ -156,7 +164,7 @@ module.exports = {
       });
       // if game is over.
       if (data.over) {
-        // dalete state
+        // dalete state.
         Room.state(db, id, null, '$set', function(err, db, room) {
           // if error happens pass it to
           // the callback and return.
@@ -170,47 +178,3 @@ module.exports = {
     });
   }
 };
-
-// Game.prototype.play = function(io, socket, app, self) {
-//   return function(game) {
-//     db.connect(app.get('mongodb'), function(err, db) {
-//       if (err) throw err;
-//       var room = game.roomid;
-//       self.switchActivePlayer(db, room, function(db, players) {
-//         var figures = game.figures;
-//         io.in(room).emit('switch', players);
-//         self.pushFigures(db, room, figures, function(db, document) {
-//           game.figure = game.figure ? 0 : 1;
-//           self.setActiveFigure(db, room, game.figure, function(db, document) {
-//             socket.broadcast.in(room).emit('play', game);
-//             if (game.over) {
-//               self.removeFigures(db, room, function(db, document) {
-//                 db.close();
-//               });
-//             }
-//             else {
-//               db.close();
-//             }
-//           });
-//         });
-//       });
-//     });
-//   }
-// }
-
-
-// Game.prototype.setActiveFigure = function(db, room, figure, cb) {
-//   var collection = db.collection(this.r_collection);
-//   collection.findAndModify({
-//     _id: parseInt(room)
-//   }, [], {
-//     $set: {
-//       figure: figure
-//     }
-//   }, {
-//     new: true
-//   }, function(err, room) {
-//     if (err) throw err;
-//     cb(db, room);
-//   });
-// }

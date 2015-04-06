@@ -108,7 +108,7 @@ module.exports = {
     });
   },
   /**
-   * save or delete state.
+   * saves or deletes state.
    *
    * @param <Object> db
    * @param <Object> id
@@ -143,6 +143,48 @@ module.exports = {
     collection.findAndModify({
       _id: id
     }, [], update, {
+      new: true
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // pass the room data to
+      // the callback and
+      // return.
+      return callback(null, db, room);
+    });
+  },
+  /**
+   * changes figure.
+   *
+   * @param <Object> db
+   * @param <Object> id
+   * @param <Object> figure
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  figureStateChange: function(db, id, figure, callback) {
+    // change figure.
+    var figure = !figure ? 1 : 0;
+    // if the id type is a string
+    // cast it to the number.
+    if (typeof id === 'string') {
+      // Bitshifting casting is 
+      // a lot faster.
+      id = id >> 0;
+    }
+    // get collection.
+    var collection = this.getCollection(db);
+    // update figure.
+    collection.findAndModify({
+      _id: id
+    }, [], {
+      $set: {
+        figure: figure
+      }
+    }, {
       new: true
     }, function(err, room) {
       // if error happens pass it to
