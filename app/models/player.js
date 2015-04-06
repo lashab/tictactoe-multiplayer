@@ -245,8 +245,6 @@ module.exports = {
           }
           else {
             player.active = true;
-            // set active player object.
-            _player = player;
           }
           // player.active = player.active ? false : true;
           // update player.
@@ -260,7 +258,7 @@ module.exports = {
         });
         // pass updated players object 
         // to the callback and return.
-        return callback(null, db, _player);
+        return callback(null, db, players);
       }
     });
   }

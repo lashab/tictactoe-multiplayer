@@ -16,8 +16,6 @@ module.exports = function(app, db) {
   });
 
   app.get('/room/:id', function(req, res) {
-    console.log(req.cookies.position);
-    // render room.
     res.render('index', { 
       title: app.get('title'),
       body: Template.render('room'),

@@ -136,7 +136,7 @@ module.exports = {
       // get room id.
       var id = data._id;
       // switch active players.
-      Player.switch(db, id, function(err, db, player) {
+      Player.switch(db, id, function(err, db, players) {
         // if error happens pass it to
         // the callback and return.
         if (err) {
@@ -144,7 +144,7 @@ module.exports = {
         }
         // emit client to switch
         // active players.
-        io.in(id).emit('switch active player', player);
+        io.in(id).emit('switch active player', players);
       });
       // save state
       Room.state(db, id, data.figures, '$push', function(err, db, room) {

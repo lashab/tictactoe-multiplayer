@@ -6,6 +6,30 @@
     this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
     this.__canvas.setHeight(window.innerHeight);
   }
+
+  /**
+   * setter.
+   *
+   * @param <String> property
+   * @param <Mixed> value
+   * @return <Object> this
+   */
+  Game.prototype.set = function(property, value) {
+    // set value.
+    this[property] = value;
+
+    return this;
+  }
+  /**
+   * getter.
+   *
+   * @param <String> prototype
+   * @return <Object> this
+   */
+  Game.prototype.get = function(property) {
+    // get value.
+    return this[property];
+  }
   /**
    * let the server know about
    * this room.
@@ -18,39 +42,13 @@
     // matches to the given
     // room path.
     if (window.location.pathname && /^\/room\/\d+$/.test(window.location.pathname)) {
-      // emit server room and player id.
+      // emit server room id.
       socket.emit('room', {
         room: this.getRoomId()
       });
     }
+
     return this;
-  }
-
-  Game.prototype.setRoom = function(room) {
-    this.room = room;
-    return this;
-  }
-
-  Game.prototype.getRoom = function() {
-    return this.room;
-  }
-
-  Game.prototype.setPlayers = function(players) {
-    this.players = players;
-    return this;
-  }
-
-  Game.prototype.getPlayers = function() {
-    return this.players;
-  }
-
-  Game.prototype.setActiveFigure = function(figure) {
-    this.figure = figure;
-    return this;
-  }
-
-  Game.prototype.getActiveFigure = function() {
-    return this.figure;
   }
 
   Game.prototype.drawLine = function(coords) {
@@ -234,8 +232,8 @@
     return figure;
   }
 
-  Game.prototype.play = function(target, evented, callback) {
-    var figure = this.getActiveFigure();
+  Game.prototype.play = function(target, callback) {
+    var figure = this.get('figure');
     var j = this.count;
     var values = [];
     var game = { over: false };
@@ -257,7 +255,6 @@
       var square = this.__canvas.item(j);
       var value = square.get('square').value;
       if (isNaN(value)) {
-        square.set('evented', evented);
         values.push(value);
       }
       j--;
@@ -301,13 +298,16 @@
       callback.call(this, data);
     }
 
-    this.setActiveFigure(~~!figure);
+    this.set('figure', ~~!figure);
+    this.__canvas.forEachObject(function(value, index) {
+      console.log(value);
+    });
 
     return this;
   }
 
   Game.prototype.ready = function() {
-    var room = this.getRoom();
+    var room = this.get('room');
     this.count = this.countCanvasObjects();
     this.__canvas.forEachObject(function(object, index) {
       object.set({
@@ -320,12 +320,16 @@
     return this;
   }
 
-  Game.prototype.activateSquares = function() {
+  Game.prototype.setActiveState = function(evented) {
     this.__canvas.forEachObject(function(object, index) {
-      object.set('evented', true);
+      if (object.square && isNaN(object.square.value)) {
+        object.set('evented', evented);
+      }
     });
     return this;
   }
+
+
 
   Game.prototype.restart = function() {
     var count = this.countCanvasObjects();
@@ -352,11 +356,11 @@
           var data = _this.getFigureData(target);
           _this
             // draws figure.
-            .drawFigure(data, _this.getActiveFigure())
+            .drawFigure(data, _this.get('figure'))
             // play game.
-            .play(target, false, function(data) {
+            .play(target, function(data) {
               socket.emit('play', data);
-            });
+            })
         }
       }
     });
@@ -384,16 +388,8 @@
       index: index,
       value: ~~value
     }).set('evented', false);
+    
     return this;
-  }
-
-  Game.prototype._play = function(socket, that) {
-    return function(data) {
-      var square = that.__canvas.item(Object.keys(data.figures));
-      that
-        .drawFigure(that.getFigureData(square), that.getActiveFigure())
-        .play(square, true);
-    } 
   }
 
   Game.prototype.getRoomId = function() {
@@ -410,7 +406,7 @@
   Game.prototype.drawStateFigures = function() {
     var _this = this;
     // get room object.
-    var room = this.getRoom();
+    var room = this.get('room');
     // map figures, draw each
     // figure, setting state.
     room.figures.map(function(figure) {
@@ -460,7 +456,7 @@
    */
   Game.prototype.addPlayers = function(room) {
     // get players.
-    var players = this.getPlayers();
+    var players = this.get('players');
     if (players.length > 1) $('.players.wait').removeClass('wait');
     // map each player and
     // add image and name.
@@ -507,7 +503,23 @@
    * @param <Object> waiting
    * @return <Object> this
    */
-  Game.prototype.setActivePlayer = function(position) {
+  Game.prototype.setActivePlayer = function(player) {
+    // get player position.
+    var position = player.position;
+    // tell both players who's
+    // active player.
+    position = player.active ? position : ~~!position;
+    // if player is active
+    // allow this player
+    // to play game.
+    if (player.active) {
+      // activate game.
+      this.setActiveState(true);
+    }
+    else {
+      // deactivate game.
+      this.setActiveState(false);
+    }
     // set opacity 1 to
     // active player.
     $('.id-player-' + position).addClass('whole-in');
@@ -536,7 +548,7 @@
     socket.on('init room', function(room) {
       _this
         // set room object.
-        .setRoom(room)
+        .set('room', room)
         // draws game.
         .drawGame()
         // ready figures.
@@ -544,7 +556,7 @@
         // figures state.
         .drawStateFigures()
         // set active figure.
-        .setActiveFigure(_this.getRoom().figure)
+        .set('figure', _this.get('room').figure)
         // make it clickable.
         .manipulate(socket);
     });
@@ -552,13 +564,13 @@
     socket.on('add players', function(players) {
       _this
         // set players object.
-        .setPlayers(players)
+        .set('players', players)
         // add players.
         .addPlayers()
     });
     // waiting for player event.
     socket.on('waiting for player', function(player) {
-      // waitinf for player.
+      // waiting for player.
       _this.waiting(player);
     });
     // set active player event.
@@ -570,38 +582,42 @@
       if (!isNaN(position)) {
         // get player by position.
         var player = players[position];
-        // tell both players who's
-        // active player.
-        position = player.active ? position : ~~!position;
-        // if player is active
-        // allow this player
-        // to play game.
-        if (player.active) {
-          // make the squares(groups)
-          // clickable.
-          _this.activateSquares();
-        }
         // set active player.
-        _this.setActivePlayer(position);
+        _this.setActivePlayer(player);
       }
       else {
         // debug if position could
         // not be found.
-        console.log('active player could not be setted.');
+        console.log('unable to set active player.');
       }
     });
     // switch active player event.
-    socket.on('switch active player', function(player) {
-      _this.
+    socket.on('switch active player', function(players) {
+      // get player position.
+      var position = _this.getPlayerPosition();
+      // check whether the position
+      // exists or not.
+      if (!isNaN(position)) {
+        // get player by position.
+        var player = players[position];
         // set active player.
-        setActivePlayer(player.position);
+        _this.setActivePlayer(player);
+      }
+      else {
+        // debug if position could
+        // not be found.
+        console.log('unable to switch active player.');
+      }
     });
     // play event.
     socket.on('play', function(data) {
-      var square = _this.__canvas.item(Object.keys(data.figures));
+      // get target by target index.
+      var target = _this.__canvas.item(Object.keys(data.figures));
       _this
-        .drawFigure(_this.getFigureData(square), _this.getActiveFigure())
-        .play(square, true);
+        // draw figure.
+        .drawFigure(_this.getFigureData(target), _this.get('figure'))
+        // play game.
+        .play(target);
     });
   }
 
