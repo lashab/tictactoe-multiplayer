@@ -1,0 +1,4510 @@
+diff --git a/settings.php b/settings.php
+index bfdddde..5425bf7 100755
+--- a/settings.php
++++ b/settings.php
+@@ -88,7 +88,9 @@
+  *   $db_url = 'mysqli://username:password@localhost/databasename';
+  *   $db_url = 'pgsql://username:password@localhost/databasename';
+  */
+-$db_url = 'mysql://user_www:w7p4WWW@master-db/www_wfp_org';
++$db_url = 'mysql://root:@localhost/wfp_lasha';
++error_reporting(E_ALL);
++ini_set('display_errors', 1);
+   
+ /* Slave database configuration */
+ /*
+@@ -255,7 +257,7 @@ $conf = array(
+  * about this setting, do not have a reverse proxy, or Drupal operates in
+  * a shared hosting environment, this setting should be set to disabled.
+  */
+-   'reverse_proxy' => TRUE,
++/*    'reverse_proxy' => TRUE, */
+ /**
+  * reverse_proxy accepts an array of IP addresses.
+  *
+@@ -266,10 +268,12 @@ $conf = array(
+  * reverse proxies. Otherwise, the client could directly connect to
+  * your web server spoofing the X-Forwarded-For headers.
+  */
++/*
+   'reverse_proxy_addresses' => array(
+     '10.80.28.131',
+     '10.80.28.130',
+   ),
++*/
+ );
+   
+ /**
+@@ -306,6 +310,8 @@ $local_settings = dirname(__FILE__) . '/settings.local.php';
+ if (file_exists($local_settings)) {
+   include $local_settings;
+ }
++
++$conf['stage_file_proxy_origin'] = 'http://wfp.org';
+  
+ /**
+  * START OF ADDITIONAL CUSTOMISATIONS
+diff --git a/sites/default/modules/custom/wfpcp_common/wfpcp_common.module b/sites/default/modules/custom/wfpcp_common/wfpcp_common.module
+index f879cf1..1f248a3 100644
+--- a/sites/default/modules/custom/wfpcp_common/wfpcp_common.module
++++ b/sites/default/modules/custom/wfpcp_common/wfpcp_common.module
+@@ -1,1889 +1,1891 @@
+-<?php
+-
+-    /**
+-     * @file wfpcp_common.module
+-     *
+-     * Provide different functionality for WFP Country pages
+-     *
+-     */
+-
+-// Load includes
+-    module_load_include('inc', 'wfpcp_common', 'wfpcp_common.config');
+-
+-// Set constants.
+-    define('FSA_TID', 993); // Taxonomy ID for "Food Security Analysis" topic.
+-
+-
+-    /**
+-     * Implementation of hook_init().
+-     */
+-    function wfpcp_common_init()
+-    {
+-        global $custom_theme, $user,
+-               $__wfpcp_common_inside,
+-               $__wfpcp_common_cnid,
+-               $__wfpcp_common_cterm,
+-               $__wfpcp_common_tabid,
+-               $__wfpcp_common_embed,
+-               $__wfpcp_common_term,
+-               $__wfpcp_common_active,
+-               $__wfpcp_common_settings;
+-        $__wfpcp_common_inside = false;
+-
+-        // read settings
+-        $__wfpcp_common_settings = variable_get('wfpcp_common_settings', array());
+-
+-        // Populate constants
+-        foreach ($__wfpcp_common_settings['const'] as $name => $value) {
+-            DEFINE($name, $value);
+-        }
+-        // ajax views and autocompletes should be considered as we in
+-        // if we are - restore info from session for referer and return
+-
+-        $path_list = explode("\r\n", $__wfpcp_common_settings['ajax_path']);
+-        foreach ($path_list as $path) {
+-            if (strpos($_GET['q'], $path) === 0) {
+-                // TODO How can we remove this?
+-                _wfpcp_common_info_restore();
+-            }
+-        }
+-
+-        // normal check
+-        if ((arg(0) == 'node')) {
+-            if (($node = node_load(arg(1))) && ($node->type == WFPCP_COUNTRY_CONTENT_TYPE)) {
+-                $__wfpcp_common_inside = true;
+-            }
+-        }
+-
+-        // check if modern view selected for current role
+-        $set_theme = false;
+-        $vmodes    = variable_get('wfpcp_common_view_modes', array());
+-
+-        // This is some important theme logic here..
+-        if (isset($node->nid)) {
+-            $vmodes = !empty($vmodes[$node->nid]) ? $vmodes[$node->nid] : array();
+-        } else {
+-            $vmodes = array();
+-        }
+-
+-        foreach ($user->roles as $role => $title) {
+-            if (in_array($role, $vmodes)) {
+-                $set_theme = true;
+-            }
+-        }
+-
+-        $__wfpcp_common_inside = $__wfpcp_common_inside && $set_theme;
+-        // Set theme if selected for current role
+-        if ($__wfpcp_common_inside) {
+-            $custom_theme = WFPCP_THEME_SUPPORT_THEME;
+-        } else {
+-            if ($custom_theme == WFPCP_THEME_SUPPORT_THEME) {
+-                unset($custom_theme);
+-            }
+-
+-            return;
+-        }
+-
+-        // set country nid
+-        $__wfpcp_common_cnid = $node->nid;
+-        // set country term id
+-        $vid                  = WFPCP_COUNTRY_VOCABULARY_ID;
+-        $term                 = array_shift(taxonomy_node_get_terms_by_vocabulary($node, $vid));
+-        $__wfpcp_common_cterm = $term->tid;
+-
+-        // set active tab
+-        $__wfpcp_common_tabid = is_numeric(arg(2)) ? arg(2) : null;
+-        $tabs                 = _wfpcp_common_get_tab_list($node, $active);
+-        $stabs                = _wfpcp_common_get_subtab_list($node, $active->itemid, $sactive);
+-
+-        $__wfpcp_common_active = !empty($sactive) ? $sactive : $active;
+-        $__wfpcp_common_tabid  = $__wfpcp_common_active->itemid;
+-
+-        // Set embed node id and category term
+-        $__wfpcp_common_embed = is_numeric(arg(3)) ? arg(3) : null;
+-        $__wfpcp_common_term  = is_numeric(arg(4)) ? arg(4) : null;
+-
+-        // Since we cant use this inside view php argument we use it here
+-        $tab = wfpcp_it_api_item_search($node, 'title', 'Current Operations');
+-
+-        if (!empty($__wfpcp_common_tabid) && ($tab[0]->itemid == $__wfpcp_common_tabid)) {
+-            if (empty($__wfpcp_common_embed)) {
+-                $view = views_get_view('wfpcp_projects');
+-                $view->execute();
+-                $res                  = $view->result;
+-                $nid                  = array_shift($res)->nid;
+-                $__wfpcp_common_embed = $nid;
+-            }
+-        }
+-
+-        // store result in session so ajax refresh can read it if we have cnid
+-        if ($__wfpcp_common_cnid) {
+-            // TODO How can we remove this?
+-            _wfpcp_common_info_save();
+-        }
+-    }
+-
+-    // LD Modification
+-    /**
+-     * Implementation of hook_nodeapi();
+-     */
+-    function wfpcp_common_nodeapi(&$node, $op, $a3 = null, $a4 = null)
+-    {
+-        switch ($op) {
+-            case 'presave':
+-            case 'insert':
+-            case 'update':
+-                // LD Modification
+-                global $__wfpcp_common_cnid, $__wfpcp_common_tabid;
+-
+-                $__wfpcp_common_cnid = $node->field_country_profile[0]['nid'];
+-                $term                = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_LOCAL_GLOBAL_VOCABULARY_ID));
+-                $mappingContentTypes = array(
+-                    'web_story'       => 'stories',
+-                    'news Release'    => 'news',
+-                    'publication'     => 'publication',
+-                    'photo_galleries' => 'photos',
+-                    'videos'          => 'videos');
+-
+-                $arr                 = explode('/', $_GET['destination']);
+-                $neededTaxsonomy     = $arr[1];
+-                $countriNode         = node_load($neededTaxsonomy);
+-                $neededTaxsonomy     = $countriNode->title;
+-
+-                // END LD MODIFICATION
+-                if ($term->name != 'Global' && isset($mappingContentTypes[$node->type]) && $neededTaxsonomy != null) {
+-
+-                    $path  = $_GET['destination'];
+-                    $alias = 'countries/' . _wfpcp_common_gci($neededTaxsonomy) . '/' . _wfpcp_common_gci($mappingContentTypes[$node->type]) . '/' . _wfpcp_common_gci($node->title);
+-                    path_set_alias($path, $alias);
+-                }
+-
+-                break;
+-        }
+-    }
+-
+-    // LD Modification end
+-
+-    /**
+-     * Implementation of hook_help();
+-     */
+-    function wfpcp_common_help($path, $args)
+-    {
+-        if ($path == 'admin/help#wfpcp_common') {
+-            $help = 'Provide different functionality for WFP Country pages.';
+-
+-            return '<p>' . t($help) . '</p>';
+-        }
+-    }
+-
+-    /**
+-     * Implementation of hook_menu();
+-     */
+-    function wfpcp_common_menu()
+-    {
+-        $items                                = array();
+-        $items['admin/settings/wfpcp_common'] = array(
+-            'title'            => 'WFPCP Common',
+-            'page callback'    => 'wfpcp_common_menu_admin_settings_wfpcp_common',
+-            'page arguments'   => array(),
+-            'access arguments' => array('config country pages'),
+-            'type'             => MENU_NORMAL_ITEM,
+-        );
+-        $items['node/%node/view_mode']        = array(
+-            'title'            => 'View Mode',
+-            'page callback'    => 'wfpcp_common_menu_node_view_mode_callback',
+-            'page arguments'   => array(1),
+-            'access callback'  => 'wfpcp_common_menu_node_view_mode_access',
+-            'access arguments' => array(1),
+-            'type'             => MENU_LOCAL_TASK,
+-        );
+-        $items['user/%user/cp_access']        = array(
+-            'title'            => 'CP Editor Access',
+-            'page callback'    => 'wfpcp_common_menu_user_cp_access_callback',
+-            'page arguments'   => array(1),
+-            'access callback'  => 'wfpcp_common_menu_user_cp_access_access',
+-            'access arguments' => array(1),
+-            'type'             => MENU_LOCAL_TASK,
+-        );
+-
+-        return $items;
+-    }
+-
+-    /**
+-     * Implementation of hook_menu_alter();
+-     */
+-    function wfpcp_common_menu_alter(&$items)
+-    {
+-        $items['node/%node/edit']['access callback'] = 'wfpcp_common_menu_node_edit_access';
+-    }
+-
+-    /**
+-     * Implementation of hook_block();
+-     */
+-    function wfpcp_common_block($op = 'list', $delta = 0, $edit = array())
+-    {
+-        global $__wfpcp_common_cnid;
+-        $blocks = array();
+-
+-        switch ($op) {
+-            case 'list':
+-                $blocks['subtabs']                        = array(
+-                    'info'  => t('WFPCP: Sub-menu tabs'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['ttfs']                           = array(
+-                    'info'  => t('WFPCP: Threats To Food Security'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['share']                          = array(
+-                    'info'  => t('WFPCP: Subscribe & Share'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['submenu_publications']           = array(
+-                    'info'  => t('WFPCP: Submenu for Publications'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['food_security_overview']         = array(
+-                    'info'  => t('WFPCP: Food Security Overview'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['food_security_reports']          = array(
+-                    'info'  => t('WFPCP: Food Security Reports and Bulletins'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['food_security_key_indicators']   = array(
+-                    'info'  => t('WFPCP: Food Security Key Indicators (unused)'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['food_security_purchasing_power'] = array(
+-                    'info'  => t('WFPCP: Food Security Purchasing Power'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['food_security_food_prices']      = array(
+-                    'info'  => t('WFPCP: Food Security Food Prices'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['publications_grid']              = array(
+-                    'info'  => t('WFPCP: Publications'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['media_featured']                 = array(
+-                    'info'  => t('WFPCP: Featured Media'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-                $blocks['unhas_current_operations']       = array(
+-                    'info'  => t('WFPCP: UNHAS Current Operations'),
+-                    'cache' => BLOCK_NO_CACHE,
+-                );
+-
+-                return $blocks;
+-                break;
+-            case 'configure':
+-                break;
+-            case 'save':
+-                break;
+-            case 'view':
+-                switch ($delta) {
+-                    case 'subtabs':
+-                        $block = _wfpcp_common_block_subtabs($__wfpcp_common_cnid);
+-                        break;
+-                    case 'ttfs':
+-                        $block = _wfpcp_common_block_ttfs($__wfpcp_common_cnid);
+-                        break;
+-                    case 'share':
+-                        $block = _wfpcp_common_block_share($__wfpcp_common_cnid);
+-                        break;
+-                    case 'submenu_publications':
+-                        $block = _wfpcp_common_block_submenu_publications($__wfpcp_common_cnid);
+-                        break;
+-                    case 'food_security_overview':
+-                        $block = _wfpcp_common_block_food_security_overview($__wfpcp_common_cnid);
+-                        break;
+-                    case 'food_security_reports':
+-                        $block = _wfpcp_common_block_food_security_reports($__wfpcp_common_cnid);
+-                        break;
+-                    case 'food_security_key_indicators':
+-                        $block = _wfpcp_common_block_food_security_key_indicators($__wfpcp_common_cnid);
+-                        break;
+-                    case 'food_security_purchasing_power':
+-                        $block = _wfpcp_common_block_food_security_purchasing_power($__wfpcp_common_cnid);
+-                        break;
+-                    case 'food_security_food_prices':
+-                        $block = _wfpcp_common_block_food_security_food_prices($__wfpcp_common_cnid);
+-                        break;
+-                    case 'publications_grid':
+-                        $block = _wfpcp_common_block_publications_grid($__wfpcp_common_cnid);
+-                        break;
+-                    case 'media_featured':
+-                        $block = _wfpcp_common_block_media_featured($__wfpcp_common_cnid);
+-                        break;
+-                    case 'unhas_current_operations':
+-                        $block = _wfpcp_common_block_unhas_current_operations($__wfpcp_common_cnid);
+-                        break;
+-                }
+-
+-                return $block;
+-                break;
+-        }
+-    }
+-
+-    /**
+-     * Implementation of hook_theme();
+-     */
+-    function wfpcp_common_theme()
+-    {
+-        $theme                                      = array();
+-        $theme['wfpcp_common_nav_tabs']             = array(
+-            'arguments' => array(
+-                'tabs' => array(),
+-            ),
+-            'template'  => 'wfpcp_common_nav_tabs'
+-        );
+-        $theme['wfpcp_common_subnav_tabs']          = array(
+-            'arguments' => array(
+-                'tabs' => array(),
+-            ),
+-            'template'  => 'wfpcp_common_subnav_tabs'
+-        );
+-        $theme['wfpcp_common_ol2_maps_description'] = array(
+-            'arguments' => array(
+-                'contact' => null,
+-            ),
+-            'template'  => 'wfpcp_common_ol2_maps_description'
+-        );
+-        $theme['wfpcp_common_block_share']          = array(
+-            'arguments' => array(
+-                'args' => null,
+-            ),
+-            'template'  => 'wfpcp_common_block_share'
+-        );
+-        $theme['wfpcp_common_resources_grid_cell']  = array(
+-            'arguments' => array(
+-                'cell' => null,
+-            ),
+-            'template'  => 'wfpcp_common_resources_grid_cell'
+-        );
+-        $theme['wfpcp_common_fsa_grid_cell']        = array(
+-            'arguments' => array(
+-                'cell' => null,
+-            ),
+-            'template'  => 'wfpcp_common_fsa_grid_cell'
+-        );
+-        $theme['wfpcp_common_media_featured_box']   = array(
+-            'arguments' => array(
+-                'box' => null,
+-            ),
+-            'template'  => 'wfpcp_common_media_featured_box'
+-        );
+-
+-        return $theme;
+-    }
+-
+-    /**
+-     * preprocess panels twocol theme
+-     */
+-    function wfpcp_common_preprocess_panels_twocol(&$vars)
+-    {
+-        global $__wfpcp_common_inside, $__wfpcp_common_active;
+-
+-        /** ======= shortcut if not inside */
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-        /** ======= add custom template */
+-        $vars['template_files'][] = 'panels-tab-' . $__wfpcp_common_active->role;
+-    }
+-
+-    /**
+-     * preprocess panels onecol theme
+-     */
+-    function wfpcp_common_preprocess_panels_onecol(&$vars)
+-    {
+-        global $__wfpcp_common_inside, $__wfpcp_common_active;
+-
+-        /** ======= shortcut if not inside */
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-        /** ======= add custom template */
+-        $vars['template_files'][] = 'panels-tab-' . $__wfpcp_common_active->role;
+-    }
+-
+-    /**
+-     * Implementation of hook_preprocess_page().
+-     *
+-     * @return
+-     *
+-     */
+-    function wfpcp_common_preprocess_page(&$vars)
+-    {
+-        global $__wfpcp_common_cnid, $__wfpcp_common_inside, $__wfpcp_common_active, $__wfpcp_common_term;
+-
+-        /** ======= shortcut if not inside */
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-        /** ======= generate tabs */
+-        $vars['node']     = node_load($__wfpcp_common_cnid);
+-        $tabs             = _wfpcp_common_get_tab_list($vars['node']);
+-        $output           = theme('wfpcp_common_nav_tabs', $tabs);
+-        $vars['nav_tabs'] = $output;
+-        $vars['privacy']  = l('Privacy', 'privacy/');
+-
+-        if (!empty($__wfpcp_common_active->parent)) {
+-            $parent_item = wfpcp_it_api_item_load($__wfpcp_common_active->parent);
+-            wfpcp_it_api_item_populate($parent_item);
+-            if (!empty($parent_item->role)) {
+-                $vars['template_files'][] = 'page-tab-' . $parent_item->role;
+-            }
+-        }
+-        $vars['template_files'][] = 'page-tab-' . $__wfpcp_common_active->role;
+-
+-        /** ======== title fallback */
+-        $title = explode(' | ', $vars['head_title']);
+-        $first = array_shift($title);
+-        $term  = taxonomy_get_term($__wfpcp_common_term);
+-        if (!empty($term->name)) {
+-            $first .= ': ' . $term->name;
+-        }
+-        array_unshift($title, $first);
+-        $vars['head_title'] = implode(' | ', $title);
+-    }
+-
+-    /**
+-     * preprocess node
+-     */
+-    function wfpcp_common_preprocess_node(&$vars)
+-    {
+-        global $__wfpcp_common_active, $__wfpcp_common_inside;
+-
+-        /** ======= shortcut if not WFPCP_COUNTRY_CONTENT_TYPE node */
+-        if (empty($vars['node']->type) || ($vars['node']->type != WFPCP_COUNTRY_CONTENT_TYPE)) {
+-            return;
+-        }
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-        /** ====== build tab content */
+-        $nid = $__wfpcp_common_active->item;
+-
+-        if (($node = node_load($nid)) && $node->status) {
+-            $teaser = false;
+-            $page   = true;
+-            $links  = true;
+-            $tab    = node_view(node_prepare($node, $teaser), $teaser, $page, $links);
+-        } else {
+-            $tab = '';
+-        }
+-        $vars['content']          = $tab;
+-        $vars['template_files'][] = 'node-country-tab';
+-    }
+-
+-    /**
+-     * wfpcp_common_preprocess_block()
+-     *
+-     * @return void
+-     */
+-    function wfpcp_common_preprocess_block(&$vars)
+-    {
+-        global $__wfpcp_common_inside;
+-        /** ======= shortcut if not inside */
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-        /** ====== preprocess block */
+-        if ($vars['block']->module == 'wfpcp_common') {
+-            $vars['template_files'][] = $vars['block']->template;
+-        }
+-    }
+-
+-    /**
+-     * prepare forms for CP editors
+-     */
+-    function wfpcp_common_form_alter(&$form, $form_state)
+-    {
+-        global $user;
+-
+-        if (($form['#id'] == 'node-form') && isset($user->roles[WFPCP_ROLE_EDITOR]) && !isset($user->roles[WFPCP_ROLE_ADMIN])) {
+-            // set loca/global to local for nodes that have l/g vocabulary on
+-            if (isset($form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID])) {
+-                // if already set keep value, if not - set local
+-                if (!empty($form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID]['#default_value'])) {
+-                    $value                                              = array(
+-                        '#type'  => 'value',
+-                        '#value' => $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID]['#default_value'],
+-                    );
+-                    $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID] = $value;
+-                } else {
+-                    // find local term id and set it
+-                    $terms = taxonomy_get_term_by_name('Local');
+-                    foreach ($terms as $term) {
+-                        if ($term->vid == WFPCP_LOCAL_GLOBAL_VOCABULARY_ID) {
+-                            $tid = $term->tid;
+-                            break;
+-                        }
+-                    }
+-                    $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID] = array(
+-                        '#type'  => 'value',
+-                        '#value' => $tid,
+-                    );
+-                }
+-            }
+-        }
+-    }
+-
+-    /**
+-     * build country admins list, this may be heavy on many users
+-     */
+-    function wfpcp_common_cp_editors_list($ctid = 0)
+-    {
+-        $list  = variable_get('wfpcp_common_cp_access', array());
+-        $table = array();
+-        foreach ($list as $uid => $tids) {
+-            foreach ($tids as $tid) {
+-                $table[$tid][$uid] = $uid;
+-            }
+-        }
+-
+-        return empty($ctid) ? $table : $table[$ctid];
+-    }
+-
+-    /**
+-     * alter mail, change recipients if needed
+-     */
+-    function wfpcp_common_mail_alter(&$messages)
+-    {
+-        $mails = explode(',', $messages['to']);
+-        foreach ($mails as $mid => $mail) {
+-            $mail   = trim($mail);
+-            $chunks = explode(':', $mail);
+-            if (($chunks[0] == '[wfpcp_common_country_admins]') && ($node = node_load($chunks[1]))) {
+-                $country_terms = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_COUNTRY_VOCABULARY_ID);
+-                $user_list     = array();
+-                foreach ($country_terms as $tid => $tmp) {
+-                    $user_list += wfpcp_common_cp_editors_list($tid);
+-                }
+-                $mail_string = array();
+-                foreach ($user_list as $uid => $uid) {
+-                    if ($user = user_load($uid)) {
+-                        if ($user->roles[WFPCP_ROLE_ADMIN]) {
+-                            $mail_string[] = $user->mail;
+-                        }
+-                    }
+-                }
+-                $mails[$mid] = implode(', ', array_filter($mail_string));
+-            }
+-        }
+-        $messages['to'] = implode(', ', array_filter($mails));
+-    }
+-
+-    /**
+-     * Prepares a string for use as a CSS identifier (element, class, or ID name).
+-     *
+-     * http://www.w3.org/TR/CSS21/syndata.html#characters shows the syntax for valid
+-     * CSS identifiers (including element names, classes, and IDs in selectors.)
+-     *
+-     * @param $identifier
+-     *   The identifier to clean.
+-     * @param $filter
+-     *   An array of string replacements to use on the identifier.
+-     *
+-     * @return
+-     *   The cleaned identifier.
+-     */
+-    function clean_css_identifier($identifier, $filter = array(' ' => '-', '_' => '-', '/' => '-', '[' => '-', ']' => ''))
+-    {
+-        // By default, we filter using Drupal's coding standards.
+-        $identifier = strtr($identifier, $filter);
+-
+-        // Valid characters in a CSS identifier are:
+-        // - the hyphen (U+002D)
+-        // - a-z (U+0030 - U+0039)
+-        // - A-Z (U+0041 - U+005A)
+-        // - the underscore (U+005F)
+-        // - 0-9 (U+0061 - U+007A)
+-        // - ISO 10646 characters U+00A1 and higher
+-        // We strip out any character not in the above list.
+-        $identifier = preg_replace('/[^\x{002D}\x{0030}-\x{0039}\x{0041}-\x{005A}\x{005F}\x{0061}-\x{007A}\x{00A1}-\x{FFFF}]/u', '', $identifier);
+-
+-        return $identifier;
+-    }
+-
+-    /**
+-     * Return sub tabs block
+-     */
+-    function _wfpcp_common_block_subtabs($nid)
+-    {
+-        if (!$node = node_load($nid)) {
+-            return;
+-        }
+-
+-        $tabs  = _wfpcp_common_get_tab_list($node, $active);
+-        $stabs = _wfpcp_common_get_subtab_list($node, $active->itemid, $sactive);
+-
+-        $block                       = array();
+-        $block['skip']               = empty($stabs);
+-        $block['subject']            = $active->title;
+-        $block['content']            = theme('wfpcp_common_subnav_tabs', $stabs);
+-        $block['classes']['content'] = 'block-c-content-menu';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * "Threats to Food Security" block
+-     *
+-     * @param integer $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_ttfs($nid)
+-    {
+-        if (!$node = node_load($nid)) {
+-            return;
+-        }
+-
+-        $block            = array();
+-        $block['subject'] = t('Threats to food security');
+-        $block['content'] = '<div class="block-table-cont">' . $node->field_threats_food_security[0]['value'] . '</div>';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Publications block for sub-menu items.
+-     *
+-     * @global type $__wfpcp_common_term
+-     * @global type $__wfpcp_common_embed
+-     * @param integer $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_submenu_publications($nid)
+-    {
+-        global $__wfpcp_common_term, $__wfpcp_common_embed, $__wfpcp_common_cterm;
+-
+-        if (!$node = node_load($nid)) {
+-            return;
+-        }
+-
+-        // Load View programatically.
+-        $view = views_get_view('wfpcp_publication_grid');
+-        $view->set_display('default');
+-        $view->set_arguments(array($__wfpcp_common_cterm)); // Set argument as current country term id.
+-
+-        // Customise Views filter:, remove Food Security.
+-        $filter = $view->get_item('default', 'filter', 'tid');
+-        if (isset($filter['value'][FSA_TID])) {
+-            unset($filter['value'][FSA_TID]);
+-        }
+-        $view->set_item('default', 'filter', 'tid', $filter);
+-        $view->execute();
+-        $res = $view->result;
+-
+-        $list = array();
+-        foreach ($res as $node) {
+-            $node         = (object)$node;
+-            $node->vid    = $node->node_vid;
+-            $topics_terms = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_TOPICS_VOCABULARY_ID);
+-            if (isset($topics_terms[FSA_TID])) {
+-                unset($topics_terms[FSA_TID]);
+-            }
+-
+-            foreach ($topics_terms as $topic) {
+-                $parents = taxonomy_get_parents($topic->tid);
+-                // Remove Food Security Analysis publications from list.
+-                if (isset($parents[FSA_TID])) {
+-                    unset($parents[FSA_TID]);
+-                }
+-                foreach ($parents as $parent) {
+-                    $topic = array_shift($parent);
+-                }
+-                $list[$topic->tid] = $topic;
+-                if ($node->nid == $__wfpcp_common_embed) {
+-                    $__wfpcp_common_term = $topic->tid;
+-                }
+-            }
+-        }
+-
+-        foreach ($list as $key => $item) {
+-            $url            = _wfpcp_common_lg_node_url(0, null, $item->tid, false, true);
+-            $css_identifier = 'cp-nav-' . strtolower(clean_css_identifier($item->name));
+-
+-            if (($key == $__wfpcp_common_term)) {
+-                $data[] = l($item->name, $url, array('html' => true, 'attributes' => array('id' => $css_identifier, 'class' => 'active', 'title' => $item->name)));
+-            } else {
+-                $data[] = l($item->name, $url, array('html' => true, 'attributes' => array('id' => $css_identifier)));
+-            }
+-
+-            $stabs[] = array(
+-                'active' => ($key == $__wfpcp_common_term),
+-                'title'  => $item->name,
+-                'url'    => $url,
+-                'link'   => l($item->name, $url, array('html' => true, 'attributes')),
+-            );
+-        }
+-        $stabs['output'] = theme('item_list', $data);
+-
+-        $block                       = array();
+-        $block['skip']               = empty($list);
+-        $block['subject']            = t('Publications');
+-        $block['content']            = theme('wfpcp_common_subnav_tabs', $stabs);
+-        $block['classes']['content'] = 'block-c-content-menu';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Publications grid listing all Publication items.
+-     *
+-     * @global type $__wfpcp_common_term
+-     * @global type $__wfpcp_common_inside
+-     * @global type $__wfpcp_common_embed
+-     * @global integer $__wfpcp_common_cterm
+-     * @param integer $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_publications_grid($nid)
+-    {
+-        global $__wfpcp_common_term, $__wfpcp_common_inside, $__wfpcp_common_embed, $__wfpcp_common_cterm;
+-
+-        if (!$__wfpcp_common_inside || ($__wfpcp_common_term) || $__wfpcp_common_embed) {
+-            return;
+-        }
+-
+-        // Load View results programatically.
+-        $view = views_get_view('wfpcp_publication_grid');
+-        $view->set_display('default');
+-        $view->set_arguments(array($__wfpcp_common_cterm)); // Set argument as current country term id.
+-
+-        // Customise Views filter:, remove Food Security.
+-        $filter = $view->get_item('default', 'filter', 'tid');
+-        if (isset($filter['value'][FSA_TID])) {
+-            unset($filter['value'][FSA_TID]);
+-        }
+-        $view->set_item('default', 'filter', 'tid', $filter);
+-        $view->execute();
+-        $publications = $view->result;
+-
+-        // Set variables.
+-        $info         = array(
+-            'year'  => array(),
+-            'topic' => array(),
+-        );
+-        $years        = array();
+-        $group_topics = array();
+-
+-        // Apply a custom grouping to Views results.
+-        foreach ($publications as $node) {
+-            $node                          = (object)$node;
+-            $node->vid                     = $node->node_vid;
+-            $year_term                     = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_YEAR_VOCABULARY_ID));
+-            $info['year'][$year_term->tid] = $year_term;
+-            $topics_terms                  = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_TOPICS_VOCABULARY_ID);
+-
+-            // Remove all Food Security Analysis publications, they have their own section in the Country Pages.
+-            if (isset($topics_terms[FSA_TID])) {
+-                unset($topics_terms[FSA_TID]);
+-            }
+-
+-            $info['topic'] += $topics_terms;
+-            foreach ($topics_terms as $topic) {
+-                $parent = taxonomy_get_parents($topic->tid);
+-                if (isset($parent[FSA_TID])) {
+-                    unset($parent[FSA_TID]);
+-                }
+-                if (!empty($parent)) {
+-                    $info['topic'] += $parent;
+-                    $topic = array_shift($parent);
+-                }
+-                // Display only the most recent 3 publications
+-                if (count($group_topics[$topic->tid]) < 3) {
+-                    $years[$topic->tid][]                  = $year_term->name;
+-                    $group_topics[$topic->tid][$node->nid] = $node;
+-                }
+-            }
+-        }
+-
+-        // Format results into cells for output.
+-        $odd = 0;
+-        foreach ($group_topics as $tid => $nodes) {
+-            $cell = array();
+-            sort($years[$tid]);
+-
+-            $cell['odd']       = $odd = 1 - $odd;
+-            $cell['year'][]    = array_shift($years[$tid]);
+-            $cell['year'][]    = array_pop($years[$tid]);
+-            $cell['year']      = implode(' - ', array_filter($cell['year']));
+-            $cell['topic']     = $info['topic'][$tid]->name;
+-            $cell['more_link'] = l(t('View more'), _wfpcp_common_lg_node_url(0, null, $tid), array('attributes' => array('class' => 'view-more')));
+-
+-            foreach ($nodes as $nid => $node) {
+-                $cell['items'][] = l($node->node_title, _wfpcp_common_lg_node_url($nid));
+-            }
+-            $output .= theme('wfpcp_common_resources_grid_cell', $cell);
+-        }
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-
+-    /**
+-     * Food Security overview tab, outputted as a block.
+-     *
+-     * @param int $nid ID of the country taxonomy for the specific Country Page.
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_food_security_overview($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        global $__wfpcp_common_cterm;
+-
+-        $sql = "SELECT field_body_value as overview
+-FROM {node}
+-INNER JOIN {term_node} ON node.vid = term_node.vid
+-LEFT JOIN {content_field_body} ON node.vid = content_field_body.vid
+-WHERE node.status = 1 AND node.type = 'country_food_security' AND term_node.tid = %d";
+-
+-        // Retreive first result from query, the first is all we need.
+-        $country_data = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
+-        $overview     = $country_data->overview;
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $overview . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Food Security overview tab, outputted as a block.
+-     *
+-     * @param int $nid ID of the country taxonomy for the specific Country Page.
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_food_security_purchasing_power($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        global $__wfpcp_common_cterm;
+-
+-        $sql = "SELECT c.field_purchasing_power_value AS purchase_power
+-FROM {node} n
+-INNER JOIN {term_node} tn ON n.vid = tn.vid
+-LEFT JOIN {content_type_country_food_security} c ON n.vid = c.vid
+-WHERE n.status = 1 AND n.type = 'country_food_security' AND tn.tid = %d";
+-
+-        // Retreive first result from query, the first is all we need.
+-        $country_data = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
+-        $value        = $country_data->purchase_power;
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $value . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-
+-    /**
+-     * Food Security reports (publications) content outputted as a block.
+-     *
+-     * @param int $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_food_security_reports($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        $sql = "SELECT term_data.tid FROM node
+-LEFT JOIN term_node ON term_node.nid = node.nid AND term_node.vid = node.vid
+-LEFT JOIN term_data ON term_data.tid = term_node.tid
+-WHERE node.nid = %d AND term_data.vid = 15";
+-
+-        $tid = db_result(db_query($sql, $nid));
+-
+-        $FSA_type = array(
+-            'Latest Food Security Assessments'     => array(1647, 1649, 1651, 1661, 1655, 1653, 1657, 2623),
+-            'Emergency Assessments'                => array(1647),
+-            'Baseline Assessments'                 => array(1649),
+-            'Markets and Food Security Monitoring' => array(1651, 1661),
+-            'Joint Assessments'                    => array(1655, 1653, 1657, 2623),
+-        );
+-
+-        $odd = 0;
+-        foreach ($FSA_type as $type => $ids) {
+-
+-            $tids = implode(', ', $ids);
+-
+-            $cell          = array();
+-            $odd           = 1 - $odd;
+-            $cell['odd']   = $odd;
+-            $cell['topic'] = $type;
+-
+-            $sql = "SELECT node.nid, node.title
+-FROM {node}
+-INNER JOIN {term_node} term_node ON node.vid = term_node.vid
+-LEFT JOIN {term_node} term_node2 ON node.vid = term_node2.vid
+-WHERE node.status <> 0 AND
+-node.type = 'publication'
+-AND term_node.tid IN (" . $tids . ")
+-AND term_node2.tid = %d
+-ORDER BY node.created DESC
+-LIMIT %d";
+-
+-            if ($type == 'Latest Food Security Assessments') {
+-                $limit = 3;
+-            } else {
+-                $limit = 5;
+-            }
+-
+-            $results = db_query($sql, $tid, $limit);
+-            while ($result = db_fetch_object($results)) {
+-                $cell['items'][] = l($result->title, _wfpcp_common_lg_node_url($result->nid));
+-            }
+-            if (isset($cell['items'])) {
+-                $cell['more_link'] = l(t('Search more'), 'food-security/assessment-bank',
+-                    array('attributes' => array(
+-                        'class' => 'view-more'
+-                    ),
+-                          'query'      => "tid_6=All&tid_1=$tid" . _wfpcp_common_fsa_types($ids),
+-                    )
+-                );
+-                $output .= theme('wfpcp_common_fsa_grid_cell', $cell);
+-            }
+-        }
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Food Security Key Indicators outputted as a block.
+-     *
+-     * @param int $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_food_security_key_indicators($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        $output = '';
+-        $node   = node_load($nid);
+-
+-        if (isset($node->field_iso31661char3code[0]['value'])) {
+-            $url_ext = 'http://foodprices.vam.wfp.org/default_620.aspx';
+-            $iso     = strtolower($node->field_iso31661char3code[0]['value']);
+-            $output  = '<iframe sandbox="allow-scripts allow-forms" src="' . $url_ext . '?iso=' . $iso . '" width="620" height="1080" frameborder="0" scrolling="no"></iframe>';
+-        } else {
+-            $output = 'No data currently available.';
+-        }
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Food Security Food Prices outputted as a block.
+-     *
+-     * @param int $nid
+-     * @return array $block
+-     */
+-    function _wfpcp_common_block_food_security_food_prices($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        $output = '';
+-        $node   = node_load($nid);
+-
+-        if (isset($node->field_iso31661char3code[0]['value'])) {
+-            $url_ext = 'http://foodprices.vam.wfp.org/default_620.aspx';
+-            $iso     = strtolower($node->field_iso31661char3code[0]['value']);
+-            $output  = '<iframe sandbox="allow-scripts allow-forms" src="' . $url_ext . '?iso=' . $iso . '" width="620" height="1080" frameborder="0" scrolling="no"></iframe>';
+-        } else {
+-            $output = 'No data currently available.';
+-        }
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /*
+-     *
+-     */
+-    function _wfpcp_common_block_unhas_current_operations($nid)
+-    {
+-        if (arg(0) == 'node' && is_numeric(arg(1))) {
+-            $nid = arg(1);
+-        } else {
+-            return;
+-        }
+-
+-        global $__wfpcp_common_cterm;
+-        $sql = "SELECT field_body_value as unhas_operations
+-FROM {node}
+-INNER JOIN {term_node} ON node.vid = term_node.vid
+-LEFT JOIN {content_field_body} ON node.vid = content_field_body.vid
+-WHERE node.status = 1 AND node.type = 'country_logistics' AND term_node.tid = %d";
+-
+-        // Retreive first result from query, the first is all we need.
+-        $country_data     = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
+-        $unhas_operations = $country_data->unhas_operations;
+-
+-        $block             = array();
+-        $block['content']  = '<div class="block-featured-items">' . $unhas_operations . '</div>';
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Food Security Types
+-     */
+-    function _wfpcp_common_fsa_types($tid)
+-    {
+-
+-        if (is_array($tid) && count($tid) == 1) {
+-            return '&type[]=' . implode('', $tid);
+-        } else if (is_array($tid)) {
+-            return '&type[]=' . implode('&type[]=', $tid);
+-        }
+-    }
+-
+-    /**
+-     * return media_featured block
+-     */
+-    function _wfpcp_common_block_media_featured($nid)
+-    {
+-        global $__wfpcp_common_embed;
+-
+-        $block        = array();
+-        $node_country = node_load($nid);
+-
+-        if (!empty($__wfpcp_common_embed)) {
+-            $node_media     = node_load($__wfpcp_common_embed);
+-            $box['subject'] = 'Now Playing';
+-        } else {
+-            $node_media     = node_load($node_country->field_featured_media[0]['nid']);
+-            $box['subject'] = t('Featured Media');
+-        }
+-        if (empty($node_media)) {
+-            $block['subject'] = '';
+-            $block['content'] = '';
+-
+-            return $block;
+-        }
+-
+-        // base info
+-        $box['nid']   = $node_media->nid;
+-        $box['type']  = $node_media->type;
+-        $box['title'] = $node_media->title;
+-        $box['date']  = date('j F Y', $node_media->created);
+-
+-        // if video generate flowplayer video box, otherwise just pick up image and adding some type spesific features
+-        $width  = 370;
+-        $height = 246; //$width * 3/4;
+-
+-        // Video
+-        if ($node_media->type == 'video') {
+-            $url = $node_media->field_video_url[0]['value'];
+-            // check for thumbnail either from (1) uploaded or (2) linked
+-            if (!empty($node_media->field_first_image[0]['filepath'])) {
+-                $video_thumbnail = base_path() . $node_media->field_first_image[0]['filepath'];
+-            } elseif (!empty($node_media->field_thumbnail_url[0]['value'])) {
+-                $video_thumbnail = $node_media->field_thumbnail_url[0]['value'];
+-            } else {
+-                $video_thumbnail = '';
+-            }
+-            $video_title   = null;
+-            $box['object'] = wfp_flowplayer_show($url, $width, $height, $video_thumbnail, $video_title);
+-            $box['text']   = $node_media->field_body[0]['value'];
+-
+-            // generate add this info
+-            $query = $_GET;
+-            unset($query['q']);
+-            $caption = $node_country->title . ' - ' . $node_media->title;
+-
+-            $args = array(
+-                'url'     => url($_GET['q'], array('query' => $query, 'absolute' => true)),
+-                'title'   => $caption,
+-                'caption' => '<span>' . t('Share Video') . '</span>',
+-                'top'     => '-100',
+-                'left'    => '-200',
+-            );
+-
+-            $box['add_this'] = theme('wfpcp_theme_support_add_this', $args);
+-        } // Gallery
+-        elseif ($node_media->type == 'photo_gallery') {
+-            $img_path = $node_media->field_thumbnail[0]['filepath'] ? $node_media->field_thumbnail[0]['filepath'] : $node_media->field_photos[0]['filepath'];
+-            $img_size = @getimagesize($img_path);
+-            if (($img_size['0'] < $width) || ($img_size['1'] < $height)) {
+-                $img_path = $node_media->field_photos[0]['filepath'];
+-            }
+-            $img           = theme('image', $img_path, $node_media->title, $node_media->title, array('width' => $width, 'height' => $height), false);
+-            $more_url      = _wfpcp_common_lg_node_url($node_media->nid, null, null, true);
+-            $url           = $more_url;
+-            $box['object'] = '<a href="' . $url . '">' . $img . '</a>';
+-            $box['text']   = $node_media->field_summary[0]['value'];
+-            $box['more']   = l(t('See the gallery ›'), $url, array('absolute' => true));
+-        }
+-        // topics
+-        $terms = taxonomy_node_get_terms_by_vocabulary($node_media, WFPCP_CONTENT_FLOW_VOCABULARY_ID);
+-        $links = array();
+-        foreach ($terms as $term) {
+-            $url     = url('videos/' . $term->name, array('absolute' => true));
+-            $links[] = l($term->name, $url);
+-        }
+-        $box['topics'] = implode(', ', $links);
+-
+-        // Countries
+-        $terms = taxonomy_node_get_terms_by_vocabulary($node_media, WFPCP_COUNTRY_VOCABULARY_ID);
+-        $links = array();
+-        foreach ($terms as $term) {
+-            $sql     = "SELECT DISTINCT(n.nid), n.title FROM {node} n INNER JOIN {term_node} tn ON n.vid = tn.vid WHERE tn.tid = %d AND n.type = '%s' AND n.status = 1";
+-            $res     = db_query($sql, $term->tid, WFPCP_COUNTRY_CONTENT_TYPE);
+-            $item    = db_fetch_object($res);
+-            $url     = url('node/' . $item->nid, array('absolute' => true));
+-            $links[] = l($item->title, $url);
+-        }
+-        $box['countries'] = implode(', ', $links);
+-        $output           = theme('wfpcp_common_media_featured_box', $box);
+-
+-        $block['content']  = $output;
+-        $block['template'] = 'block-box';
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * return share block
+-     */
+-    function _wfpcp_common_block_share($nid)
+-    {
+-        global $base_url;
+-        if (!$node = node_load($nid)) {
+-            return;
+-        }
+-        // theme share link
+-        $args  = array(
+-            'url'     => url($_GET['q'], array('query' => $query, 'absolute' => true)),
+-            'caption' => t('Share this page on social networks '),
+-        );
+-        $share = theme('wfpcp_theme_support_add_this', $args);
+-
+-        // Get feeds href and theme_path
+-        $theme_path     = drupal_get_path('theme', WFPCP_THEME_SUPPORT_THEME);
+-        $theme_path_abs = url($theme_path, array('absolute' => true));
+-        $feed_href      = $base_url . '/feeds/' . $node->field_iso31661name[0]['value'];
+-
+-        $args = array(
+-            'sub_title'   => t('Get involved with Latest News and Stories'),
+-            'theme_path'  => $theme_path_abs,
+-            'feed_href'   => $feed_href,
+-            'feed_output' => l(theme('image', $theme_path . '/images/pic_ico_rss.png', 'RSS Feed') . 'RSS Feeds', $feed_href, array('html' => true)),
+-            'share'       => $share,
+-        );
+-
+-        $block            = array();
+-        $block['subject'] = t('Subscribe & Share');
+-        $block['content'] = theme('wfpcp_common_block_share', $args);
+-
+-        return $block;
+-    }
+-
+-    /**
+-     * Create clean id
+-     * Replace all non char with "-"
+-     */
+-    function _wfpcp_common_gci($string)
+-    {
+-        $string = strtolower($string);
+-        // Specific case for "Korea, Democratic People's Republic (DPRK)"
+-        $string = str_replace("'s", 's', $string);
+-        // Clean multiple dashes or whitespaces
+-        $string = preg_replace("/[\s,.'()]+/", "-", $string);
+-        // Clean multiple dashes or whitespaces
+-        $string = preg_replace("/[\s-]+/", " ", $string);
+-        // Convert whitespaces and underscore to dash
+-        $string = preg_replace("/[\s_]/", "-", $string);
+-
+-        $string = trim($string, '- ');
+-
+-        return strtolower($string);
+-    }
+-
+-    /**
+-     * create node link point either to local node's mount point
+-     * or to node's regular path
+-     */
+-    function _wfpcp_common_lg_node_link($nid, $tab = null, $tid = null, $force = false)
+-    {
+-        if ($node = node_load($nid)) {
+-            $title = $node->title;
+-            $url   = _wfpcp_common_lg_node_url($nid, $tab, $tid, $force);
+-
+-            return l($title, $url);
+-        }
+-    }
+-
+-    /**
+-     * create node link's url point either to local node's mount point
+-     * or to node's regular path, for local case will also create a path alias
+-     * so url looks human friendly.
+-     * @param $nid
+-     * embedding node nid (Local/global node), it node is tagged as local it url
+-     * will
+-     * @param $tab
+-     * mount point, may be either numeric tab id, or string tab role, if omitted
+-     * content will be attempted to mount into mount point configured in the settings
+-     * for this node type, and as a last resort it will be mounted to the current tab
+-     * @param $tid
+-     * not actually used by LGC but used by CP subsystem and present here so
+-     * we can create human friendly urls for it
+-     * @param $force
+-     * if set to TRUE this will ignore nodes Local/Global tagging and threat node like
+-     * it Local (i.e. mount it even if its not a Local node). but will not mount
+-     * anything if not inside CP.
+-     * @return
+-     * node URL
+-     */
+-    function _wfpcp_common_lg_node_url($nid, $tab = null, $tid = null, $force = false, $subtab = false)
+-    {
+-        global $__wfpcp_common_inside, $__wfpcp_common_cnid, $__wfpcp_common_term, $__wfpcp_common_tabid, $__wfpcp_common_settings;
+-
+-        $node = node_load($nid);
+-        $term = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_LOCAL_GLOBAL_VOCABULARY_ID));
+-        // Use custom link if we inside and either nid is local or nid is empty
+-        // (in last case link will point to the tab)
+-
+-        if ($__wfpcp_common_inside && (($term->name == 'Local') || (empty($nid)) || $force)) {
+-            // Get tab to the local node
+-            $tree = node_load($__wfpcp_common_cnid);
+-            if (($auto_tab_role = $__wfpcp_common_settings['lg_mount'][$node->type]) && (empty($tab))) {
+-                $auto_tab = array_shift(wfpcp_it_api_item_search($tree, 'role', $auto_tab_role));
+-                $tab      = $auto_tab->itemid;
+-            } // Search tab if not integer
+-            elseif (!is_numeric($tab) && !empty($tab)) {
+-                $auto_tab = array_shift(wfpcp_it_api_item_search($tree, 'role', $tab));
+-                $tab      = $auto_tab->itemid;
+-            }
+-
+-            $tab  = isset($tab) ? $tab : $__wfpcp_common_tabid;
+-            $term = isset($term) ? $term : $__wfpcp_common_term;
+-
+-            // Generate url
+-            $path = 'node/' . $__wfpcp_common_cnid . '/' . $tab;
+-
+-            if (!empty($tid)) {
+-                $path .= '/' . $nid . '/' . $tid;
+-            } elseif (!empty($nid)) {
+-                $path .= '/' . $nid;
+-            }
+-
+-            // Generate alias
+-            $tab_item  = !empty($auto_tab) ? $auto_tab : wfpcp_it_api_item_load($tab);
+-            $ptab_item = !empty($tab_item->parent) ? wfpcp_it_api_item_load($tab_item->parent) : null;
+-            wfpcp_it_api_item_populate($tab_item);
+-            if (!empty($ptab_item)) {
+-                wfpcp_it_api_item_populate($ptab_item);
+-                $tab_title = $ptab_item->title;
+-            } else {
+-                $tab_title = $tab_item->title;
+-            }
+-
+-            $alias = 'countries/' . _wfpcp_common_gci($tree->title) . '/' . _wfpcp_common_gci($tab_title);
+-
+-            if ($subtab) {
+-                $pieces = explode('/', $path);
+-
+-                // Rewrite the URL differently depending on the URL supplied.
+-                if (count($pieces) == 5 && $pieces[0] == 'node' && is_numeric($pieces[3]) && is_numeric($pieces[4])) {
+-                    $publications_term = taxonomy_get_term($pieces[4]);
+-                    $alias .= '/' . _wfpcp_common_gci($publications_term->name);
+-                } // Special pages which are formatted for Current Operations: eg. node/3507/3252/232484
+-                else if (count($pieces) == 4 && $pieces[0] == 'node' && is_numeric($pieces[1]) && is_numeric($pieces[2]) && is_numeric($pieces[3])) {
+-                    // We know this is an "Current Operation" so just add it.
+-                    $node_loaded = node_load($pieces[3]);
+-                    $alias .= '/' . _wfpcp_common_gci($tab_item->title);
+-                    $alias .= '/' . _wfpcp_common_gci($node_loaded->title);
+-                } // Special pages which are formatted: node/#/#/#/#, eg. node/3435/3228/0/2657
+-                else if (count($pieces) == 5 && $pieces[0] == 'node' && $pieces[3] === 0 && is_numeric($pieces[4])) {
+-                    $publications_term = taxonomy_get_term($pieces[4]);
+-                    $alias .= '/' . _wfpcp_common_gci($publications_term->name);
+-                } else {
+-                    $alias .= '/' . _wfpcp_common_gci($tab_item->title);
+-                }
+-            }
+-
+-            $existing = db_result(db_query("SELECT COUNT(*) FROM {url_alias} WHERE dst = '%s'", $alias));
+-            if ($existing === '0') {
+-                if (!$subtab) {
+-                    if (empty($nid) && empty($tid) && !empty($ptab_item->title)) {
+-                        $alias .= '/' . _wfpcp_common_gci($tab_item->title);
+-                    }
+-                    if (!empty($node->title)) {
+-                        $alias .= '/' . _wfpcp_common_gci($node->title);
+-                    }
+-                    $term = taxonomy_get_term($tid);
+-                    if (!empty($term->name)) {
+-                        $alias .= '/' . _wfpcp_common_gci($term->name);
+-                    }
+-                }
+-                path_set_alias($path, $alias);
+-            }
+-        } else {
+-            $path = 'node/' . $nid;
+-        }
+-        $final_path = url($path, array('absolute' => true));
+-
+-        return $final_path;
+-    }
+-
+-    /**
+-     * Get tab list for current country node
+-     */
+-    function _wfpcp_common_get_tab_list($node, &$active = null)
+-    {
+-        global $__wfpcp_common_tabid;
+-
+-        $tree = wfpcp_it_api_tree_load($node);
+-        wfpcp_it_api_tree_populate($tree);
+-        $tabs = array();
+-
+-        // Create tabs list
+-        foreach ($tree->siblings as $itemid => $item) {
+-            if (!$item->hide) {
+-                $url = $item->url ? $item->url : _wfpcp_common_lg_node_url(0, $item->itemid);
+-                $url = strtolower($url);
+-                $id  = end(explode('/', $url));
+-
+-                $tabs[$item->itemid] = array(
+-                    'title'  => $item->title,
+-                    'url'    => $url,
+-                    'active' => false,
+-                    'id'     => $id,
+-                    'link'   => l($item->title, $url),
+-                );
+-            }
+-        }
+-        // get active item
+-        $active = wfpcp_it_api_item_load($__wfpcp_common_tabid);
+-        wfpcp_it_api_item_populate($active);
+-        $parent = wfpcp_it_api_item_load($active->parent);
+-        wfpcp_it_api_item_populate($parent);
+-
+-        if (empty($active->item)) {
+-            $active = array_shift($tree->siblings);
+-        } else {
+-            $active = !empty($parent->item) ? $parent : $active;
+-        }
+-        if (!empty($tabs[$active->itemid])) {
+-            $tabs[$active->itemid]['active'] = true;
+-            $tabs[$active->itemid]['link']   = l($tabs[$active->itemid]['title'], $tabs[$active->itemid]['url'], array('attributes' => array('class' => 'active')));
+-        }
+-
+-        return $tabs;
+-    }
+-
+-    /**
+-     * Get subtab list for given node and toplevel tab
+-     */
+-    function _wfpcp_common_get_subtab_list($node, $itemid, &$active = null)
+-    {
+-        global $__wfpcp_common_tabid;
+-
+-        if (empty($itemid)) {
+-            $active = null;
+-
+-            return array();
+-        }
+-
+-        $tree = wfpcp_it_api_tree_load($node, $itemid);
+-        wfpcp_it_api_tree_populate($tree);
+-        $tabs = array();
+-        $data = array();
+-
+-        // Create tabs list
+-        foreach ($tree->siblings as $itemid => $item) {
+-            // Do not display items set to hidden.
+-            if (!$item->hide) {
+-                $css_identifier      = 'cp-nav-' . strtolower(clean_css_identifier($item->title));
+-                $url                 = $item->url ? $item->url : _wfpcp_common_lg_node_url(0, $item->itemid, null, false, true);
+-                $options             = array('attributes' => array('title' => $item->title));
+-                $data[$item->itemid] = array('data' => l($item->title, $url, $options), 'id' => $css_identifier);
+-
+-                $tabs[$item->itemid] = array(
+-                    'title'  => $item->title,
+-                    'url'    => $url,
+-                    'id'     => $css_identifier,
+-                    'active' => false,
+-                );
+-            }
+-        }
+-        // Get active item
+-        $active = wfpcp_it_api_item_load($__wfpcp_common_tabid);
+-        wfpcp_it_api_item_populate($active);
+-
+-        if (!in_array($active->itemid, array_keys($tree->siblings))) {
+-            $active = array_shift($tree->siblings);
+-        }
+-        if (!empty($tabs[$active->itemid])) {
+-            $tabs[$active->itemid]['active'] = true;
+-            $options                         = array('attributes' => array('title' => $tabs[$active->itemid]['title'], 'class' => 'active'));
+-
+-            $data[$active->itemid] = array('data' => l($tabs[$active->itemid]['title'], $tabs[$active->itemid]['url'], $options), 'id' => $tabs[$active->itemid]['id']);
+-        }
+-        if (!empty($data)) {
+-            $tabs['output'] = theme('item_list', $data);
+-        }
+-
+-        return $tabs;
+-    }
+-
+-    /**
+-     * submit handler for wfpcp_common_form_menu_node_view_mode_form
+-     */
+-    function wfpcp_common_form_menu_node_view_mode_form_submit($form, &$form_state)
+-    {
+-        $values                 = $form_state['values'];
+-        $vmodes                 = variable_get('wfpcp_common_view_modes', array());
+-        $vmodes[$values['nid']] = array_filter($values['options']);
+-        variable_set('wfpcp_common_view_modes', $vmodes);
+-        drupal_set_message(t('Configuration saved.'));
+-    }
+-
+-    /**
+-     * Generate wfpcp_common_form_menu_node_view_mode_form
+-     *
+-     * @return
+-     * drupal form
+-     */
+-    function wfpcp_common_form_menu_node_view_mode_form($form_state, $nid, $options = array())
+-    {
+-        $roles = user_roles();
+-        $form  = array();
+-
+-        $form['info']    = array(
+-            '#prefix' => '<div>',
+-            '#value'  => t('Set wich roles should see modern version of the country.'),
+-            '#suffix' => '</div>',
+-            '#weight' => 0,
+-        );
+-        $form['options'] = array(
+-            '#title'         => t('Roles'),
+-            '#type'          => 'checkboxes',
+-            '#description'   => t('Set wich roles should see modern version of the country.'),
+-            '#default_value' => $options,
+-            '#weight'        => 1,
+-            '#required'      => false,
+-            '#options'       => $roles,
+-        );
+-        $form['nid']     = array(
+-            '#value' => $nid,
+-            '#type'  => 'value',
+-        );
+-        $form['save']    = array(
+-            '#value'  => t('Save'),
+-            '#type'   => 'submit',
+-            '#weight' => 2,
+-        );
+-
+-        return $form;
+-    }
+-
+-    /**
+-     * submit handler for wfpcp_common_form_menu_node_view_mode_form
+-     */
+-    function wfpcp_common_form_menu_user_cp_access_form_submit($form, &$form_state)
+-    {
+-        $values                 = $form_state['values'];
+-        $access                 = variable_get('wfpcp_common_cp_access', array());
+-        $access[$values['uid']] = array_filter($values['options']);
+-
+-        variable_set('wfpcp_common_cp_access', $access);
+-        drupal_set_message(t('Configuration saved.'));
+-    }
+-
+-    /**
+-     * generate wfpcp_common_form_menu_node_view_mode_form
+-     *
+-     * @return
+-     * drupal form
+-     */
+-    function wfpcp_common_form_menu_user_cp_access_form($form_state, $uid, $options = array())
+-    {
+-        $terms = taxonomy_get_tree(WFPCP_COUNTRY_VOCABULARY_ID);
+-
+-        foreach ($terms as $term) {
+-            $variants[$term->tid] = $term->name;
+-        }
+-
+-        $form            = array();
+-        $form['info']    = array(
+-            '#prefix' => '<div>',
+-            '#value'  => t('Set wich countries this user can administer.'),
+-            '#suffix' => '</div>',
+-            '#weight' => 0,
+-        );
+-        $form['options'] = array(
+-            '#title'         => t('Countries'),
+-            '#type'          => 'checkboxes',
+-            '#description'   => t('Set wich countries this user can administer.'),
+-            '#default_value' => $options,
+-            '#weight'        => 1,
+-            '#required'      => false,
+-            '#options'       => $variants,
+-        );
+-        $form['uid']     = array(
+-            '#value' => $uid,
+-            '#type'  => 'value',
+-        );
+-        $form['save']    = array(
+-            '#value'  => t('Save'),
+-            '#type'   => 'submit',
+-            '#weight' => 2,
+-        );
+-
+-        return $form;
+-    }
+-
+-    /**
+-     * submit handler for wfpcp_common_form_menu_admin_settings_wfpcp_common_form
+-     */
+-    function wfpcp_common_form_menu_admin_settings_wfpcp_common_form_submit($form, $form_state)
+-    {
+-        drupal_set_message(t('WFPCP Common settings saved.'));
+-        variable_set('wfpcp_common_settings', $form_state['values']['settings']);
+-    }
+-
+-    /**
+-     * generate wfpcp_common_form_menu_admin_settings_wfpcp_common_form
+-     *
+-     * @return
+-     * drupal form
+-     */
+-    function wfpcp_common_form_menu_admin_settings_wfpcp_common_form($form_state, $wfpcp_common_settings = array())
+-    {
+-        $form                      = array();
+-        $form['settings']          = array(
+-            '#tree' => true,
+-        );
+-        $form['settings']['const'] = array(
+-            '#title'       => t('Constants '),
+-            '#type'        => 'fieldset',
+-            '#description' => t('wfpcp_common constants, define content types and vocabularies id to use.'),
+-            '#weight'      => 0,
+-            '#collapsible' => true,
+-            '#collapsed'   => true,
+-        );
+-        $const_names               = explode(', ', WFPCP_COMMON_CONSTANTS);
+-        foreach ($const_names as $weigth => $name) {
+-            $form['settings']['const'][$name] = array(
+-                '#title'         => t($name),
+-                '#type'          => 'textfield',
+-                '#description'   => null,
+-                '#default_value' => $wfpcp_common_settings['const'][$name],
+-                '#weight'        => $weigth,
+-                '#required'      => true,
+-            );
+-        }
+-        // Default tabs macro
+-        $form['settings']['def_tabs']        = array(
+-            '#title'       => t('Default Tabs'),
+-            '#type'        => 'fieldset',
+-            '#description' => t('Default tabs settings'),
+-            '#weight'      => 0,
+-            '#collapsible' => true,
+-            '#collapsed'   => true,
+-        );
+-        $form['settings']['def_tabs']['php'] = array(
+-            '#title'         => t('PHP function'),
+-            '#type'          => 'textarea',
+-            '#description'   => t('Enter function code that will return array of default tabs.'),
+-            '#default_value' => $wfpcp_common_settings['def_tabs']['php'],
+-            '#weight'        => 0,
+-            '#required'      => false,
+-            '#rows'          => 30,
+-        );
+-
+-        // Mount points for local content
+-        $types = node_get_types();
+-        $voc   = taxonomy_vocabulary_load(WFPCP_LOCAL_GLOBAL_VOCABULARY_ID);
+-
+-        $form['settings']['lg_mount'] = array(
+-            '#title'       => t('Local/Global content mount points'),
+-            '#type'        => 'fieldset',
+-            '#description' => t('Specify country tab`s roles where apropriate content types should be mounted if they are %local. <br />
+-    <b>IMPORTANT: Tab must have a role in order to be recognised as mount point! </b>', array('%local' => 'Local')),
+-            '#weight'      => 0,
+-            '#collapsible' => false,
+-            '#collapsed'   => false,
+-        );
+-        foreach ($voc->nodes as $type) {
+-            $form['settings']['lg_mount'][$type] = array(
+-                '#title'         => t('Tab role for %type', array('%type' => $types[$type]->name)),
+-                '#type'          => 'textfield',
+-                '#description'   => null,
+-                '#default_value' => $wfpcp_common_settings['lg_mount'][$type],
+-                '#weight'        => 0,
+-                '#required'      => false,
+-            );
+-        }
+-
+-        // Custom path counted as local
+-        $form['settings']['ajax_path'] = array(
+-            '#title'         => t('AJAX/AHAH Path'),
+-            '#type'          => 'textarea',
+-            '#description'   => t('Specify starting path parts to AJAX/AHAH callbacks that may be threated as they inside country page, each one from new line. <br><b>DO NOT PUT REGULAR PATH HERE!</b>'),
+-            '#default_value' => $wfpcp_common_settings['ajax_path'],
+-            '#weight'        => 0,
+-            '#required'      => false,
+-        );
+-        $form['save']                  = array(
+-            '#value'  => t('Save'),
+-            '#type'   => 'submit',
+-            '#weight' => 0,
+-        );
+-
+-        return $form;
+-    }
+-
+-    /**
+-     * access replacement for 'node/%node/edit'
+-     */
+-    function wfpcp_common_menu_node_edit_access($op, $node)
+-    {
+-        global $user;
+-
+-        // Deny acces to node editing if user is not this country editor
+-        if ($node->type == WFPCP_COUNTRY_CONTENT_TYPE) {
+-            $terms     = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_COUNTRY_VOCABULARY_ID);
+-            $tid       = array_shift(array_keys($terms));
+-            $access    = variable_get('wfpcp_common_cp_access', array());
+-            $countries = $access[$user->uid];
+-            if (!empty($countries) && is_array($countries)) {
+-                $permit = in_array($tid, $countries);
+-            } else {
+-                $permit = false;
+-            }
+-        } else {
+-            $permit = true;
+-        }
+-
+-        return (($permit || user_access('administer country pages')) && node_access($op, $node));
+-    }
+-
+-    /**
+-     * menu page callback for 'admin/settings/wfpcp_common'
+-     *
+-     * @return
+-     * html: wfpcp settings page
+-     */
+-    function wfpcp_common_menu_admin_settings_wfpcp_common()
+-    {
+-        global $__wfpcp_common_settings;
+-
+-        return drupal_get_form('wfpcp_common_form_menu_admin_settings_wfpcp_common_form', $__wfpcp_common_settings);
+-    }
+-
+-    /**
+-     * menu access callback 'node/%node/view_mode'
+-     *
+-     * @return void
+-     */
+-    function wfpcp_common_menu_node_view_mode_access($node)
+-    {
+-        return (user_access('administer country pages') && isset($node->type) && ($node->type == WFPCP_IT_CONTENT_TYPE));
+-    }
+-
+-    /**
+-     * menu page callback 'node/%node/view_mode'
+-     */
+-    function wfpcp_common_menu_node_view_mode_callback($node)
+-    {
+-        $vmodes = variable_get('wfpcp_common_view_modes', array());
+-
+-        return drupal_get_form('wfpcp_common_form_menu_node_view_mode_form', $node->nid, $vmodes[$node->nid]);
+-    }
+-
+-    /**
+-     * menu access callback 'user/%user/cp_access'
+-     */
+-    function wfpcp_common_menu_user_cp_access_access($user)
+-    {
+-        return user_access('administer country pages editors');
+-    }
+-
+-    /**
+-     * menu page callback 'user/%user/cp_access'
+-     */
+-    function wfpcp_common_menu_user_cp_access_callback($user)
+-    {
+-        $access = variable_get('wfpcp_common_cp_access', array());
+-
+-        return drupal_get_form('wfpcp_common_form_menu_user_cp_access_form', $user->uid, $access[$user->uid]);
+-    }
+-
+-    /**
+-     * Implementation of hook_perm();
+-     */
+-    function wfpcp_common_perm()
+-    {
+-        return array(
+-            'config country pages', 'administer country pages', 'administer country pages editors'
+-        );
+-    }
+-
+-    /**
+-     * Alter ol2 maps
+-     */
+-    function wfpcp_common_openlayers_map_alter(&$map)
+-    {
+-        global $__wfpcp_common_inside, $__wfpcp_common_cnid;
+-        /** ======= shortcut if not inside */
+-        if (!$__wfpcp_common_inside) {
+-            return;
+-        }
+-
+-        // Get country node
+-        $node = node_load($__wfpcp_common_cnid);
+-        // Set zoom level
+-        module_load_include('inc', 'wfpcp_common', 'wfpcp_common.area');
+-        $area = wfpcp_common_area($node->field_iso31661char2code[0]['value']);
+-        $zoom = array(
+-            '0' => '100000000',
+-            '1' => '100000000',
+-            '2' => '24000000',
+-            '3' => '8000000',
+-            '4' => '2000000',
+-            '5' => '500000',
+-            '6' => '200000',
+-            '7' => '100000',
+-            '8' => '50000',
+-            '9' => '-1'
+-        );
+-        $size = 0;
+-        while ($zoom[$size] > $area) {
+-            $size++;
+-        }
+-        // set center point
+-        if ($map['id'] == 'openlayers-map-auto-id-0') {
+-            $map['center']['initial']['centerpoint'] = $node->field_longitude[0]['value'] . ' , ' .
+-                $node->field_latitude[0]['value'];
+-            $map['center']['initial']['zoom']        = $size - 1;
+-        }
+-        // set features description
+-        foreach ($map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'] as $key => $item) {
+-            if (empty($item['wkt'])) {
+-                unset($map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'][$key]);
+-            } else {
+-                $item_node                                                                                        = node_load($item['attributes']['description']);
+-                $desc                                                                                             = theme('wfpcp_common_ol2_maps_description', $item_node);
+-                $map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'][$key]['attributes']['description'] = $desc;
+-            }
+-        }
+-    }
+-
+-    /**
+-     * save all wfpcp_common variables in session for current URI
+-     * for future use in ajax pages
+-     */
+-    function _wfpcp_common_info_save()
+-    {
+-        global $custom_theme,
+-               $__wfpcp_common_inside,
+-               $__wfpcp_common_cnid,
+-               $__wfpcp_common_cterm,
+-               $__wfpcp_common_tabid,
+-               $__wfpcp_common_embed,
+-               $__wfpcp_common_term,
+-               $__wfpcp_common_active,
+-               $__wfpcp_common_settings;
+-
+-        $key = request_uri();
+-
+-        $info                                     = array(
+-            'custom_theme' => $custom_theme,
+-            'inside'       => $__wfpcp_common_inside,
+-            'cnid'         => $__wfpcp_common_cnid,
+-            'cterm'        => $__wfpcp_common_cterm,
+-            'tabid'        => $__wfpcp_common_tabid,
+-            'embed'        => $__wfpcp_common_embed,
+-            'term'         => $__wfpcp_common_term,
+-            'active'       => $__wfpcp_common_active,
+-//    'settings' => $__wfpcp_common_settings,
+-        );
+-        $_SESSION['__wfpcp_common']['info'][$key] = $info;
+-
+-        if (!isset($_SESSION['__wfpcp_common']['default_php'])) {
+-            $_SESSION['__wfpcp_common']['default_php'] = $__wfpcp_common_settings;
+-        }
+-    }
+-
+-    /**
+-     * restore all wfpcp_common variables from session
+-     */
+-    function _wfpcp_common_info_restore()
+-    {
+-        global $custom_theme,
+-               $__wfpcp_common_inside,
+-               $__wfpcp_common_cnid,
+-               $__wfpcp_common_cterm,
+-               $__wfpcp_common_tabid,
+-               $__wfpcp_common_embed,
+-               $__wfpcp_common_term,
+-               $__wfpcp_common_active,
+-               $__wfpcp_common_settings;
+-
+-        $key   = $_SERVER["HTTP_REFERER"];
+-        $parts = explode('/', $key);
+-        unset($parts[0], $parts[1], $parts[2]);
+-        $key = '/' . implode('/', $parts);
+-
+-        if ($info = $_SESSION['__wfpcp_common']['info'][$key]) {
+-            $custom_theme          = $info['custom_theme'];
+-            $__wfpcp_common_inside = $info['inside'];
+-            $__wfpcp_common_cnid   = $info['cnid'];
+-            $__wfpcp_common_cterm  = $info['cterm'];
+-            $__wfpcp_common_tabid  = $info['tabid'];
+-            $__wfpcp_common_embed  = $info['embed'];
+-            $__wfpcp_common_term   = $info['term'];
+-            $__wfpcp_common_active = $info['active'];
+-//    $__wfpcp_common_settings = $info['settings'];
+-        }
+-
+-        if (isset($_SESSION['__wfpcp_common']['default_php'])) {
+-            $__wfpcp_common_settings = $_SESSION['__wfpcp_common']['default_php'];
+-        }
+-    }
++<?php
++
++    /**
++     * @file wfpcp_common.module
++     *
++     * Provide different functionality for WFP Country pages
++     *
++     */
++
++// Load includes
++    module_load_include('inc', 'wfpcp_common', 'wfpcp_common.config');
++
++// Set constants.
++    define('FSA_TID', 993); // Taxonomy ID for "Food Security Analysis" topic.
++
++
++    /**
++     * Implementation of hook_init().
++     */
++    function wfpcp_common_init()
++    {
++/*
++        global $custom_theme, $user,
++               $__wfpcp_common_inside,
++               $__wfpcp_common_cnid,
++               $__wfpcp_common_cterm,
++               $__wfpcp_common_tabid,
++               $__wfpcp_common_embed,
++               $__wfpcp_common_term,
++               $__wfpcp_common_active,
++               $__wfpcp_common_settings;
++        $__wfpcp_common_inside = false;
++
++        // read settings
++        $__wfpcp_common_settings = variable_get('wfpcp_common_settings', array());
++
++        // Populate constants
++        foreach ($__wfpcp_common_settings['const'] as $name => $value) {
++            DEFINE($name, $value);
++        }
++        // ajax views and autocompletes should be considered as we in
++        // if we are - restore info from session for referer and return
++
++        $path_list = explode("\r\n", $__wfpcp_common_settings['ajax_path']);
++        foreach ($path_list as $path) {
++            if (strpos($_GET['q'], $path) === 0) {
++                // TODO How can we remove this?
++                _wfpcp_common_info_restore();
++            }
++        }
++
++        // normal check
++        if ((arg(0) == 'node')) {
++            if (($node = node_load(arg(1))) && ($node->type == WFPCP_COUNTRY_CONTENT_TYPE)) {
++                $__wfpcp_common_inside = true;
++            }
++        }
++
++        // check if modern view selected for current role
++        $set_theme = false;
++        $vmodes    = variable_get('wfpcp_common_view_modes', array());
++
++        // This is some important theme logic here..
++        if (isset($node->nid)) {
++            $vmodes = !empty($vmodes[$node->nid]) ? $vmodes[$node->nid] : array();
++        } else {
++            $vmodes = array();
++        }
++
++        foreach ($user->roles as $role => $title) {
++            if (in_array($role, $vmodes)) {
++                $set_theme = true;
++            }
++        }
++
++        $__wfpcp_common_inside = $__wfpcp_common_inside && $set_theme;
++        // Set theme if selected for current role
++        if ($__wfpcp_common_inside) {
++            $custom_theme = WFPCP_THEME_SUPPORT_THEME;
++        } else {
++            if ($custom_theme == WFPCP_THEME_SUPPORT_THEME) {
++                unset($custom_theme);
++            }
++
++            return;
++        }
++
++        // set country nid
++        $__wfpcp_common_cnid = $node->nid;
++        // set country term id
++        $vid                  = WFPCP_COUNTRY_VOCABULARY_ID;
++        $term                 = array_shift(taxonomy_node_get_terms_by_vocabulary($node, $vid));
++        $__wfpcp_common_cterm = $term->tid;
++
++        // set active tab
++        $__wfpcp_common_tabid = is_numeric(arg(2)) ? arg(2) : null;
++        $tabs                 = _wfpcp_common_get_tab_list($node, $active);
++        $stabs                = _wfpcp_common_get_subtab_list($node, $active->itemid, $sactive);
++
++        $__wfpcp_common_active = !empty($sactive) ? $sactive : $active;
++        $__wfpcp_common_tabid  = $__wfpcp_common_active->itemid;
++
++        // Set embed node id and category term
++        $__wfpcp_common_embed = is_numeric(arg(3)) ? arg(3) : null;
++        $__wfpcp_common_term  = is_numeric(arg(4)) ? arg(4) : null;
++
++        // Since we cant use this inside view php argument we use it here
++        $tab = wfpcp_it_api_item_search($node, 'title', 'Current Operations');
++
++        if (!empty($__wfpcp_common_tabid) && ($tab[0]->itemid == $__wfpcp_common_tabid)) {
++            if (empty($__wfpcp_common_embed)) {
++                $view = views_get_view('wfpcp_projects');
++                $view->execute();
++                $res                  = $view->result;
++                $nid                  = array_shift($res)->nid;
++                $__wfpcp_common_embed = $nid;
++            }
++        }
++
++        // store result in session so ajax refresh can read it if we have cnid
++        if ($__wfpcp_common_cnid) {
++            // TODO How can we remove this?
++            _wfpcp_common_info_save();
++        }
++*/
++    }
++
++    // LD Modification
++    /**
++     * Implementation of hook_nodeapi();
++     */
++    function wfpcp_common_nodeapi(&$node, $op, $a3 = null, $a4 = null)
++    {
++        switch ($op) {
++            case 'presave':
++            case 'insert':
++            case 'update':
++                // LD Modification
++                global $__wfpcp_common_cnid, $__wfpcp_common_tabid;
++
++                $__wfpcp_common_cnid = $node->field_country_profile[0]['nid'];
++                $term                = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_LOCAL_GLOBAL_VOCABULARY_ID));
++                $mappingContentTypes = array(
++                    'web_story'       => 'stories',
++                    'news Release'    => 'news',
++                    'publication'     => 'publication',
++                    'photo_galleries' => 'photos',
++                    'videos'          => 'videos');
++
++                $arr                 = explode('/', $_GET['destination']);
++                $neededTaxsonomy     = $arr[1];
++                $countriNode         = node_load($neededTaxsonomy);
++                $neededTaxsonomy     = $countriNode->title;
++
++                // END LD MODIFICATION
++                if ($term->name != 'Global' && isset($mappingContentTypes[$node->type]) && $neededTaxsonomy != null) {
++
++                    $path  = $_GET['destination'];
++                    $alias = 'countries/' . _wfpcp_common_gci($neededTaxsonomy) . '/' . _wfpcp_common_gci($mappingContentTypes[$node->type]) . '/' . _wfpcp_common_gci($node->title);
++                    path_set_alias($path, $alias);
++                }
++
++                break;
++        }
++    }
++
++    // LD Modification end
++
++    /**
++     * Implementation of hook_help();
++     */
++    function wfpcp_common_help($path, $args)
++    {
++        if ($path == 'admin/help#wfpcp_common') {
++            $help = 'Provide different functionality for WFP Country pages.';
++
++            return '<p>' . t($help) . '</p>';
++        }
++    }
++
++    /**
++     * Implementation of hook_menu();
++     */
++    function wfpcp_common_menu()
++    {
++        $items                                = array();
++        $items['admin/settings/wfpcp_common'] = array(
++            'title'            => 'WFPCP Common',
++            'page callback'    => 'wfpcp_common_menu_admin_settings_wfpcp_common',
++            'page arguments'   => array(),
++            'access arguments' => array('config country pages'),
++            'type'             => MENU_NORMAL_ITEM,
++        );
++        $items['node/%node/view_mode']        = array(
++            'title'            => 'View Mode',
++            'page callback'    => 'wfpcp_common_menu_node_view_mode_callback',
++            'page arguments'   => array(1),
++            'access callback'  => 'wfpcp_common_menu_node_view_mode_access',
++            'access arguments' => array(1),
++            'type'             => MENU_LOCAL_TASK,
++        );
++        $items['user/%user/cp_access']        = array(
++            'title'            => 'CP Editor Access',
++            'page callback'    => 'wfpcp_common_menu_user_cp_access_callback',
++            'page arguments'   => array(1),
++            'access callback'  => 'wfpcp_common_menu_user_cp_access_access',
++            'access arguments' => array(1),
++            'type'             => MENU_LOCAL_TASK,
++        );
++
++        return $items;
++    }
++
++    /**
++     * Implementation of hook_menu_alter();
++     */
++    function wfpcp_common_menu_alter(&$items)
++    {
++        $items['node/%node/edit']['access callback'] = 'wfpcp_common_menu_node_edit_access';
++    }
++
++    /**
++     * Implementation of hook_block();
++     */
++    function wfpcp_common_block($op = 'list', $delta = 0, $edit = array())
++    {
++        global $__wfpcp_common_cnid;
++        $blocks = array();
++
++        switch ($op) {
++            case 'list':
++                $blocks['subtabs']                        = array(
++                    'info'  => t('WFPCP: Sub-menu tabs'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['ttfs']                           = array(
++                    'info'  => t('WFPCP: Threats To Food Security'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['share']                          = array(
++                    'info'  => t('WFPCP: Subscribe & Share'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['submenu_publications']           = array(
++                    'info'  => t('WFPCP: Submenu for Publications'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['food_security_overview']         = array(
++                    'info'  => t('WFPCP: Food Security Overview'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['food_security_reports']          = array(
++                    'info'  => t('WFPCP: Food Security Reports and Bulletins'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['food_security_key_indicators']   = array(
++                    'info'  => t('WFPCP: Food Security Key Indicators (unused)'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['food_security_purchasing_power'] = array(
++                    'info'  => t('WFPCP: Food Security Purchasing Power'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['food_security_food_prices']      = array(
++                    'info'  => t('WFPCP: Food Security Food Prices'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['publications_grid']              = array(
++                    'info'  => t('WFPCP: Publications'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['media_featured']                 = array(
++                    'info'  => t('WFPCP: Featured Media'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++                $blocks['unhas_current_operations']       = array(
++                    'info'  => t('WFPCP: UNHAS Current Operations'),
++                    'cache' => BLOCK_NO_CACHE,
++                );
++
++                return $blocks;
++                break;
++            case 'configure':
++                break;
++            case 'save':
++                break;
++            case 'view':
++                switch ($delta) {
++                    case 'subtabs':
++                        $block = _wfpcp_common_block_subtabs($__wfpcp_common_cnid);
++                        break;
++                    case 'ttfs':
++                        $block = _wfpcp_common_block_ttfs($__wfpcp_common_cnid);
++                        break;
++                    case 'share':
++                        $block = _wfpcp_common_block_share($__wfpcp_common_cnid);
++                        break;
++                    case 'submenu_publications':
++                        $block = _wfpcp_common_block_submenu_publications($__wfpcp_common_cnid);
++                        break;
++                    case 'food_security_overview':
++                        $block = _wfpcp_common_block_food_security_overview($__wfpcp_common_cnid);
++                        break;
++                    case 'food_security_reports':
++                        $block = _wfpcp_common_block_food_security_reports($__wfpcp_common_cnid);
++                        break;
++                    case 'food_security_key_indicators':
++                        $block = _wfpcp_common_block_food_security_key_indicators($__wfpcp_common_cnid);
++                        break;
++                    case 'food_security_purchasing_power':
++                        $block = _wfpcp_common_block_food_security_purchasing_power($__wfpcp_common_cnid);
++                        break;
++                    case 'food_security_food_prices':
++                        $block = _wfpcp_common_block_food_security_food_prices($__wfpcp_common_cnid);
++                        break;
++                    case 'publications_grid':
++                        $block = _wfpcp_common_block_publications_grid($__wfpcp_common_cnid);
++                        break;
++                    case 'media_featured':
++                        $block = _wfpcp_common_block_media_featured($__wfpcp_common_cnid);
++                        break;
++                    case 'unhas_current_operations':
++                        $block = _wfpcp_common_block_unhas_current_operations($__wfpcp_common_cnid);
++                        break;
++                }
++
++                return $block;
++                break;
++        }
++    }
++
++    /**
++     * Implementation of hook_theme();
++     */
++    function wfpcp_common_theme()
++    {
++        $theme                                      = array();
++        $theme['wfpcp_common_nav_tabs']             = array(
++            'arguments' => array(
++                'tabs' => array(),
++            ),
++            'template'  => 'wfpcp_common_nav_tabs'
++        );
++        $theme['wfpcp_common_subnav_tabs']          = array(
++            'arguments' => array(
++                'tabs' => array(),
++            ),
++            'template'  => 'wfpcp_common_subnav_tabs'
++        );
++        $theme['wfpcp_common_ol2_maps_description'] = array(
++            'arguments' => array(
++                'contact' => null,
++            ),
++            'template'  => 'wfpcp_common_ol2_maps_description'
++        );
++        $theme['wfpcp_common_block_share']          = array(
++            'arguments' => array(
++                'args' => null,
++            ),
++            'template'  => 'wfpcp_common_block_share'
++        );
++        $theme['wfpcp_common_resources_grid_cell']  = array(
++            'arguments' => array(
++                'cell' => null,
++            ),
++            'template'  => 'wfpcp_common_resources_grid_cell'
++        );
++        $theme['wfpcp_common_fsa_grid_cell']        = array(
++            'arguments' => array(
++                'cell' => null,
++            ),
++            'template'  => 'wfpcp_common_fsa_grid_cell'
++        );
++        $theme['wfpcp_common_media_featured_box']   = array(
++            'arguments' => array(
++                'box' => null,
++            ),
++            'template'  => 'wfpcp_common_media_featured_box'
++        );
++
++        return $theme;
++    }
++
++    /**
++     * preprocess panels twocol theme
++     */
++    function wfpcp_common_preprocess_panels_twocol(&$vars)
++    {
++        global $__wfpcp_common_inside, $__wfpcp_common_active;
++
++        /** ======= shortcut if not inside */
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++        /** ======= add custom template */
++        $vars['template_files'][] = 'panels-tab-' . $__wfpcp_common_active->role;
++    }
++
++    /**
++     * preprocess panels onecol theme
++     */
++    function wfpcp_common_preprocess_panels_onecol(&$vars)
++    {
++        global $__wfpcp_common_inside, $__wfpcp_common_active;
++
++        /** ======= shortcut if not inside */
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++        /** ======= add custom template */
++        $vars['template_files'][] = 'panels-tab-' . $__wfpcp_common_active->role;
++    }
++
++    /**
++     * Implementation of hook_preprocess_page().
++     *
++     * @return
++     *
++     */
++    function wfpcp_common_preprocess_page(&$vars)
++    {
++        global $__wfpcp_common_cnid, $__wfpcp_common_inside, $__wfpcp_common_active, $__wfpcp_common_term;
++
++        /** ======= shortcut if not inside */
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++        /** ======= generate tabs */
++        $vars['node']     = node_load($__wfpcp_common_cnid);
++        $tabs             = _wfpcp_common_get_tab_list($vars['node']);
++        $output           = theme('wfpcp_common_nav_tabs', $tabs);
++        $vars['nav_tabs'] = $output;
++        $vars['privacy']  = l('Privacy', 'privacy/');
++
++        if (!empty($__wfpcp_common_active->parent)) {
++            $parent_item = wfpcp_it_api_item_load($__wfpcp_common_active->parent);
++            wfpcp_it_api_item_populate($parent_item);
++            if (!empty($parent_item->role)) {
++                $vars['template_files'][] = 'page-tab-' . $parent_item->role;
++            }
++        }
++        $vars['template_files'][] = 'page-tab-' . $__wfpcp_common_active->role;
++
++        /** ======== title fallback */
++        $title = explode(' | ', $vars['head_title']);
++        $first = array_shift($title);
++        $term  = taxonomy_get_term($__wfpcp_common_term);
++        if (!empty($term->name)) {
++            $first .= ': ' . $term->name;
++        }
++        array_unshift($title, $first);
++        $vars['head_title'] = implode(' | ', $title);
++    }
++
++    /**
++     * preprocess node
++     */
++    function wfpcp_common_preprocess_node(&$vars)
++    {
++        global $__wfpcp_common_active, $__wfpcp_common_inside;
++
++        /** ======= shortcut if not WFPCP_COUNTRY_CONTENT_TYPE node */
++        if (empty($vars['node']->type) || ($vars['node']->type != WFPCP_COUNTRY_CONTENT_TYPE)) {
++            return;
++        }
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++        /** ====== build tab content */
++        $nid = $__wfpcp_common_active->item;
++
++        if (($node = node_load($nid)) && $node->status) {
++            $teaser = false;
++            $page   = true;
++            $links  = true;
++            $tab    = node_view(node_prepare($node, $teaser), $teaser, $page, $links);
++        } else {
++            $tab = '';
++        }
++        $vars['content']          = $tab;
++        $vars['template_files'][] = 'node-country-tab';
++    }
++
++    /**
++     * wfpcp_common_preprocess_block()
++     *
++     * @return void
++     */
++    function wfpcp_common_preprocess_block(&$vars)
++    {
++        global $__wfpcp_common_inside;
++        /** ======= shortcut if not inside */
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++        /** ====== preprocess block */
++        if ($vars['block']->module == 'wfpcp_common') {
++            $vars['template_files'][] = $vars['block']->template;
++        }
++    }
++
++    /**
++     * prepare forms for CP editors
++     */
++    function wfpcp_common_form_alter(&$form, $form_state)
++    {
++        global $user;
++
++        if (($form['#id'] == 'node-form') && isset($user->roles[WFPCP_ROLE_EDITOR]) && !isset($user->roles[WFPCP_ROLE_ADMIN])) {
++            // set loca/global to local for nodes that have l/g vocabulary on
++            if (isset($form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID])) {
++                // if already set keep value, if not - set local
++                if (!empty($form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID]['#default_value'])) {
++                    $value                                              = array(
++                        '#type'  => 'value',
++                        '#value' => $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID]['#default_value'],
++                    );
++                    $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID] = $value;
++                } else {
++                    // find local term id and set it
++                    $terms = taxonomy_get_term_by_name('Local');
++                    foreach ($terms as $term) {
++                        if ($term->vid == WFPCP_LOCAL_GLOBAL_VOCABULARY_ID) {
++                            $tid = $term->tid;
++                            break;
++                        }
++                    }
++                    $form['taxonomy'][WFPCP_LOCAL_GLOBAL_VOCABULARY_ID] = array(
++                        '#type'  => 'value',
++                        '#value' => $tid,
++                    );
++                }
++            }
++        }
++    }
++
++    /**
++     * build country admins list, this may be heavy on many users
++     */
++    function wfpcp_common_cp_editors_list($ctid = 0)
++    {
++        $list  = variable_get('wfpcp_common_cp_access', array());
++        $table = array();
++        foreach ($list as $uid => $tids) {
++            foreach ($tids as $tid) {
++                $table[$tid][$uid] = $uid;
++            }
++        }
++
++        return empty($ctid) ? $table : $table[$ctid];
++    }
++
++    /**
++     * alter mail, change recipients if needed
++     */
++    function wfpcp_common_mail_alter(&$messages)
++    {
++        $mails = explode(',', $messages['to']);
++        foreach ($mails as $mid => $mail) {
++            $mail   = trim($mail);
++            $chunks = explode(':', $mail);
++            if (($chunks[0] == '[wfpcp_common_country_admins]') && ($node = node_load($chunks[1]))) {
++                $country_terms = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_COUNTRY_VOCABULARY_ID);
++                $user_list     = array();
++                foreach ($country_terms as $tid => $tmp) {
++                    $user_list += wfpcp_common_cp_editors_list($tid);
++                }
++                $mail_string = array();
++                foreach ($user_list as $uid => $uid) {
++                    if ($user = user_load($uid)) {
++                        if ($user->roles[WFPCP_ROLE_ADMIN]) {
++                            $mail_string[] = $user->mail;
++                        }
++                    }
++                }
++                $mails[$mid] = implode(', ', array_filter($mail_string));
++            }
++        }
++        $messages['to'] = implode(', ', array_filter($mails));
++    }
++
++    /**
++     * Prepares a string for use as a CSS identifier (element, class, or ID name).
++     *
++     * http://www.w3.org/TR/CSS21/syndata.html#characters shows the syntax for valid
++     * CSS identifiers (including element names, classes, and IDs in selectors.)
++     *
++     * @param $identifier
++     *   The identifier to clean.
++     * @param $filter
++     *   An array of string replacements to use on the identifier.
++     *
++     * @return
++     *   The cleaned identifier.
++     */
++    function clean_css_identifier($identifier, $filter = array(' ' => '-', '_' => '-', '/' => '-', '[' => '-', ']' => ''))
++    {
++        // By default, we filter using Drupal's coding standards.
++        $identifier = strtr($identifier, $filter);
++
++        // Valid characters in a CSS identifier are:
++        // - the hyphen (U+002D)
++        // - a-z (U+0030 - U+0039)
++        // - A-Z (U+0041 - U+005A)
++        // - the underscore (U+005F)
++        // - 0-9 (U+0061 - U+007A)
++        // - ISO 10646 characters U+00A1 and higher
++        // We strip out any character not in the above list.
++        $identifier = preg_replace('/[^\x{002D}\x{0030}-\x{0039}\x{0041}-\x{005A}\x{005F}\x{0061}-\x{007A}\x{00A1}-\x{FFFF}]/u', '', $identifier);
++
++        return $identifier;
++    }
++
++    /**
++     * Return sub tabs block
++     */
++    function _wfpcp_common_block_subtabs($nid)
++    {
++        if (!$node = node_load($nid)) {
++            return;
++        }
++
++        $tabs  = _wfpcp_common_get_tab_list($node, $active);
++        $stabs = _wfpcp_common_get_subtab_list($node, $active->itemid, $sactive);
++
++        $block                       = array();
++        $block['skip']               = empty($stabs);
++        $block['subject']            = $active->title;
++        $block['content']            = theme('wfpcp_common_subnav_tabs', $stabs);
++        $block['classes']['content'] = 'block-c-content-menu';
++
++        return $block;
++    }
++
++    /**
++     * "Threats to Food Security" block
++     *
++     * @param integer $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_ttfs($nid)
++    {
++        if (!$node = node_load($nid)) {
++            return;
++        }
++
++        $block            = array();
++        $block['subject'] = t('Threats to food security');
++        $block['content'] = '<div class="block-table-cont">' . $node->field_threats_food_security[0]['value'] . '</div>';
++
++        return $block;
++    }
++
++    /**
++     * Publications block for sub-menu items.
++     *
++     * @global type $__wfpcp_common_term
++     * @global type $__wfpcp_common_embed
++     * @param integer $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_submenu_publications($nid)
++    {
++        global $__wfpcp_common_term, $__wfpcp_common_embed, $__wfpcp_common_cterm;
++
++        if (!$node = node_load($nid)) {
++            return;
++        }
++
++        // Load View programatically.
++        $view = views_get_view('wfpcp_publication_grid');
++        $view->set_display('default');
++        $view->set_arguments(array($__wfpcp_common_cterm)); // Set argument as current country term id.
++
++        // Customise Views filter:, remove Food Security.
++        $filter = $view->get_item('default', 'filter', 'tid');
++        if (isset($filter['value'][FSA_TID])) {
++            unset($filter['value'][FSA_TID]);
++        }
++        $view->set_item('default', 'filter', 'tid', $filter);
++        $view->execute();
++        $res = $view->result;
++
++        $list = array();
++        foreach ($res as $node) {
++            $node         = (object)$node;
++            $node->vid    = $node->node_vid;
++            $topics_terms = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_TOPICS_VOCABULARY_ID);
++            if (isset($topics_terms[FSA_TID])) {
++                unset($topics_terms[FSA_TID]);
++            }
++
++            foreach ($topics_terms as $topic) {
++                $parents = taxonomy_get_parents($topic->tid);
++                // Remove Food Security Analysis publications from list.
++                if (isset($parents[FSA_TID])) {
++                    unset($parents[FSA_TID]);
++                }
++                foreach ($parents as $parent) {
++                    $topic = array_shift($parent);
++                }
++                $list[$topic->tid] = $topic;
++                if ($node->nid == $__wfpcp_common_embed) {
++                    $__wfpcp_common_term = $topic->tid;
++                }
++            }
++        }
++
++        foreach ($list as $key => $item) {
++            $url            = _wfpcp_common_lg_node_url(0, null, $item->tid, false, true);
++            $css_identifier = 'cp-nav-' . strtolower(clean_css_identifier($item->name));
++
++            if (($key == $__wfpcp_common_term)) {
++                $data[] = l($item->name, $url, array('html' => true, 'attributes' => array('id' => $css_identifier, 'class' => 'active', 'title' => $item->name)));
++            } else {
++                $data[] = l($item->name, $url, array('html' => true, 'attributes' => array('id' => $css_identifier)));
++            }
++
++            $stabs[] = array(
++                'active' => ($key == $__wfpcp_common_term),
++                'title'  => $item->name,
++                'url'    => $url,
++                'link'   => l($item->name, $url, array('html' => true, 'attributes')),
++            );
++        }
++        $stabs['output'] = theme('item_list', $data);
++
++        $block                       = array();
++        $block['skip']               = empty($list);
++        $block['subject']            = t('Publications');
++        $block['content']            = theme('wfpcp_common_subnav_tabs', $stabs);
++        $block['classes']['content'] = 'block-c-content-menu';
++
++        return $block;
++    }
++
++    /**
++     * Publications grid listing all Publication items.
++     *
++     * @global type $__wfpcp_common_term
++     * @global type $__wfpcp_common_inside
++     * @global type $__wfpcp_common_embed
++     * @global integer $__wfpcp_common_cterm
++     * @param integer $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_publications_grid($nid)
++    {
++        global $__wfpcp_common_term, $__wfpcp_common_inside, $__wfpcp_common_embed, $__wfpcp_common_cterm;
++
++        if (!$__wfpcp_common_inside || ($__wfpcp_common_term) || $__wfpcp_common_embed) {
++            return;
++        }
++
++        // Load View results programatically.
++        $view = views_get_view('wfpcp_publication_grid');
++        $view->set_display('default');
++        $view->set_arguments(array($__wfpcp_common_cterm)); // Set argument as current country term id.
++
++        // Customise Views filter:, remove Food Security.
++        $filter = $view->get_item('default', 'filter', 'tid');
++        if (isset($filter['value'][FSA_TID])) {
++            unset($filter['value'][FSA_TID]);
++        }
++        $view->set_item('default', 'filter', 'tid', $filter);
++        $view->execute();
++        $publications = $view->result;
++
++        // Set variables.
++        $info         = array(
++            'year'  => array(),
++            'topic' => array(),
++        );
++        $years        = array();
++        $group_topics = array();
++
++        // Apply a custom grouping to Views results.
++        foreach ($publications as $node) {
++            $node                          = (object)$node;
++            $node->vid                     = $node->node_vid;
++            $year_term                     = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_YEAR_VOCABULARY_ID));
++            $info['year'][$year_term->tid] = $year_term;
++            $topics_terms                  = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_TOPICS_VOCABULARY_ID);
++
++            // Remove all Food Security Analysis publications, they have their own section in the Country Pages.
++            if (isset($topics_terms[FSA_TID])) {
++                unset($topics_terms[FSA_TID]);
++            }
++
++            $info['topic'] += $topics_terms;
++            foreach ($topics_terms as $topic) {
++                $parent = taxonomy_get_parents($topic->tid);
++                if (isset($parent[FSA_TID])) {
++                    unset($parent[FSA_TID]);
++                }
++                if (!empty($parent)) {
++                    $info['topic'] += $parent;
++                    $topic = array_shift($parent);
++                }
++                // Display only the most recent 3 publications
++                if (count($group_topics[$topic->tid]) < 3) {
++                    $years[$topic->tid][]                  = $year_term->name;
++                    $group_topics[$topic->tid][$node->nid] = $node;
++                }
++            }
++        }
++
++        // Format results into cells for output.
++        $odd = 0;
++        foreach ($group_topics as $tid => $nodes) {
++            $cell = array();
++            sort($years[$tid]);
++
++            $cell['odd']       = $odd = 1 - $odd;
++            $cell['year'][]    = array_shift($years[$tid]);
++            $cell['year'][]    = array_pop($years[$tid]);
++            $cell['year']      = implode(' - ', array_filter($cell['year']));
++            $cell['topic']     = $info['topic'][$tid]->name;
++            $cell['more_link'] = l(t('View more'), _wfpcp_common_lg_node_url(0, null, $tid), array('attributes' => array('class' => 'view-more')));
++
++            foreach ($nodes as $nid => $node) {
++                $cell['items'][] = l($node->node_title, _wfpcp_common_lg_node_url($nid));
++            }
++            $output .= theme('wfpcp_common_resources_grid_cell', $cell);
++        }
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++
++    /**
++     * Food Security overview tab, outputted as a block.
++     *
++     * @param int $nid ID of the country taxonomy for the specific Country Page.
++     * @return array $block
++     */
++    function _wfpcp_common_block_food_security_overview($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        global $__wfpcp_common_cterm;
++
++        $sql = "SELECT field_body_value as overview
++FROM {node}
++INNER JOIN {term_node} ON node.vid = term_node.vid
++LEFT JOIN {content_field_body} ON node.vid = content_field_body.vid
++WHERE node.status = 1 AND node.type = 'country_food_security' AND term_node.tid = %d";
++
++        // Retreive first result from query, the first is all we need.
++        $country_data = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
++        $overview     = $country_data->overview;
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $overview . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /**
++     * Food Security overview tab, outputted as a block.
++     *
++     * @param int $nid ID of the country taxonomy for the specific Country Page.
++     * @return array $block
++     */
++    function _wfpcp_common_block_food_security_purchasing_power($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        global $__wfpcp_common_cterm;
++
++        $sql = "SELECT c.field_purchasing_power_value AS purchase_power
++FROM {node} n
++INNER JOIN {term_node} tn ON n.vid = tn.vid
++LEFT JOIN {content_type_country_food_security} c ON n.vid = c.vid
++WHERE n.status = 1 AND n.type = 'country_food_security' AND tn.tid = %d";
++
++        // Retreive first result from query, the first is all we need.
++        $country_data = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
++        $value        = $country_data->purchase_power;
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $value . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++
++    /**
++     * Food Security reports (publications) content outputted as a block.
++     *
++     * @param int $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_food_security_reports($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        $sql = "SELECT term_data.tid FROM node
++LEFT JOIN term_node ON term_node.nid = node.nid AND term_node.vid = node.vid
++LEFT JOIN term_data ON term_data.tid = term_node.tid
++WHERE node.nid = %d AND term_data.vid = 15";
++
++        $tid = db_result(db_query($sql, $nid));
++
++        $FSA_type = array(
++            'Latest Food Security Assessments'     => array(1647, 1649, 1651, 1661, 1655, 1653, 1657, 2623),
++            'Emergency Assessments'                => array(1647),
++            'Baseline Assessments'                 => array(1649),
++            'Markets and Food Security Monitoring' => array(1651, 1661),
++            'Joint Assessments'                    => array(1655, 1653, 1657, 2623),
++        );
++
++        $odd = 0;
++        foreach ($FSA_type as $type => $ids) {
++
++            $tids = implode(', ', $ids);
++
++            $cell          = array();
++            $odd           = 1 - $odd;
++            $cell['odd']   = $odd;
++            $cell['topic'] = $type;
++
++            $sql = "SELECT node.nid, node.title
++FROM {node}
++INNER JOIN {term_node} term_node ON node.vid = term_node.vid
++LEFT JOIN {term_node} term_node2 ON node.vid = term_node2.vid
++WHERE node.status <> 0 AND
++node.type = 'publication'
++AND term_node.tid IN (" . $tids . ")
++AND term_node2.tid = %d
++ORDER BY node.created DESC
++LIMIT %d";
++
++            if ($type == 'Latest Food Security Assessments') {
++                $limit = 3;
++            } else {
++                $limit = 5;
++            }
++
++            $results = db_query($sql, $tid, $limit);
++            while ($result = db_fetch_object($results)) {
++                $cell['items'][] = l($result->title, _wfpcp_common_lg_node_url($result->nid));
++            }
++            if (isset($cell['items'])) {
++                $cell['more_link'] = l(t('Search more'), 'food-security/assessment-bank',
++                    array('attributes' => array(
++                        'class' => 'view-more'
++                    ),
++                          'query'      => "tid_6=All&tid_1=$tid" . _wfpcp_common_fsa_types($ids),
++                    )
++                );
++                $output .= theme('wfpcp_common_fsa_grid_cell', $cell);
++            }
++        }
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /**
++     * Food Security Key Indicators outputted as a block.
++     *
++     * @param int $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_food_security_key_indicators($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        $output = '';
++        $node   = node_load($nid);
++
++        if (isset($node->field_iso31661char3code[0]['value'])) {
++            $url_ext = 'http://foodprices.vam.wfp.org/default_620.aspx';
++            $iso     = strtolower($node->field_iso31661char3code[0]['value']);
++            $output  = '<iframe sandbox="allow-scripts allow-forms" src="' . $url_ext . '?iso=' . $iso . '" width="620" height="1080" frameborder="0" scrolling="no"></iframe>';
++        } else {
++            $output = 'No data currently available.';
++        }
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /**
++     * Food Security Food Prices outputted as a block.
++     *
++     * @param int $nid
++     * @return array $block
++     */
++    function _wfpcp_common_block_food_security_food_prices($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        $output = '';
++        $node   = node_load($nid);
++
++        if (isset($node->field_iso31661char3code[0]['value'])) {
++            $url_ext = 'http://foodprices.vam.wfp.org/default_620.aspx';
++            $iso     = strtolower($node->field_iso31661char3code[0]['value']);
++            $output  = '<iframe sandbox="allow-scripts allow-forms" src="' . $url_ext . '?iso=' . $iso . '" width="620" height="1080" frameborder="0" scrolling="no"></iframe>';
++        } else {
++            $output = 'No data currently available.';
++        }
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $output . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /*
++     *
++     */
++    function _wfpcp_common_block_unhas_current_operations($nid)
++    {
++        if (arg(0) == 'node' && is_numeric(arg(1))) {
++            $nid = arg(1);
++        } else {
++            return;
++        }
++
++        global $__wfpcp_common_cterm;
++        $sql = "SELECT field_body_value as unhas_operations
++FROM {node}
++INNER JOIN {term_node} ON node.vid = term_node.vid
++LEFT JOIN {content_field_body} ON node.vid = content_field_body.vid
++WHERE node.status = 1 AND node.type = 'country_logistics' AND term_node.tid = %d";
++
++        // Retreive first result from query, the first is all we need.
++        $country_data     = db_fetch_object(db_query($sql, $__wfpcp_common_cterm));
++        $unhas_operations = $country_data->unhas_operations;
++
++        $block             = array();
++        $block['content']  = '<div class="block-featured-items">' . $unhas_operations . '</div>';
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /**
++     * Food Security Types
++     */
++    function _wfpcp_common_fsa_types($tid)
++    {
++
++        if (is_array($tid) && count($tid) == 1) {
++            return '&type[]=' . implode('', $tid);
++        } else if (is_array($tid)) {
++            return '&type[]=' . implode('&type[]=', $tid);
++        }
++    }
++
++    /**
++     * return media_featured block
++     */
++    function _wfpcp_common_block_media_featured($nid)
++    {
++        global $__wfpcp_common_embed;
++
++        $block        = array();
++        $node_country = node_load($nid);
++
++        if (!empty($__wfpcp_common_embed)) {
++            $node_media     = node_load($__wfpcp_common_embed);
++            $box['subject'] = 'Now Playing';
++        } else {
++            $node_media     = node_load($node_country->field_featured_media[0]['nid']);
++            $box['subject'] = t('Featured Media');
++        }
++        if (empty($node_media)) {
++            $block['subject'] = '';
++            $block['content'] = '';
++
++            return $block;
++        }
++
++        // base info
++        $box['nid']   = $node_media->nid;
++        $box['type']  = $node_media->type;
++        $box['title'] = $node_media->title;
++        $box['date']  = date('j F Y', $node_media->created);
++
++        // if video generate flowplayer video box, otherwise just pick up image and adding some type spesific features
++        $width  = 370;
++        $height = 246; //$width * 3/4;
++
++        // Video
++        if ($node_media->type == 'video') {
++            $url = $node_media->field_video_url[0]['value'];
++            // check for thumbnail either from (1) uploaded or (2) linked
++            if (!empty($node_media->field_first_image[0]['filepath'])) {
++                $video_thumbnail = base_path() . $node_media->field_first_image[0]['filepath'];
++            } elseif (!empty($node_media->field_thumbnail_url[0]['value'])) {
++                $video_thumbnail = $node_media->field_thumbnail_url[0]['value'];
++            } else {
++                $video_thumbnail = '';
++            }
++            $video_title   = null;
++            $box['object'] = wfp_flowplayer_show($url, $width, $height, $video_thumbnail, $video_title);
++            $box['text']   = $node_media->field_body[0]['value'];
++
++            // generate add this info
++            $query = $_GET;
++            unset($query['q']);
++            $caption = $node_country->title . ' - ' . $node_media->title;
++
++            $args = array(
++                'url'     => url($_GET['q'], array('query' => $query, 'absolute' => true)),
++                'title'   => $caption,
++                'caption' => '<span>' . t('Share Video') . '</span>',
++                'top'     => '-100',
++                'left'    => '-200',
++            );
++
++            $box['add_this'] = theme('wfpcp_theme_support_add_this', $args);
++        } // Gallery
++        elseif ($node_media->type == 'photo_gallery') {
++            $img_path = $node_media->field_thumbnail[0]['filepath'] ? $node_media->field_thumbnail[0]['filepath'] : $node_media->field_photos[0]['filepath'];
++            $img_size = @getimagesize($img_path);
++            if (($img_size['0'] < $width) || ($img_size['1'] < $height)) {
++                $img_path = $node_media->field_photos[0]['filepath'];
++            }
++            $img           = theme('image', $img_path, $node_media->title, $node_media->title, array('width' => $width, 'height' => $height), false);
++            $more_url      = _wfpcp_common_lg_node_url($node_media->nid, null, null, true);
++            $url           = $more_url;
++            $box['object'] = '<a href="' . $url . '">' . $img . '</a>';
++            $box['text']   = $node_media->field_summary[0]['value'];
++            $box['more']   = l(t('See the gallery ›'), $url, array('absolute' => true));
++        }
++        // topics
++        $terms = taxonomy_node_get_terms_by_vocabulary($node_media, WFPCP_CONTENT_FLOW_VOCABULARY_ID);
++        $links = array();
++        foreach ($terms as $term) {
++            $url     = url('videos/' . $term->name, array('absolute' => true));
++            $links[] = l($term->name, $url);
++        }
++        $box['topics'] = implode(', ', $links);
++
++        // Countries
++        $terms = taxonomy_node_get_terms_by_vocabulary($node_media, WFPCP_COUNTRY_VOCABULARY_ID);
++        $links = array();
++        foreach ($terms as $term) {
++            $sql     = "SELECT DISTINCT(n.nid), n.title FROM {node} n INNER JOIN {term_node} tn ON n.vid = tn.vid WHERE tn.tid = %d AND n.type = '%s' AND n.status = 1";
++            $res     = db_query($sql, $term->tid, WFPCP_COUNTRY_CONTENT_TYPE);
++            $item    = db_fetch_object($res);
++            $url     = url('node/' . $item->nid, array('absolute' => true));
++            $links[] = l($item->title, $url);
++        }
++        $box['countries'] = implode(', ', $links);
++        $output           = theme('wfpcp_common_media_featured_box', $box);
++
++        $block['content']  = $output;
++        $block['template'] = 'block-box';
++
++        return $block;
++    }
++
++    /**
++     * return share block
++     */
++    function _wfpcp_common_block_share($nid)
++    {
++        global $base_url;
++        if (!$node = node_load($nid)) {
++            return;
++        }
++        // theme share link
++        $args  = array(
++            'url'     => url($_GET['q'], array('query' => $query, 'absolute' => true)),
++            'caption' => t('Share this page on social networks '),
++        );
++        $share = theme('wfpcp_theme_support_add_this', $args);
++
++        // Get feeds href and theme_path
++        $theme_path     = drupal_get_path('theme', WFPCP_THEME_SUPPORT_THEME);
++        $theme_path_abs = url($theme_path, array('absolute' => true));
++        $feed_href      = $base_url . '/feeds/' . $node->field_iso31661name[0]['value'];
++
++        $args = array(
++            'sub_title'   => t('Get involved with Latest News and Stories'),
++            'theme_path'  => $theme_path_abs,
++            'feed_href'   => $feed_href,
++            'feed_output' => l(theme('image', $theme_path . '/images/pic_ico_rss.png', 'RSS Feed') . 'RSS Feeds', $feed_href, array('html' => true)),
++            'share'       => $share,
++        );
++
++        $block            = array();
++        $block['subject'] = t('Subscribe & Share');
++        $block['content'] = theme('wfpcp_common_block_share', $args);
++
++        return $block;
++    }
++
++    /**
++     * Create clean id
++     * Replace all non char with "-"
++     */
++    function _wfpcp_common_gci($string)
++    {
++        $string = strtolower($string);
++        // Specific case for "Korea, Democratic People's Republic (DPRK)"
++        $string = str_replace("'s", 's', $string);
++        // Clean multiple dashes or whitespaces
++        $string = preg_replace("/[\s,.'()]+/", "-", $string);
++        // Clean multiple dashes or whitespaces
++        $string = preg_replace("/[\s-]+/", " ", $string);
++        // Convert whitespaces and underscore to dash
++        $string = preg_replace("/[\s_]/", "-", $string);
++
++        $string = trim($string, '- ');
++
++        return strtolower($string);
++    }
++
++    /**
++     * create node link point either to local node's mount point
++     * or to node's regular path
++     */
++    function _wfpcp_common_lg_node_link($nid, $tab = null, $tid = null, $force = false)
++    {
++        if ($node = node_load($nid)) {
++            $title = $node->title;
++            $url   = _wfpcp_common_lg_node_url($nid, $tab, $tid, $force);
++
++            return l($title, $url);
++        }
++    }
++
++    /**
++     * create node link's url point either to local node's mount point
++     * or to node's regular path, for local case will also create a path alias
++     * so url looks human friendly.
++     * @param $nid
++     * embedding node nid (Local/global node), it node is tagged as local it url
++     * will
++     * @param $tab
++     * mount point, may be either numeric tab id, or string tab role, if omitted
++     * content will be attempted to mount into mount point configured in the settings
++     * for this node type, and as a last resort it will be mounted to the current tab
++     * @param $tid
++     * not actually used by LGC but used by CP subsystem and present here so
++     * we can create human friendly urls for it
++     * @param $force
++     * if set to TRUE this will ignore nodes Local/Global tagging and threat node like
++     * it Local (i.e. mount it even if its not a Local node). but will not mount
++     * anything if not inside CP.
++     * @return
++     * node URL
++     */
++    function _wfpcp_common_lg_node_url($nid, $tab = null, $tid = null, $force = false, $subtab = false)
++    {
++        global $__wfpcp_common_inside, $__wfpcp_common_cnid, $__wfpcp_common_term, $__wfpcp_common_tabid, $__wfpcp_common_settings;
++
++        $node = node_load($nid);
++        $term = array_shift(taxonomy_node_get_terms_by_vocabulary($node, WFPCP_LOCAL_GLOBAL_VOCABULARY_ID));
++        // Use custom link if we inside and either nid is local or nid is empty
++        // (in last case link will point to the tab)
++
++        if ($__wfpcp_common_inside && (($term->name == 'Local') || (empty($nid)) || $force)) {
++            // Get tab to the local node
++            $tree = node_load($__wfpcp_common_cnid);
++            if (($auto_tab_role = $__wfpcp_common_settings['lg_mount'][$node->type]) && (empty($tab))) {
++                $auto_tab = array_shift(wfpcp_it_api_item_search($tree, 'role', $auto_tab_role));
++                $tab      = $auto_tab->itemid;
++            } // Search tab if not integer
++            elseif (!is_numeric($tab) && !empty($tab)) {
++                $auto_tab = array_shift(wfpcp_it_api_item_search($tree, 'role', $tab));
++                $tab      = $auto_tab->itemid;
++            }
++
++            $tab  = isset($tab) ? $tab : $__wfpcp_common_tabid;
++            $term = isset($term) ? $term : $__wfpcp_common_term;
++
++            // Generate url
++            $path = 'node/' . $__wfpcp_common_cnid . '/' . $tab;
++
++            if (!empty($tid)) {
++                $path .= '/' . $nid . '/' . $tid;
++            } elseif (!empty($nid)) {
++                $path .= '/' . $nid;
++            }
++
++            // Generate alias
++            $tab_item  = !empty($auto_tab) ? $auto_tab : wfpcp_it_api_item_load($tab);
++            $ptab_item = !empty($tab_item->parent) ? wfpcp_it_api_item_load($tab_item->parent) : null;
++            wfpcp_it_api_item_populate($tab_item);
++            if (!empty($ptab_item)) {
++                wfpcp_it_api_item_populate($ptab_item);
++                $tab_title = $ptab_item->title;
++            } else {
++                $tab_title = $tab_item->title;
++            }
++
++            $alias = 'countries/' . _wfpcp_common_gci($tree->title) . '/' . _wfpcp_common_gci($tab_title);
++
++            if ($subtab) {
++                $pieces = explode('/', $path);
++
++                // Rewrite the URL differently depending on the URL supplied.
++                if (count($pieces) == 5 && $pieces[0] == 'node' && is_numeric($pieces[3]) && is_numeric($pieces[4])) {
++                    $publications_term = taxonomy_get_term($pieces[4]);
++                    $alias .= '/' . _wfpcp_common_gci($publications_term->name);
++                } // Special pages which are formatted for Current Operations: eg. node/3507/3252/232484
++                else if (count($pieces) == 4 && $pieces[0] == 'node' && is_numeric($pieces[1]) && is_numeric($pieces[2]) && is_numeric($pieces[3])) {
++                    // We know this is an "Current Operation" so just add it.
++                    $node_loaded = node_load($pieces[3]);
++                    $alias .= '/' . _wfpcp_common_gci($tab_item->title);
++                    $alias .= '/' . _wfpcp_common_gci($node_loaded->title);
++                } // Special pages which are formatted: node/#/#/#/#, eg. node/3435/3228/0/2657
++                else if (count($pieces) == 5 && $pieces[0] == 'node' && $pieces[3] === 0 && is_numeric($pieces[4])) {
++                    $publications_term = taxonomy_get_term($pieces[4]);
++                    $alias .= '/' . _wfpcp_common_gci($publications_term->name);
++                } else {
++                    $alias .= '/' . _wfpcp_common_gci($tab_item->title);
++                }
++            }
++
++            $existing = db_result(db_query("SELECT COUNT(*) FROM {url_alias} WHERE dst = '%s'", $alias));
++            if ($existing === '0') {
++                if (!$subtab) {
++                    if (empty($nid) && empty($tid) && !empty($ptab_item->title)) {
++                        $alias .= '/' . _wfpcp_common_gci($tab_item->title);
++                    }
++                    if (!empty($node->title)) {
++                        $alias .= '/' . _wfpcp_common_gci($node->title);
++                    }
++                    $term = taxonomy_get_term($tid);
++                    if (!empty($term->name)) {
++                        $alias .= '/' . _wfpcp_common_gci($term->name);
++                    }
++                }
++                path_set_alias($path, $alias);
++            }
++        } else {
++            $path = 'node/' . $nid;
++        }
++        $final_path = url($path, array('absolute' => true));
++
++        return $final_path;
++    }
++
++    /**
++     * Get tab list for current country node
++     */
++    function _wfpcp_common_get_tab_list($node, &$active = null)
++    {
++        global $__wfpcp_common_tabid;
++
++        $tree = wfpcp_it_api_tree_load($node);
++        wfpcp_it_api_tree_populate($tree);
++        $tabs = array();
++
++        // Create tabs list
++        foreach ($tree->siblings as $itemid => $item) {
++            if (!$item->hide) {
++                $url = $item->url ? $item->url : _wfpcp_common_lg_node_url(0, $item->itemid);
++                $url = strtolower($url);
++                $id  = end(explode('/', $url));
++
++                $tabs[$item->itemid] = array(
++                    'title'  => $item->title,
++                    'url'    => $url,
++                    'active' => false,
++                    'id'     => $id,
++                    'link'   => l($item->title, $url),
++                );
++            }
++        }
++        // get active item
++        $active = wfpcp_it_api_item_load($__wfpcp_common_tabid);
++        wfpcp_it_api_item_populate($active);
++        $parent = wfpcp_it_api_item_load($active->parent);
++        wfpcp_it_api_item_populate($parent);
++
++        if (empty($active->item)) {
++            $active = array_shift($tree->siblings);
++        } else {
++            $active = !empty($parent->item) ? $parent : $active;
++        }
++        if (!empty($tabs[$active->itemid])) {
++            $tabs[$active->itemid]['active'] = true;
++            $tabs[$active->itemid]['link']   = l($tabs[$active->itemid]['title'], $tabs[$active->itemid]['url'], array('attributes' => array('class' => 'active')));
++        }
++
++        return $tabs;
++    }
++
++    /**
++     * Get subtab list for given node and toplevel tab
++     */
++    function _wfpcp_common_get_subtab_list($node, $itemid, &$active = null)
++    {
++        global $__wfpcp_common_tabid;
++
++        if (empty($itemid)) {
++            $active = null;
++
++            return array();
++        }
++
++        $tree = wfpcp_it_api_tree_load($node, $itemid);
++        wfpcp_it_api_tree_populate($tree);
++        $tabs = array();
++        $data = array();
++
++        // Create tabs list
++        foreach ($tree->siblings as $itemid => $item) {
++            // Do not display items set to hidden.
++            if (!$item->hide) {
++                $css_identifier      = 'cp-nav-' . strtolower(clean_css_identifier($item->title));
++                $url                 = $item->url ? $item->url : _wfpcp_common_lg_node_url(0, $item->itemid, null, false, true);
++                $options             = array('attributes' => array('title' => $item->title));
++                $data[$item->itemid] = array('data' => l($item->title, $url, $options), 'id' => $css_identifier);
++
++                $tabs[$item->itemid] = array(
++                    'title'  => $item->title,
++                    'url'    => $url,
++                    'id'     => $css_identifier,
++                    'active' => false,
++                );
++            }
++        }
++        // Get active item
++        $active = wfpcp_it_api_item_load($__wfpcp_common_tabid);
++        wfpcp_it_api_item_populate($active);
++
++        if (!in_array($active->itemid, array_keys($tree->siblings))) {
++            $active = array_shift($tree->siblings);
++        }
++        if (!empty($tabs[$active->itemid])) {
++            $tabs[$active->itemid]['active'] = true;
++            $options                         = array('attributes' => array('title' => $tabs[$active->itemid]['title'], 'class' => 'active'));
++
++            $data[$active->itemid] = array('data' => l($tabs[$active->itemid]['title'], $tabs[$active->itemid]['url'], $options), 'id' => $tabs[$active->itemid]['id']);
++        }
++        if (!empty($data)) {
++            $tabs['output'] = theme('item_list', $data);
++        }
++
++        return $tabs;
++    }
++
++    /**
++     * submit handler for wfpcp_common_form_menu_node_view_mode_form
++     */
++    function wfpcp_common_form_menu_node_view_mode_form_submit($form, &$form_state)
++    {
++        $values                 = $form_state['values'];
++        $vmodes                 = variable_get('wfpcp_common_view_modes', array());
++        $vmodes[$values['nid']] = array_filter($values['options']);
++        variable_set('wfpcp_common_view_modes', $vmodes);
++        drupal_set_message(t('Configuration saved.'));
++    }
++
++    /**
++     * Generate wfpcp_common_form_menu_node_view_mode_form
++     *
++     * @return
++     * drupal form
++     */
++    function wfpcp_common_form_menu_node_view_mode_form($form_state, $nid, $options = array())
++    {
++        $roles = user_roles();
++        $form  = array();
++
++        $form['info']    = array(
++            '#prefix' => '<div>',
++            '#value'  => t('Set wich roles should see modern version of the country.'),
++            '#suffix' => '</div>',
++            '#weight' => 0,
++        );
++        $form['options'] = array(
++            '#title'         => t('Roles'),
++            '#type'          => 'checkboxes',
++            '#description'   => t('Set wich roles should see modern version of the country.'),
++            '#default_value' => $options,
++            '#weight'        => 1,
++            '#required'      => false,
++            '#options'       => $roles,
++        );
++        $form['nid']     = array(
++            '#value' => $nid,
++            '#type'  => 'value',
++        );
++        $form['save']    = array(
++            '#value'  => t('Save'),
++            '#type'   => 'submit',
++            '#weight' => 2,
++        );
++
++        return $form;
++    }
++
++    /**
++     * submit handler for wfpcp_common_form_menu_node_view_mode_form
++     */
++    function wfpcp_common_form_menu_user_cp_access_form_submit($form, &$form_state)
++    {
++        $values                 = $form_state['values'];
++        $access                 = variable_get('wfpcp_common_cp_access', array());
++        $access[$values['uid']] = array_filter($values['options']);
++
++        variable_set('wfpcp_common_cp_access', $access);
++        drupal_set_message(t('Configuration saved.'));
++    }
++
++    /**
++     * generate wfpcp_common_form_menu_node_view_mode_form
++     *
++     * @return
++     * drupal form
++     */
++    function wfpcp_common_form_menu_user_cp_access_form($form_state, $uid, $options = array())
++    {
++        $terms = taxonomy_get_tree(WFPCP_COUNTRY_VOCABULARY_ID);
++
++        foreach ($terms as $term) {
++            $variants[$term->tid] = $term->name;
++        }
++
++        $form            = array();
++        $form['info']    = array(
++            '#prefix' => '<div>',
++            '#value'  => t('Set wich countries this user can administer.'),
++            '#suffix' => '</div>',
++            '#weight' => 0,
++        );
++        $form['options'] = array(
++            '#title'         => t('Countries'),
++            '#type'          => 'checkboxes',
++            '#description'   => t('Set wich countries this user can administer.'),
++            '#default_value' => $options,
++            '#weight'        => 1,
++            '#required'      => false,
++            '#options'       => $variants,
++        );
++        $form['uid']     = array(
++            '#value' => $uid,
++            '#type'  => 'value',
++        );
++        $form['save']    = array(
++            '#value'  => t('Save'),
++            '#type'   => 'submit',
++            '#weight' => 2,
++        );
++
++        return $form;
++    }
++
++    /**
++     * submit handler for wfpcp_common_form_menu_admin_settings_wfpcp_common_form
++     */
++    function wfpcp_common_form_menu_admin_settings_wfpcp_common_form_submit($form, $form_state)
++    {
++        drupal_set_message(t('WFPCP Common settings saved.'));
++        variable_set('wfpcp_common_settings', $form_state['values']['settings']);
++    }
++
++    /**
++     * generate wfpcp_common_form_menu_admin_settings_wfpcp_common_form
++     *
++     * @return
++     * drupal form
++     */
++    function wfpcp_common_form_menu_admin_settings_wfpcp_common_form($form_state, $wfpcp_common_settings = array())
++    {
++        $form                      = array();
++        $form['settings']          = array(
++            '#tree' => true,
++        );
++        $form['settings']['const'] = array(
++            '#title'       => t('Constants '),
++            '#type'        => 'fieldset',
++            '#description' => t('wfpcp_common constants, define content types and vocabularies id to use.'),
++            '#weight'      => 0,
++            '#collapsible' => true,
++            '#collapsed'   => true,
++        );
++        $const_names               = explode(', ', WFPCP_COMMON_CONSTANTS);
++        foreach ($const_names as $weigth => $name) {
++            $form['settings']['const'][$name] = array(
++                '#title'         => t($name),
++                '#type'          => 'textfield',
++                '#description'   => null,
++                '#default_value' => $wfpcp_common_settings['const'][$name],
++                '#weight'        => $weigth,
++                '#required'      => true,
++            );
++        }
++        // Default tabs macro
++        $form['settings']['def_tabs']        = array(
++            '#title'       => t('Default Tabs'),
++            '#type'        => 'fieldset',
++            '#description' => t('Default tabs settings'),
++            '#weight'      => 0,
++            '#collapsible' => true,
++            '#collapsed'   => true,
++        );
++        $form['settings']['def_tabs']['php'] = array(
++            '#title'         => t('PHP function'),
++            '#type'          => 'textarea',
++            '#description'   => t('Enter function code that will return array of default tabs.'),
++            '#default_value' => $wfpcp_common_settings['def_tabs']['php'],
++            '#weight'        => 0,
++            '#required'      => false,
++            '#rows'          => 30,
++        );
++
++        // Mount points for local content
++        $types = node_get_types();
++        $voc   = taxonomy_vocabulary_load(WFPCP_LOCAL_GLOBAL_VOCABULARY_ID);
++
++        $form['settings']['lg_mount'] = array(
++            '#title'       => t('Local/Global content mount points'),
++            '#type'        => 'fieldset',
++            '#description' => t('Specify country tab`s roles where apropriate content types should be mounted if they are %local. <br />
++    <b>IMPORTANT: Tab must have a role in order to be recognised as mount point! </b>', array('%local' => 'Local')),
++            '#weight'      => 0,
++            '#collapsible' => false,
++            '#collapsed'   => false,
++        );
++        foreach ($voc->nodes as $type) {
++            $form['settings']['lg_mount'][$type] = array(
++                '#title'         => t('Tab role for %type', array('%type' => $types[$type]->name)),
++                '#type'          => 'textfield',
++                '#description'   => null,
++                '#default_value' => $wfpcp_common_settings['lg_mount'][$type],
++                '#weight'        => 0,
++                '#required'      => false,
++            );
++        }
++
++        // Custom path counted as local
++        $form['settings']['ajax_path'] = array(
++            '#title'         => t('AJAX/AHAH Path'),
++            '#type'          => 'textarea',
++            '#description'   => t('Specify starting path parts to AJAX/AHAH callbacks that may be threated as they inside country page, each one from new line. <br><b>DO NOT PUT REGULAR PATH HERE!</b>'),
++            '#default_value' => $wfpcp_common_settings['ajax_path'],
++            '#weight'        => 0,
++            '#required'      => false,
++        );
++        $form['save']                  = array(
++            '#value'  => t('Save'),
++            '#type'   => 'submit',
++            '#weight' => 0,
++        );
++
++        return $form;
++    }
++
++    /**
++     * access replacement for 'node/%node/edit'
++     */
++    function wfpcp_common_menu_node_edit_access($op, $node)
++    {
++        global $user;
++
++        // Deny acces to node editing if user is not this country editor
++        if ($node->type == WFPCP_COUNTRY_CONTENT_TYPE) {
++            $terms     = taxonomy_node_get_terms_by_vocabulary($node, WFPCP_COUNTRY_VOCABULARY_ID);
++            $tid       = array_shift(array_keys($terms));
++            $access    = variable_get('wfpcp_common_cp_access', array());
++            $countries = $access[$user->uid];
++            if (!empty($countries) && is_array($countries)) {
++                $permit = in_array($tid, $countries);
++            } else {
++                $permit = false;
++            }
++        } else {
++            $permit = true;
++        }
++
++        return (($permit || user_access('administer country pages')) && node_access($op, $node));
++    }
++
++    /**
++     * menu page callback for 'admin/settings/wfpcp_common'
++     *
++     * @return
++     * html: wfpcp settings page
++     */
++    function wfpcp_common_menu_admin_settings_wfpcp_common()
++    {
++        global $__wfpcp_common_settings;
++
++        return drupal_get_form('wfpcp_common_form_menu_admin_settings_wfpcp_common_form', $__wfpcp_common_settings);
++    }
++
++    /**
++     * menu access callback 'node/%node/view_mode'
++     *
++     * @return void
++     */
++    function wfpcp_common_menu_node_view_mode_access($node)
++    {
++        return (user_access('administer country pages') && isset($node->type) && ($node->type == WFPCP_IT_CONTENT_TYPE));
++    }
++
++    /**
++     * menu page callback 'node/%node/view_mode'
++     */
++    function wfpcp_common_menu_node_view_mode_callback($node)
++    {
++        $vmodes = variable_get('wfpcp_common_view_modes', array());
++
++        return drupal_get_form('wfpcp_common_form_menu_node_view_mode_form', $node->nid, $vmodes[$node->nid]);
++    }
++
++    /**
++     * menu access callback 'user/%user/cp_access'
++     */
++    function wfpcp_common_menu_user_cp_access_access($user)
++    {
++        return user_access('administer country pages editors');
++    }
++
++    /**
++     * menu page callback 'user/%user/cp_access'
++     */
++    function wfpcp_common_menu_user_cp_access_callback($user)
++    {
++        $access = variable_get('wfpcp_common_cp_access', array());
++
++        return drupal_get_form('wfpcp_common_form_menu_user_cp_access_form', $user->uid, $access[$user->uid]);
++    }
++
++    /**
++     * Implementation of hook_perm();
++     */
++    function wfpcp_common_perm()
++    {
++        return array(
++            'config country pages', 'administer country pages', 'administer country pages editors'
++        );
++    }
++
++    /**
++     * Alter ol2 maps
++     */
++    function wfpcp_common_openlayers_map_alter(&$map)
++    {
++        global $__wfpcp_common_inside, $__wfpcp_common_cnid;
++        /** ======= shortcut if not inside */
++        if (!$__wfpcp_common_inside) {
++            return;
++        }
++
++        // Get country node
++        $node = node_load($__wfpcp_common_cnid);
++        // Set zoom level
++        module_load_include('inc', 'wfpcp_common', 'wfpcp_common.area');
++        $area = wfpcp_common_area($node->field_iso31661char2code[0]['value']);
++        $zoom = array(
++            '0' => '100000000',
++            '1' => '100000000',
++            '2' => '24000000',
++            '3' => '8000000',
++            '4' => '2000000',
++            '5' => '500000',
++            '6' => '200000',
++            '7' => '100000',
++            '8' => '50000',
++            '9' => '-1'
++        );
++        $size = 0;
++        while ($zoom[$size] > $area) {
++            $size++;
++        }
++        // set center point
++        if ($map['id'] == 'openlayers-map-auto-id-0') {
++            $map['center']['initial']['centerpoint'] = $node->field_longitude[0]['value'] . ' , ' .
++                $node->field_latitude[0]['value'];
++            $map['center']['initial']['zoom']        = $size - 1;
++        }
++        // set features description
++        foreach ($map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'] as $key => $item) {
++            if (empty($item['wkt'])) {
++                unset($map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'][$key]);
++            } else {
++                $item_node                                                                                        = node_load($item['attributes']['description']);
++                $desc                                                                                             = theme('wfpcp_common_ol2_maps_description', $item_node);
++                $map['layers']['wfpcp_ol2_maps_data_openlayers_1']['features'][$key]['attributes']['description'] = $desc;
++            }
++        }
++    }
++
++    /**
++     * save all wfpcp_common variables in session for current URI
++     * for future use in ajax pages
++     */
++    function _wfpcp_common_info_save()
++    {
++        global $custom_theme,
++               $__wfpcp_common_inside,
++               $__wfpcp_common_cnid,
++               $__wfpcp_common_cterm,
++               $__wfpcp_common_tabid,
++               $__wfpcp_common_embed,
++               $__wfpcp_common_term,
++               $__wfpcp_common_active,
++               $__wfpcp_common_settings;
++
++        $key = request_uri();
++
++        $info                                     = array(
++            'custom_theme' => $custom_theme,
++            'inside'       => $__wfpcp_common_inside,
++            'cnid'         => $__wfpcp_common_cnid,
++            'cterm'        => $__wfpcp_common_cterm,
++            'tabid'        => $__wfpcp_common_tabid,
++            'embed'        => $__wfpcp_common_embed,
++            'term'         => $__wfpcp_common_term,
++            'active'       => $__wfpcp_common_active,
++//    'settings' => $__wfpcp_common_settings,
++        );
++        $_SESSION['__wfpcp_common']['info'][$key] = $info;
++
++        if (!isset($_SESSION['__wfpcp_common']['default_php'])) {
++            $_SESSION['__wfpcp_common']['default_php'] = $__wfpcp_common_settings;
++        }
++    }
++
++    /**
++     * restore all wfpcp_common variables from session
++     */
++    function _wfpcp_common_info_restore()
++    {
++        global $custom_theme,
++               $__wfpcp_common_inside,
++               $__wfpcp_common_cnid,
++               $__wfpcp_common_cterm,
++               $__wfpcp_common_tabid,
++               $__wfpcp_common_embed,
++               $__wfpcp_common_term,
++               $__wfpcp_common_active,
++               $__wfpcp_common_settings;
++
++        $key   = $_SERVER["HTTP_REFERER"];
++        $parts = explode('/', $key);
++        unset($parts[0], $parts[1], $parts[2]);
++        $key = '/' . implode('/', $parts);
++
++        if ($info = $_SESSION['__wfpcp_common']['info'][$key]) {
++            $custom_theme          = $info['custom_theme'];
++            $__wfpcp_common_inside = $info['inside'];
++            $__wfpcp_common_cnid   = $info['cnid'];
++            $__wfpcp_common_cterm  = $info['cterm'];
++            $__wfpcp_common_tabid  = $info['tabid'];
++            $__wfpcp_common_embed  = $info['embed'];
++            $__wfpcp_common_term   = $info['term'];
++            $__wfpcp_common_active = $info['active'];
++//    $__wfpcp_common_settings = $info['settings'];
++        }
++
++        if (isset($_SESSION['__wfpcp_common']['default_php'])) {
++            $__wfpcp_common_settings = $_SESSION['__wfpcp_common']['default_php'];
++        }
++    }
+diff --git a/sites/default/modules/wfp_global/wfp_global.module b/sites/default/modules/wfp_global/wfp_global.module
+index 1c2d18e..e63feab 100644
+--- a/sites/default/modules/wfp_global/wfp_global.module
++++ b/sites/default/modules/wfp_global/wfp_global.module
+@@ -215,6 +215,164 @@ function wfp_global_perm() {
+   return array('section_careers_editor');
+ }
+ 
++
++/**
++ * Implementation of hook_form_alter().
++ */
++function wfp_global_form_alter(&$form, &$form_state, $form_id) {
++  switch ($form_id) {
++    case 'views_exposed_form':
++      $form['#attributes'] = array('class' => 'pure-form');
++    break;
++  }
++}
++
++/**
++ * Implementation of views_pre_render().
++ */
++function wfp_global_views_pre_render(&$view) {
++  switch ($view->name) {
++    case 'operations_list':
++      if ($view->current_display === 'page_1') {
++        foreach ($view->result as $operations) {
++          $country_terms = wfp_global_get_country_terms_by_node($operations->nid);
++          $operations_terms = wfp_global_get_terms_by_node($operations->nid, WFP_GLOBAL_OPERATIONS_VOCABULARY);
++          $country = wfp_global_get_taxonomy_terms_name($country_terms);
++          $operation = wfp_global_get_taxonomy_terms_name($operations_terms);
++          $operations->icons = wfp_global_region_icons_render($country);
++          $operations->operation_type = $operation;
++          $operations->country_type = $country;
++        }
++      }
++    break;
++  }
++}
++
++/**
++ * Get terms by node object.
++ *
++ * @author lashab
++ *
++ * @param integer $nid
++ *   Node id.
++ * @param integer $vid
++ *   Vocabylary id.
++ * @param string $key
++ *   Term tid. 
++ * 
++ * @return array.
++ *   Terms by node.
++ */
++function wfp_global_get_terms_by_node($nid, $vid, $key = 'tid') {
++  $node = node_load($nid);
++  $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid, $key);
++  return $terms;
++}
++
++/**
++ * Get country terms by node object.
++ *
++ * @author lashab
++ *
++ * @param integer $nid
++ *   Node id.
++ * 
++ * @return array.
++ *   Country terms by node.
++ */
++function wfp_global_get_country_terms_by_node($nid) {
++  return wfp_global_get_terms_by_node($nid, WFP_GLOBAL_COUNTRIES_VOCABULARY);
++}
++
++/**
++ * Get all country regions.
++ *
++ * @author lashab
++ *
++ * @return array.
++ *   Country regions
++ */
++function wfp_global_get_country_regions() {
++  $regions = taxonomy_get_tree(WFP_GLOBAL_COUNTRY_REGIONS);
++  return $regions;
++}
++
++/**
++ * Get region by country
++ *
++ * @author lashab
++ *
++ * @param string $country
++ *   Country name.
++ * 
++ * @return string.
++ *   Region name.
++ */
++function wfp_global_get_region_by_country($country) {
++  $region = custompage_view_tile('country_from_term', FALSE, 'page_1', $country);
++  return $region;
++}
++
++function wfp_global_region_icons_render($country) {
++  $region = wfp_global_get_region_by_country($country);
++  $regions = wfp_global_get_taxonomy_terms_name(wfp_global_get_country_regions());
++  
++  foreach ($regions as $key => $region_) {
++    if(strstr($region, $region_)) {
++      $region_class = preg_replace('/\s+/', '-', $region_);
++      $region_class = drupal_strtolower($region_class);
++    }
++  }
++  $icons = $region_class 
++    ? theme('image', sprintf('%s/%s.gif', WFP_GLOBAL_WFP_ORG_IMAGE_ICONS, $region_class), $region_class, $region_class)
++     : theme('image', sprintf('%s/wfp.gif', WFP_GLOBAL_WFP_ORG_IMAGE_ICONS), 'WFP', 'WFP');
++     
++  return $icons;
++}
++
++/**
++ * Get taxonomy terms name.
++ *
++ * @author lashab
++ *
++ * @param array $terms
++ *   Taxonomy terms.
++ * 
++ * @return array.
++ *   Taxonomy terms name.
++ */
++function wfp_global_get_taxonomy_terms_name($terms) {
++  $terms = array_values($terms);
++  $terms = array_map(function($term) {
++    return $term->name;
++  }, $terms);
++  
++  return count($terms) > 1 ? $terms : $terms[0];
++}
++
++/**
++ * Query for getting country term using country code (ISO2).
++ *
++ * @author string lashab
++ * 
++ * @param string $code
++ *   Country iso2 code.
++ *
++ * @return string
++ *    SQL string.
++ */
++function wfp_global_country_query($code) {
++  $query = "SELECT node.nid AS nid, term_data.tid AS term_data_tid FROM {node} node
++    LEFT JOIN {term_node} term_node ON node.vid = term_node.vid
++    LEFT JOIN {term_data} term_data ON term_node.tid = term_data.tid
++    LEFT JOIN {content_type_country} node_data_field_iso31661char2code
++      ON node.vid = node_data_field_iso31661char2code.vid
++        WHERE (term_data.vid in ('15'))
++          AND (node_data_field_iso31661char2code.field_iso31661char2code_value = '%s')";
++
++  return sprintf($query, $code);
++}
++
+ /**
+  * Set wfp_org theme.
+  *
+diff --git a/sites/default/modules/wfp_ia/wfp_ia.module b/sites/default/modules/wfp_ia/wfp_ia.module
+index cd54459..7bbb7f5 100644
+--- a/sites/default/modules/wfp_ia/wfp_ia.module
++++ b/sites/default/modules/wfp_ia/wfp_ia.module
+@@ -1,12 +1,49 @@
+ <?php
+ 
++define('WFP_IA_STRUCTURE_MENU', 'menu-structure');
++define('WFP_IA_COUNTRY_STRUCTURE_MENU', 'menu-structure-country');
++
++/**
++ * Implementation of hook_init().
++ */
+ function wfp_ia_init() {
+-  if (arg(0) == 'node' && _use_new_theme(arg(1) && arg(2) !== 'edit')) {
+-    global $custom_theme;
+-    $custom_theme = 'wfp_org';
++  if (wfp_ia_menu_is_structure()) {
++    wfp_global_wfp_org_theme();
+   }
+ }
+ 
++/**
++ * Determine Whether the page is under structure menu.
++ *
++ * @author lashab
++ *
++ * @return boolean
++ *
++ */
++function wfp_ia_menu_is_structure() {
++  $menus = array(
++    WFP_IA_STRUCTURE_MENU,
++    WFP_IA_COUNTRY_STRUCTURE_MENU,
++  );
++  $tree = array();
++  //Get current menu.
++  $item = menu_get_item();
++  //Get structure menu.
++  foreach ($menus as $menu) {
++    $menu_tree = menu_tree_page_data($menu);
++    //Trees recursive
++    _wfp_ia_menu_tree_recursive($menu_tree, $tree);
++  }
++  //Get all the hrefs including childrens
++  $hrefs = $tree['href'];
++  //If current path is found in array
++  //The page is under structure menu.
++  if (in_array($item['href'], $hrefs)) {
++    return TRUE;
++  }
++  return FALSE;
++}
++
+ function wfp_ia_preprocess_page(&$vars) {
+   $tree = _extract_needed_menu(menu_tree_all_data('menu-structure'));
+   if (!empty($tree)) {
+@@ -54,6 +91,17 @@ function wfp_ia_preprocess_node(&$vars) {
+   }
+ }
+ 
++function _wfp_ia_menu_tree_recursive($trees, &$tree) {
++  foreach($trees as $key => $value){
++    if(is_array($value)){
++      _wfp_ia_menu_tree_recursive($value, $tree);
++    } 
++    else {
++      $tree[$key][] = $value;
++    }
++  }
++}
++
+ function _menu_tree_walk(&$tree, &$neededMenu) {
+   foreach ($tree as $key => $node) {
+     if ($node['link']['in_active_trail']) {
+@@ -70,14 +118,9 @@ function _extract_needed_menu(&$tree) {
+   $neededMenu   = array();
+   menu_tree_add_active_path($tree);
+   _menu_tree_walk($tree, $neededMenu);
+-
+   return $neededMenu;
+ }
+ 
+-function _use_new_theme($nid) {
+-  return count(_extract_needed_menu(menu_tree_all_data('menu-structure'))) > 0;
+-}
+-
+ function _tree_to_path($tree) {
+   $arr = array();
+   $search = array(array_shift($tree));
+@@ -92,7 +135,6 @@ function _tree_to_path($tree) {
+       $search = array_merge($search, array_values($below));
+     }
+   }
+-
+   return $arr;
+ }
+ 
+@@ -104,7 +146,7 @@ function _tree_to_class($tree, $title) {
+   while (!empty($search)) {
+     $item  = array_shift($search);
+     $below = NULL;
+-    if ($item['link']['in_active_trail']) {
++    if (true || $item['link']['in_active_trail']) {
+       $arr[] = array('title' => $item['link']['title'], 'class' => $item['link']['options']['attributes']['class']);
+     }
+     $below = $item['below'];
+@@ -114,7 +156,7 @@ function _tree_to_class($tree, $title) {
+     }
+   }
+   foreach ($arr as $key => $value) {
+-    if ($value['title'] == $title) {
++    if (true || $value['title'] == $title) {
+       $class = $value['class'];
+     }
+   }
+diff --git a/sites/default/modules/wfp_widgets/wfp_widgets.module b/sites/default/modules/wfp_widgets/wfp_widgets.module
+index 7e22a63..58df211 100644
+--- a/sites/default/modules/wfp_widgets/wfp_widgets.module
++++ b/sites/default/modules/wfp_widgets/wfp_widgets.module
+@@ -186,7 +186,13 @@ function wfp_widgets_theme($existing, $type, $theme, $path) {
+       ),
+       'path' => WFP_WIDGETS_TEMPLATE_PATH,
+     ),
+-
++    'operations' => array(
++      'template' => 'widget_operations',
++      'arguments' => array(
++        'operations' => array(),
++      ),
++      'path' => WFP_WIDGETS_TEMPLATE_PATH,      
++    ),
+   );
+ }
+ 
+@@ -281,8 +287,9 @@ function wfp_widgets_filter_tips($delta, $format, $long = FALSE) {
+     return t('[quote|quote text] to embed a quote. Example: [quote|Gravitation is not responsible for people falling in love. Albert Einstein]');
+   case 9:
+     return t('[vacancies|type|filter|title_string|empty_string] to add a Vacancies. Example: [vacancies|staffnet|intprof|Available vacancies:|Sorry, there are no vacancies at this moment.]');
++  case 10:
++    return t('[operations|type|country] to add operations. Examples: [operations], [operations|emop], [operations||sy], [operations|emop|sy]');
+   }
+-
+ }
+ 
+ /**
+@@ -303,6 +310,7 @@ function wfp_widgets_filter($op, $delta = 0, $format = -1, $text = '', $cache_id
+         7 => t('Photo Collection Filter'),
+         8 => t('Styled Quote Filter'),
+         9 => t('Vacancies Filter'),
++        10 => t('Operations Filter'),
+       );
+     case 'no cache':
+       break;
+@@ -328,6 +336,8 @@ function wfp_widgets_filter($op, $delta = 0, $format = -1, $text = '', $cache_id
+         return t('[quote|quote text] to embed a quote. Example: [quote:"Gravitation is not responsible for people falling in love. Albert Einstein"]');
+       case 9:
+         return t('[vacancies|type|filter|title_string|empty_string] to add a Vacancies. Example: [vacancies|staffnet|intprof|Available vacancies:|Sorry, there are no vacancies at this moment.]');
++      case 10: 
++        return t('[operations|type|country] to add operations. Examples: [operations], [operations|emop], [operations||sy], [operations|emop|sy]');
+       }
+       break;
+     case 'process':
+@@ -352,6 +362,8 @@ function wfp_widgets_filter($op, $delta = 0, $format = -1, $text = '', $cache_id
+         return _wfp_widgets_process($text);
+       case 9:
+         return _wfp_widgets_process($text);
++      case 10: 
++        return _wfp_widgets_process($text);
+       default:
+         return $text;
+       }
+@@ -367,6 +379,7 @@ function wfp_widgets_filter($op, $delta = 0, $format = -1, $text = '', $cache_id
+       case 7:
+       case 8:
+       case 9:
++      case 10:
+         break;
+       default:
+         return;
+@@ -403,6 +416,7 @@ function _wfp_widgets_process($text) {
+     'photo-collection'         => '_wfp_widgets_photos_collection',
+     'quote'                    => '_wfp_widgets_quote',
+     'vacancies'                => '_wfp_widgets_vacancies',
++    'operations'               => '_wfp_widgets_operations',
+   );
+   if (preg_match_all(WFP_WIDGETS_PATTERN, $text, $matches)) {
+     foreach ($matches[1] as $key => $match) {
+@@ -863,6 +877,148 @@ function _wfp_widgets_vacancies($text, $vacancies, $replace, $widget) {
+ }
+ 
+ /**
++ * Widget - Operations.
++ *
++ * @author lashab
++ *
++ * @param string $text
++ *   Formatted full body text.
++ * @param array $operations
++ *   Operations arguments.
++ * @param string $replace
++ *   Matched string that needs to be replaced.
++ *
++ * @return string
++ *   Replaced string token.
++ */
++function _wfp_widgets_operations($text, $operations, $replace) {
++  $terms = array();
++  $types = array();
++  //Get operations vocabulary tree.
++  $operations_tree = taxonomy_get_tree(WFP_GLOBAL_OPERATIONS_VOCABULARY);
++  //Get countries vocabulary tree.
++  $countries_tree = taxonomy_get_tree(WFP_GLOBAL_COUNTRIES_VOCABULARY);
++  //Loop through operations vocabulary and map the term
++  foreach ($operations_tree as $operations_tree) {
++    $keys = explode('(', $operations_tree->name);
++    $keys = explode(')', $keys[1]);
++    $types[drupal_strtolower($keys[0])] = $operations_tree->tid;
++  }
++  //Check wheather operation arguments exists.
++  //If not get all the country terms tid.
++  if ($operations) {
++    $operations = array_values(array_filter($operations));
++    if (count($operations) > 1) {
++      $terms['operation_types'][] = $operations[0];
++      $terms['country_types'][] = $operations[1];
++    }
++    else {
++      $terms['operation_types'][] = $operations[0];
++    }
++  }
++  else {
++    $terms['operation_types'] = array_map(function($country) {
++      return $country->tid;
++    }, $countries_tree);
++  }
++
++  //Loop through terms.
++  //Put each value into single quotes.
++  //If term is operation type repalce it with appropriate tid.
++  //If term is country type replace it with appropriate tid.
++  array_walk($terms, function(&$terms) use ($types) {
++    foreach ($terms as $key => $term) {
++      $type_keys = array_keys($types);
++      if (in_array($term, $type_keys)) {
++        $terms[$key] = sprintf("'%d'", $types[$term]);
++      }
++      else if (is_string($term) && mb_strlen($term) === 2){
++        $query = wfp_global_country_query($term);
++        $result = db_query($query);
++        $row = db_fetch_object($result);
++        $terms[$key] = sprintf("'%d'", $row->term_data_tid);
++      }
++      else {
++        $terms[$key] = sprintf("'%d'", $term);
++      }
++    }
++  });
++  
++  $operation_types = implode(',', $terms['operation_types']);
++  $country_types = implode(',', $terms['country_types']);
++  
++  $rows = array();
++  //Get Operations.
++  $query = _wfp_widgets_operations_query($operation_types, $country_types);
++  $result = db_query($query);
++  while ($operation = db_fetch_object($result)) {
++    //Get path alias for each operations using nid.
++    $path = drupal_get_path_alias('node/' . $operation->nid);
++    //Setting operations ID.
++    $number = floor($operation->node_data_field_id_field_id_value);
++    //Pushing necessary fields into array.
++    //Then use it in theme_table().
++    $rows[] = array(
++      $number ? $number : '<span class="zero-number">&mdash;</span>',
++      l($operation->node_title, $path),
++      $operation->term_type, 
++    );
++  }
++  
++  if ($rows && is_array($rows)) {
++    //Table header values.
++    $headers = array(
++      'Number',
++      'Title',
++      'Type',
++    );
++    //Preparing replacement.
++    $replacement = theme('table', $headers, $rows, array('class' => 'widget-operations'));
++  }
++  //Replace widget string with html table.
++  return _widgets_token_replace($replace, $replacement, $text);
++}
++
++/**
++ * Query for getting operations.
++ *
++ * @author lashab
++ *
++ * @param array $operation_types
++ *   Operation types.
++ * @param array $operation_countries
++ *   Country types.
++ *
++ * @return string
++ *   SQL Query string.
++ */
++function _wfp_widgets_operations_query($operation_types, $operation_countries = array()) {
++  $concat = NULL;
++  $concat .= sprintf(' AND (term_node.tid IN (%s))', $operation_types);
++  if ($operation_countries) {
++    $concat .= sprintf(' AND (term_node2.tid IN (%s))', $operation_countries);
++  }  
++  $concat .= ' GROUP BY node_data_field_id_field_id_value ORDER BY node_data_field_id_field_id_value ASC';
++  
++  $query = "SELECT node.nid AS nid, 
++    node.title AS node_title, 
++    node_data_field_id.field_id_value AS node_data_field_id_field_id_value, 
++    node.type AS node_type, 
++    node.vid AS node_vid, 
++    term_data.name AS term_type 
++    FROM {node} node  
++    LEFT JOIN {term_node} term_node ON node.vid = term_node.vid
++    LEFT JOIN {term_data} term_data ON term_data.tid IN (SELECT term_node.tid FROM {term_node} INNER JOIN {term_data} ON term_node.tid = term_data.tid WHERE term_node.nid = node.nid and term_data.vid = 7)
++    LEFT JOIN {term_node} term_node2 ON node.vid = term_node2.vid
++    LEFT JOIN {content_type_operation} node_data_field_id ON node.vid = node_data_field_id.vid 
++    WHERE (node.status = 1) 
++      AND (node.type in ('operation')) 
++        AND (term_data.vid in ('7','15'))" . $concat;
++           
++  return $query;
++}
++
++/**
+  * Widget - Vacancies parser.
+  *
+  * @author lashab
+@@ -878,7 +1034,6 @@ function _wfp_widgets_vacancies($text, $vacancies, $replace, $widget) {
+ function _wfp_widgets_vacancies_object($path, $options = array()) {
+   $url = url($path, $options);
+   $result = drupal_http_request($url);
+-  // return json_decode(utf8_decode($result->data), TRUE);
+   return json_decode($result->data, TRUE);
+ }
+ 
+@@ -1049,4 +1204,4 @@ function wfp_widgets_tokens_hide($text) {
+  */
+ function _widgets_node_check($node, $type) {
+   return $node && $node->type === $type ? TRUE : FALSE;
+-}
++}
+\ No newline at end of file
+diff --git a/sites/default/themes/wfp_mobile/templates/page/page.tpl.php b/sites/default/themes/wfp_mobile/templates/page/page.tpl.php
+index d147b6c..4d76c2d 100755
+--- a/sites/default/themes/wfp_mobile/templates/page/page.tpl.php
++++ b/sites/default/themes/wfp_mobile/templates/page/page.tpl.php
+@@ -208,11 +208,9 @@
+   </div><!-- /#page -->
+   <?php print $closure; ?>
+   
+-  <?php 
+-  if (isset($gawfpfooter)){
+-    print $gawfpfooter;
+-  }
+-  ?>
++<?php if ($google_analytics): ?>
++  <?php print $google_analytics; ?>
++<?php endif; ?>
+   
+ </body>
+ </html>
+diff --git a/sites/default/themes/wfp_org/css/style.css b/sites/default/themes/wfp_org/css/style.css
+index 0a8ed5d..fef689c 100644
+--- a/sites/default/themes/wfp_org/css/style.css
++++ b/sites/default/themes/wfp_org/css/style.css
+@@ -616,7 +616,6 @@ a:hover {
+     View Styles
+    ========================================================================== */
+ .view .views-row { margin: 5px 0;}
+-.view .view-edit-menu-left .tabs {float: left;}
+ .view-filters {
+   border: 1px solid #E5E5E5;
+   border-left: none;
+@@ -629,6 +628,31 @@ a:hover {
+ .view .item-list .pager li {
+   display: inline;
+ }
++.view .item-list .pager li.pager-current,
++.view .item-list .pager li a{
++  padding: 6px 12px;
++  color: #337AB7;
++  float: left;
++  text-decoration: none;
++  background-color: #FFF;
++  border: 1px solid #DDD;
++}
++.view .item-list .pager li a:hover {background-color: #E8E8EF}
++.view .item-list .pager li.pager-current {
++  background-color: #E8E8EF;
++}
++.view .item-list .pager li.pager-ellipsis {display: none;}
++
++
++/* ==========================================================================
++    Operations View List page.
++   ========================================================================== */
++.operations {
++  padding: 15px 0 15px 0;
++  border-bottom: 1px solid #E5E5E5;
++}
++.operations .operations-icon {margin: 5px 0 0 0;}
++.operations .operations-type {font-size: small;}
+ 
+ /* ==========================================================================
+    Media Queries
+diff --git a/sites/default/themes/wfp_org/template.php b/sites/default/themes/wfp_org/template.php
+index 5938835..c84a733 100644
+--- a/sites/default/themes/wfp_org/template.php
++++ b/sites/default/themes/wfp_org/template.php
+@@ -32,7 +32,6 @@ function phptemplate_preprocess_page(&$variables) {
+   $head = preg_replace('/<script(.|\s)+?src\=".+?maps.google.com.+?"(.|\s)+?><\/script>/', '', $head);
+ 
+   $variables['head'] = $head;
+-
+ }
+ 
+ /**
+@@ -74,4 +73,16 @@ function phptemplate_menu_tree($tree) {
+ 
+   $html  =  "<ul class='menu level-$i'>" . $tree . '</ul>';
+   return $html;
++}
++
++/**
++ * Implementation of hook_preprocess_views_view().
++ */
++function wfp_org_preprocess_views_view(&$vars) {
++  //Theming views admin links
++  $links = $vars['admin_links_raw'];
++  $vars['admin_links'] = theme('links', $links, array('class' => 'tabs primary'));
++  if ($attachment_after = wfp_section_menu()) {
++    $vars['attachment_after'] = $attachment_after;
++  }
+ }
+\ No newline at end of file
+diff --git a/sites/default/themes/wfp_org/templates/page/page.tpl.php b/sites/default/themes/wfp_org/templates/page/page.tpl.php
+index f029999..21c2761 100644
+--- a/sites/default/themes/wfp_org/templates/page/page.tpl.php
++++ b/sites/default/themes/wfp_org/templates/page/page.tpl.php
+@@ -156,7 +156,7 @@
+ <div class="band">
+   <div class="pure-g wrapper">
+   <?php if ($breadcrumbs): ?>
+-    <div class="pure-u-1 <?php if ($breadcrumbs && $tabs): ?> <?php print 'pure-u-sm-1-2'; ?> <?php elseif ($breadcrumbs && $section_links): ?><?php print 'pure-u-sm-1-3'; ?><?php endif; ?>">
++    <div class="pure-u-1 <?php if ($breadcrumbs && $tabs): ?> <?php print 'pure-u-sm-1-2'; ?> <?php endif; ?>">
+       <?php print $breadcrumbs; ?>
+     </div>
+   <?php endif; ?>
+@@ -165,11 +165,6 @@
+       <?php print($tabs) ?>
+     </div>
+   <?php endif ?>
+-  <?php if($section_links): ?>
+-    <div class="pure-u-1 pure-u-md-2-3 edit-menu">
+-      <?php print $section_links; ?>    
+-    </div>
+-  <?php endif; ?>
+   </div>
+ </div>
+ <?php endif;?>
+diff --git a/sites/default/themes/wfp_org/wfp_org.info b/sites/default/themes/wfp_org/wfp_org.info
+index ea3df02..e73bd6e 100644
+--- a/sites/default/themes/wfp_org/wfp_org.info
++++ b/sites/default/themes/wfp_org/wfp_org.info
+@@ -8,3 +8,34 @@ stylesheets[all][] = "css/header.css"
+ stylesheets[all][] = "css/style.css"
+ scripts[] = "js/header.js"
+ scripts[] = "js/global.js"
++
++regions[left] = Left Sidebar
++regions[right] = Right Sidebar (legacy)
++regions[sidebar_right] = Right Sidebar
++regions[sidebar_content_flow] = Section (content-flow driven) Pages Sidebar
++regions[sidebar_topic_page] = Topic Pages Sidebar
++regions[sidebar_site_page] = Site Pages Sidebar
++regions[sidebar_country_detail] = Country Detail Page Sidebar (Bottom Part)
++regions[sidebar_homepage] = Home Page Sidebar
++regions[sidebar_howtohelp] = How To Help Sidebar
++regions[sidebar_ourwork] = Our Work Sidebar
++regions[sidebar_operation_detail_page] = Operations Detail Page Sidebar
++regions[sidebar_web_story_page] = Web Story Page Sidebar
++regions[sidebar_press_release_page] = Press Release Page Sidebar
++regions[sidebar_operation_type] = Operation Type Page Sidebar
++regions[content] = Content
++regions[homepage_top_right] = Home Page Top Right
++regions[homepage_top_left] = Home Page Top Left
++regions[homepage_middle_right] = Home Page Middle Right
++regions[homepage_middle_left] = Home Page Middle Left
++regions[homepage_center] = Home Page Center
++regions[news_right] = News Right Sidebar
++regions[content_operations_page] = Operations Page Content
++regions[news_type_page_content] = News Page Content Area
++regions[sidebar_aboutwfp] = About WFP Sidebar
++regions[sidebar_contacts] = Contact Page Sidebar
++regions[sidebar_celebrities] = Celebrities Page Sidebar
++regions[sidebar_celebrity_detail] = Celebrities Detail Page Sidebar
++regions[sidebar_1billion_hungry] = A Billion for a Billion Sidebar
++regions[sidebar_donate_campaign] = Donate Campaign Page Sidebar
++regions[footer_region] = Footer
+\ No newline at end of file
