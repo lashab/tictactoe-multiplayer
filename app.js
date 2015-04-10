@@ -13,6 +13,7 @@ var io = require('socket.io')(server);
 var config = require('config');
 var cookieParser = require('cookie-parser');
 var database = require('mongodb').MongoClient;
+var debug = require('debug')('app');
 
 var Routes = require(join(__dirname, 'app/routes'));
 var Game = require(join(__dirname, 'app/models/game'));
