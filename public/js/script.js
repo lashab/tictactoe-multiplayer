@@ -1,10 +1,18 @@
-(function($) {
+;(function($) {
   'use strict';
 
+  /**
+   * Game constructor.
+   *
+   * @param <Object> canvas
+   */
   var Game = function(canvas) {
-    this.__canvas = new fabric.Canvas(canvas);
-    this.__canvas.setWidth(window.innerWidth - (window.innerWidth - window.innerHeight));
-    this.__canvas.setHeight(window.innerHeight);
+    // create new fabric object.
+    this.__canvas = new fabric.Canvas(canvas.id);
+    // set canvas width.
+    this.__canvas.setWidth(canvas.width);
+    // set canvas height.
+    this.__canvas.setHeight(canvas.height);
   }
   /**
    * setter.
@@ -22,7 +30,7 @@
   /**
    * getter.
    *
-   * @param <String> prototype
+   * @param <String> property
    * @return <Object> this
    */
   Game.prototype.get = function(property) {
@@ -30,11 +38,11 @@
     return this[property];
   }
   /**
-   * get room id.
+   * get room id by pathname.
    *
-   * @return <Number|String> room|debug
+   * @return <Number|Boolean> room|false
    */
-  Game.prototype.getRoom = function() {
+  Game.prototype.getRoomIdByPathName = function() {
     var pathname = ''; 
     // regular expression for instance:
     // room/1, room/2 etc.
@@ -57,7 +65,6 @@
 
       return false;
     }
-
     // check whether the pathname
     // matches to the regex if
     // matches return room id.
@@ -68,11 +75,10 @@
       return room;
     }
     // debug.
-    console.error('pathname doesn\'t match regex');
+    console.debug('you\'re not joined to the room.');
 
     return false;
   }
-
   /**
    * get player position.
    *
@@ -81,7 +87,7 @@
   Game.prototype.getPlayerPosition = function() {
     // get player position from cookie.
     // cast it to the number.
-    var position = Cookies.getItem('position') >> 0;
+    var position = docCookies.getItem('position') >> 0;
     try {
       // throw TypeError if position
       // type is not number.
@@ -106,7 +112,7 @@
    * @return <Object> this
    */
   Game.prototype.room = function(socket) {
-    var room = this.getRoom();
+    var room = this.getRoomIdByPathName();
     if (room) {
       // emit server room id.
       socket.emit('room', {
@@ -115,6 +121,54 @@
     }
 
     return this;
+  }
+  /**
+   * initializes squares.
+   *
+   * @return <Object> this
+   */
+  Game.prototype.initSquares = function() {
+    // loop over each drawn
+    // square and set index
+    // and figure defaults
+    // to NaN.
+    this.__canvas.forEachObject(function(object, index) {
+      object.set({
+        index: index,
+        figure: NaN
+      });
+    });
+    // set count.
+    this.set('count', this.getCanvasCountObjects());
+
+    return this;
+  }
+  /**
+   * updates target (square).
+   *
+   * @return <Object> this
+   */
+  Game.prototype.updateSquare = function(target, index, figure) {
+    // set index and figure
+    // to the target and 
+    // set evented to 
+    // false.
+    target.set({
+      index: index,
+      figure: figure
+    }).set('evented', false);
+
+    return this;
+  }
+  /**
+   * count canvas objects.
+   *
+   * @return <Number> count
+   */
+  Game.prototype.getCanvasCountObjects = function() {
+    var count = this.__canvas.getObjects().length - 1;
+
+    return count;
   }
 
   Game.prototype.drawLine = function(coords) {
@@ -193,6 +247,7 @@
         this.drawLine([x * 2, y * 3, x * 3, y * 3])
       ])
     );
+
     return this;
   }
 
@@ -220,68 +275,70 @@
   }
 
   Game.prototype.drawCrossOut = function(win) {
-    var a = win[0];
-    var b = win[2];
-    var c = b - a;
+    if (win.length) {
+      var a = win[0];
+      var b = win[2];
+      var c = b - a;
 
-    var _a_group = this.__canvas.item(a);
-    var _c_group = this.__canvas.item(b);
+      var _a_group = this.__canvas.item(a);
+      var _c_group = this.__canvas.item(b);
 
-    var _a_groupWidth = _a_group.getWidth() / 2.5;
-    var _c_groupWidth = _c_group.getWidth() / 2.5;
+      var _a_groupWidth = _a_group.getWidth() / 2.5;
+      var _c_groupWidth = _c_group.getWidth() / 2.5;
 
-    var _a_groupHeight = _a_group.getHeight() / 2.5;
-    var _c_groupHeight = _c_group.getHeight() / 2.5;
+      var _a_groupHeight = _a_group.getHeight() / 2.5;
+      var _c_groupHeight = _c_group.getHeight() / 2.5;
 
-    var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
-    var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
+      var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
+      var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
 
-    var coords = null;
+      var coords = null;
 
-    var setCoords = function(coords) {
-      var coords_default = {
-        x1: _a_groupOriginCenter.x,
-        y1: _a_groupOriginCenter.y,
-        x2: _c_groupOriginCenter.x,
-        y2: _c_groupOriginCenter.y
-      };
-      for (var i in coords) {
-        coords_default[i] = coords[i];
+      var setCoords = function(coords) {
+        var coords_default = {
+          x1: _a_groupOriginCenter.x,
+          y1: _a_groupOriginCenter.y,
+          x2: _c_groupOriginCenter.x,
+          y2: _c_groupOriginCenter.y
+        };
+        for (var i in coords) {
+          coords_default[i] = coords[i];
+        }
+        return coords_default;
       }
-      return coords_default;
-    }
 
-    if (c === 2) {
-      coords = setCoords({
-        x1: _a_groupOriginCenter.x - _a_groupWidth,
-        x2: _c_groupOriginCenter.x + _c_groupWidth
-      });
-    }
-    else if (c === 4) {
-      coords = setCoords({
-        x1: _a_groupOriginCenter.x + _a_groupWidth,
-        y1: _a_groupOriginCenter.y - _a_groupHeight,
-        x2: _c_groupOriginCenter.x - _c_groupWidth,
-        y2: _c_groupOriginCenter.y + _c_groupHeight
-      });
-    }
-    else if (c === 6) {
-      coords = setCoords({
-        y1: _a_groupOriginCenter.y - _a_groupHeight,
-        y2: _c_groupOriginCenter.y + _a_groupHeight
-      });
-    }
-    else if (c === 8) {
-      coords = setCoords({
-        x1: _a_groupOriginCenter.x - _a_groupWidth,
-        y1: _a_groupOriginCenter.y - _a_groupHeight,
-        x2: _c_groupOriginCenter.x + _c_groupWidth,
-        y2: _c_groupOriginCenter.y + _c_groupHeight
-      });
-    }
+      if (c === 2) {
+        coords = setCoords({
+          x1: _a_groupOriginCenter.x - _a_groupWidth,
+          x2: _c_groupOriginCenter.x + _c_groupWidth
+        });
+      }
+      else if (c === 4) {
+        coords = setCoords({
+          x1: _a_groupOriginCenter.x + _a_groupWidth,
+          y1: _a_groupOriginCenter.y - _a_groupHeight,
+          x2: _c_groupOriginCenter.x - _c_groupWidth,
+          y2: _c_groupOriginCenter.y + _c_groupHeight
+        });
+      }
+      else if (c === 6) {
+        coords = setCoords({
+          y1: _a_groupOriginCenter.y - _a_groupHeight,
+          y2: _c_groupOriginCenter.y + _a_groupHeight
+        });
+      }
+      else if (c === 8) {
+        coords = setCoords({
+          x1: _a_groupOriginCenter.x - _a_groupWidth,
+          y1: _a_groupOriginCenter.y - _a_groupHeight,
+          x2: _c_groupOriginCenter.x + _c_groupWidth,
+          y2: _c_groupOriginCenter.y + _c_groupHeight
+        });
+      }
 
-    if (coords) {
-      this.__canvas.add(this.drawGroup([this.drawLine([coords.x1, coords.y1, coords.x2, coords.y2])]));
+      if (coords) {
+        this.__canvas.add(this.drawGroup([this.drawLine([coords.x1, coords.y1, coords.x2, coords.y2])]));
+      }
     }
 
     return this;
@@ -321,7 +378,7 @@
         figure: figure,
       },
       over: false,
-      won: {}
+      won: []
     };
     // combinations.
     var combinations = {
@@ -340,7 +397,7 @@
       // update square state and
       // prevent this square to
       // be clickable.
-      .updateSquares(target, index, figure);
+      .updateSquare(target, index, figure);
     // loop while count doesn't 
     // equals to -1.
     while (count !== -1) {
@@ -398,7 +455,7 @@
           // get target.
           var target = e.target;
           // get room.
-          var room = _this.getRoom();
+          var room = _this.getRoomIdByPathName();
           // check for room.
           if (room) {
             // start playing.
@@ -423,20 +480,13 @@
                 });
               }
               else {
-                // check for non-empty won object.
-                if (!$.isEmptyObject(game.won)) {
-                  // emit server that game is over
-                  // passing room id and winner
-                  // object.
-                  socket.emit('game over', {
-                    room: room,
-                    won: game.won
-                  });
-                }
-                else {
-                  // debug.
-                  console.debug('winner couldn\'t be found');
-                }
+                // emit server that game is over
+                // passing room id and winner
+                // object.
+                socket.emit('game over', {
+                  room: room,
+                  won: game.won
+                });
               }
             });
           }
@@ -450,44 +500,6 @@
 
     return this;
   }
-  /**
-   * initializes squares.
-   *
-   * @return <Object> this
-   */
-  Game.prototype.initSquares = function() {
-    // loop over each drawn
-    // square and set index
-    // and figure defaults
-    // to NaN.
-    this.__canvas.forEachObject(function(object, index) {
-      object.set({
-        index: index,
-        figure: NaN
-      });
-    });
-    // set count.
-    this.set('count', this.getCanvasCountObjects());
-
-    return this;
-  }
-  /**
-   * updates squares.
-   *
-   * @return <Object> this
-   */
-  Game.prototype.updateSquares = function(target, index, figure) {
-    // set index and figure
-    // to the target and 
-    // set evented to 
-    // false.
-    target.set({
-      index: index,
-      figure: figure
-    }).set('evented', false);
-
-    return this;
-  }
 
   Game.prototype.setActiveState = function(evented) {
     this.__canvas.forEachObject(function(object, index) {
@@ -495,6 +507,7 @@
         object.set('evented', evented);
       }
     });
+
     return this;
   }
 
@@ -508,10 +521,6 @@
       gap: object.getWidth() / 4,
       center: object.getPointByOrigin('center', 'center')
     }
-  }
-
-  Game.prototype.getCanvasCountObjects = function() {
-    return this.__canvas.getObjects().length - 1;
   }
 
   /**
@@ -536,7 +545,7 @@
         // draw figures.
         .drawFigure(_this.getSquareData(target), value)
         // set square state.
-        .updateSquares(target, index, value);
+        .updateSquare(target, index, value);
     });
 
     return this;
@@ -636,7 +645,6 @@
     var _this = this;
     // get room object.
     var room = data.room;
-    console.log(room);
     // get players object.
     var players = data.players;
     // get winner combination object.
@@ -662,11 +670,9 @@
         while (count !== _this.count) {
           _this.__canvas.fxRemove(_this.__canvas.item(count), {
             onComplete: function() {
-              // var _count = _this.getCanvasCountObjects();
-              // if (_count === count) {
-              //   _this.initSquares().setActivePlayer(player);
-              // }
-              _this.initSquares().setActivePlayer(player);
+              _this
+                .initSquares()
+                .setActivePlayer(player);
             }
           });
           count--;
@@ -688,85 +694,92 @@
     // notify server about
     // this room.
     this.room(socket);
-    // init room event.
-    socket.on('init room', function(room) {
-      _this
-        // set room object.
-        .set('room', room)
-        // draw game.
-        .drawGame()
-        // initialize squares.
-        .initSquares()
-        // // draw squares state.
-        .drawStateSquares()
-        // play game.
-        ._play(socket);
-    });
-    // add players event.
-    socket.on('add players', function(players) {
-      _this
-        // set players object.
-        .set('players', players)
-        // add players.
-        .addPlayers()
-    });
-    // waiting for player event.
-    socket.on('waiting for player', function(player) {
-      // waiting for player.
-      _this.waiting(player);
-    });
-    // set active player event.
-    socket.on('set active player', function(players) {
-      // get player position.
-      var position = _this.getPlayerPosition();
-      // check for position.
-      if (position !== -1) {
-        // get player by position.
-        var player = players[position];
-        // set active player.
-        _this.setActivePlayer(player);
-      }
-    });
-    // switch event.
-    socket.on('switch', function(data) {
-      // get room object.
-      var room = data.room;
-      // get players object.
-      var players = data.players;
-      // get player position.
-      var position = _this.getPlayerPosition();
-      // check for position.
-      if (position !== -1) {
-        // get player by position.
-        var player = players[position];
+    socket.on('connect', function() {
+      // init room event.
+      socket.on('init room', function(room) {
         _this
-          // set room.
+          // set room object.
           .set('room', room)
-          // set players.
+          // draw game.
+          .drawGame()
+          // initialize squares.
+          .initSquares()
+          // // draw squares state.
+          .drawStateSquares()
+          // play game.
+          ._play(socket);
+      });
+      // add players event.
+      socket.on('add players', function(players) {
+        _this
+          // set players object.
           .set('players', players)
+          // add players.
+          .addPlayers()
+      });
+      // waiting for player event.
+      socket.on('waiting for player', function(player) {
+        // waiting for player.
+        _this.waiting(player);
+      });
+      // set active player event.
+      socket.on('set active player', function(players) {
+        // get player position.
+        var position = _this.getPlayerPosition();
+        // check for position.
+        if (position !== -1) {
+          // get player by position.
+          var player = players[position];
           // set active player.
-          .setActivePlayer(player)
-      }
-    });
-    // play event.
-    socket.on('play', function(index) {
-      // get target.
-      var target = _this.__canvas.item(index);
-      // play game.
-      _this.play(target);
-    });
-    // restart event.
-    socket.on('restart', function(data) {
-      // restart game.
-      _this.restart(data);
-    });
-
+          _this.setActivePlayer(player);
+        }
+      });
+      // switch event.
+      socket.on('switch', function(data) {
+        // get room object.
+        var room = data.room;
+        // get players object.
+        var players = data.players;
+        // get player position.
+        var position = _this.getPlayerPosition();
+        // check for position.
+        if (position !== -1) {
+          // get player by position.
+          var player = players[position];
+          _this
+            // set room.
+            .set('room', room)
+            // set players.
+            .set('players', players)
+            // set active player.
+            .setActivePlayer(player)
+        }
+      });
+      // play event.
+      socket.on('play', function(index) {
+        // get target.
+        var target = _this.__canvas.item(index);
+        // play game.
+        _this.play(target);
+      });
+      // restart event.
+      socket.on('restart', function(data) {
+        // restart game.
+        _this.restart(data);
+      });
+   });
+  
    return this; 
   }
 
+  // make sure page is loaded.
   $(function() {
-    // instantiate game object.
-    new Game('tictactoe').run(io());
+    // create new game object.
+    new Game({
+      id: 'tictactoe',
+      width: window.innerWidth - (window.innerWidth - window.innerHeight),
+      height: window.innerHeight
+    }).run(io());
   });
 
 })(jQuery);

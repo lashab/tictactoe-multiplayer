@@ -98,7 +98,7 @@ module.exports = {
             return callback(err);
           }
           // check for players existence.
-          if (players) {
+          if (players.length) {
             // if there is only one player
             // wait for another player.
             if (players.length === 1) {
@@ -168,7 +168,7 @@ module.exports = {
         // debug if the data has not have
         // property room with the value
         // room id.
-        debug('room property couldn\'t be found.');
+        debug('room couldn\'t be found.');
       }
     })
     // switch event.
@@ -205,7 +205,7 @@ module.exports = {
         // debug if the data has not have
         // property room with the value
         // room id.
-        debug('room property couldn\'t be found.');
+        debug('room couldn\'t be found.');
       }
     })
     // game over event.
@@ -230,83 +230,30 @@ module.exports = {
             if (err) {
               return callback(err);
             }
-          });
-          // get players.
-          Player.getPlayersByRoomId(db, id, function(err, db, players) {
-            // if error happens pass it to
-            // the callback and return.
-            if (err) {
-              return callback(err);
-            }
-            // emit clients to restart game, passing
-            // room and players object.
-            io.in(id).emit('restart', {
-              room: room,
-              players: players,
-              won: data.won
+            // get players.
+            Player.getPlayersByRoomId(db, id, function(err, db, players) {
+              // if error happens pass it to
+              // the callback and return.
+              if (err) {
+                return callback(err);
+              }
+              // emit clients to restart game, passing
+              // room and players object.
+              io.in(id).emit('restart', {
+                room: room,
+                players: players,
+                won: data.won
+              });
             });
           });
         });
       }
+      else {
+        // debug if the data has not have
+        // property room with the value
+        // room id.
+        debug('room couldn\'t be found.');
+      }
     });
-    // // play event.
-    // .on('play', function(data) {
-    //   // game data object.
-    //   var game = data.game;
-    //   // get room id.
-    //   var id = data._id;
-    //   // save state.
-    //   Room.state(db, id, data.figures, '$push', function(err, db, room) {
-    //     // if error happens pass it to
-    //     // the callback and return.
-    //     if (err) {
-    //       return callback(err);
-    //     }
-    //   });
-    //   // if game is over.
-    //   if (game.over) {
-    //     // dalete state.
-    //     Room.state(db, id, null, '$set', function(err, db, room) {
-    //       // if error happens pass it to
-    //       // the callback and return.
-    //       if (err) {
-    //         return callback(err);
-    //       }
-    //     });
-    //     // change figure.
-    //     Room.figureStateChange(db, id, 0, function(err, db, room) {
-    //       // if error happens pass it to
-    //       // the callback and return.
-    //       if (err) {
-    //         return callback(err);
-    //       }
-    //       // restart game.
-    //       io.in(id).emit('restart', game);
-    //     });
-    //   }
-    //   else {
-    //     // switch active players.
-    //     Player.switch(db, id, function(err, db, players) {
-    //       // if error happens pass it to
-    //       // the callback and return.
-    //       if (err) {
-    //         return callback(err);
-    //       }
-    //       // emit client to switch
-    //       // active players.
-    //       io.in(id).emit('switch active player', players);
-    //     });
-    //     // change figure.
-    //     Room.figureStateChange(db, id, data.figure, function(err, db, room) {
-    //       // if error happens pass it to
-    //       // the callback and return.
-    //       if (err) {
-    //         return callback(err);
-    //       }
-    //     });
-    //   }
-    //   // emit client to play.
-    //   socket.broadcast.in(id).emit('play', data);
-    // });
   }
 };
