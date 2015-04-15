@@ -263,8 +263,8 @@
   /**
    * plays game.
    *
-   * @param <Object> socket
    * @param <Object> target
+   * @param <Function> callback
    * @return <Object> this
    */
   Game.prototype.play = function(target, callback) {
@@ -300,7 +300,7 @@
     };
     this
       // draw figure.
-      .drawFigure(this.getSquareData(target), figure)
+      .drawFigure(target, figure)
       // update square state and
       // prevent this square to
       // be clickable.
@@ -472,18 +472,36 @@
 
     return count;
   }
-
+  /**
+   * draws line.
+   *
+   * @param <Array> coords
+   * @return <Object> line
+   */
   Game.prototype.drawLine = function(coords) {
-    return new fabric.Line(coords, {
+    // set options.
+    var options = {
       stroke: 'black',
       strokeWidth: 1,
       selectable: false,
       evented: false
-    });
-  }
+    };
+    // create new line.
+    var line = new fabric.Line(coords, options);
 
+    return line;
+  }
+  /**
+   * draws circle.
+   *
+   * @param <Number> top
+   * @param <Number> left
+   * @param <Number> radius
+   * @return <Object> circle
+   */
   Game.prototype.drawCircle = function(top, left, radius) {
-    return new fabric.Circle({
+    // set options.
+    var options = {
       top: top,
       left: left,
       radius: radius,
@@ -494,23 +512,45 @@
       originY: 'center',
       selectable: false,
       evented: false
-    });
-  }
+    };
+    // create new circle.
+    var circle = new fabric.Circle(options);
 
+    return circle;
+  }
+  /**
+   * draws group.
+   *
+   * @param <Array> groups
+   * @return <Object> group
+   */
   Game.prototype.drawGroup = function(groups) {
-    return new fabric.Group(groups, {
+    // set options.
+    var options = {
       hasBorders: false,
       hasControls: false,
       lockMovementX: true,
       lockMovementY: true,
       selectable: false,
       evented: false
-    });
-  }
+    };
+    // create new group.
+    var group = new fabric.Group(groups, options);
 
+    return group;
+  }
+  /**
+   * draws game.
+   *
+   * @return <Object> this
+   */
   Game.prototype.drawGame = function() {
+    // get x.
     var x = this.__canvas.getWidth() / 3;
+    // get y.
     var y = this.__canvas.getHeight() / 3;
+    // add new groups onto the canvas 
+    // combined with two lines.
     this.__canvas.add(
       this.drawGroup([
         this.drawLine([x, 0, x, y]),
@@ -552,28 +592,99 @@
 
     return this;
   }
-
-  Game.prototype.drawFigure = function(data, figure) {
-    if (figure) {
-      var top = data.top;
-      var left = data.left;
-      var width = data.width;
-      var height = data.height;
-      var gap = data.gap;
+  /**
+   * draws figure.
+   *
+   * @param <Object> target
+   * @param <Number> figure
+   * @return <Object> this
+   */
+  Game.prototype.drawFigure = function(target, figure) {
+    // get top.
+    var top = target.getTop()
+    // get left.
+    var left = target.getLeft();
+    // get width.
+    var width = target.getWidth();
+    // get height.
+    var height = target.getHeight();
+    // get radius.
+    var radius = width / 3;
+    // get gap.
+    var gap = width / 4;
+    // get center points.
+    var center = target.getPointByOrigin('center', 'center');
+    // get center X point.
+    var centerX = center.x;
+    // get center Y point.
+    var centerY = center.y;
+    // if the figure is 1 draw cross
+    // otherwise draw circle.
+    if (figure) {      
+      // prepare cross.
       var cross = this.drawGroup([
         this.drawLine([left + gap, top + gap, left + width - gap, top + height - gap]),
         this.drawLine([left + width - gap, top + gap, left + gap, top + height - gap])
       ]);
+      // add cross onto the canvas.
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
     }
     else {
-      var centerX = data.center.x;
-      var centerY = data.center.y;
-      var radius = data.radius;
+      // prepare circle.
       var circle = this.drawCircle(centerY, centerX, radius);
+      // add circle onto the canvas.
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
     }
+
     return this;
+  }
+  /**
+   * draws figures state.
+   *
+   * @return <Object> this
+   */
+  Game.prototype.drawStateSquares = function() {
+    var _this = this;
+    // get room object.
+    var room = this.get('room');
+    // map figures, draw each
+    // figure, setting state.
+    room.figures.map(function(figure) {
+      // square index.
+      var index = Object.keys(figure)[0];
+      // figure value.
+      var value = figure[index];
+      // get square.
+      var target = _this.__canvas.item(index);
+      _this
+        // draw figures.
+        .drawFigure(target, value)
+        // set square state.
+        .updateSquare(target, index, value);
+    });
+
+    return this;
+  }
+  /**
+   * figures fade in.
+   *
+   * @param <Object> figure
+   * @param <Number> from
+   * @param <Number> to
+   * @param <Number> duration
+   * @return <Object> this
+   */
+  Game.prototype.figureFadeIn = function(figure, from, to, duration) {
+    // set opacity (from where to start).
+    figure.set('opacity', from);
+    // add animation onto the figure increase
+    // opacity to the provided point.
+    figure.animate('opacity', to, {
+      duration: duration,
+      onChange: this.__canvas.renderAll.bind(this.__canvas)
+    });
+
+    return figure;
   }
 
   Game.prototype.drawCrossOut = function(win) {
@@ -645,58 +756,8 @@
 
     return this;
   }
-
-  Game.prototype.figureFadeIn = function(figure, from, to, duration) {
-    var that = this;
-    figure.set('opacity', from);
-    figure.animate('opacity', to, {
-      duration: duration,
-      onChange: this.__canvas.renderAll.bind(this.__canvas)
-    });
-    return figure;
-  }
-
-  Game.prototype.getSquareData = function(object) {
-    return {
-      top: object.getTop(),
-      left: object.getLeft(),
-      width: object.getWidth(),
-      height: object.getHeight(),
-      radius: object.getWidth() / 3,
-      gap: object.getWidth() / 4,
-      center: object.getPointByOrigin('center', 'center')
-    }
-  }
-
   /**
-   * draws figures state.
-   *
-   * @return <Object> this
-   */
-  Game.prototype.drawStateSquares = function() {
-    var _this = this;
-    // get room object.
-    var room = this.get('room');
-    // map figures, draw each
-    // figure, setting state.
-    room.figures.map(function(figure) {
-      // square index.
-      var index = Object.keys(figure)[0];
-      // figure value.
-      var value = figure[index];
-      // get square.
-      var target = _this.__canvas.item(index);
-      _this
-        // draw figures.
-        .drawFigure(_this.getSquareData(target), value)
-        // set square state.
-        .updateSquare(target, index, value);
-    });
-
-    return this;
-  }
-  /**
-   * runs game.
+   * runs the game.
    *
    * @param <Object> socket
    * @return <Object> this
@@ -784,7 +845,7 @@
   
    return this; 
   }
-
+  
   // make sure page is loaded.
   $(function() {
     // create new game object.
