@@ -2,7 +2,7 @@
   'use strict';
 
   /**
-   * Game constructor.
+   * constructor.
    *
    * @param <Object> canvas
    */
@@ -31,11 +31,13 @@
    * getter.
    *
    * @param <String> property
-   * @return <Object> this
+   * @return <Mixed> value
    */
   Game.prototype.get = function(property) {
     // get value.
-    return this[property];
+    var value = this[property];
+
+    return value;
   }
   /**
    * get room id by pathname.
@@ -72,6 +74,7 @@
     if (matches) {
       // cast it to the number.
       var room = matches[1] >> 0;
+
       return room;
     }
     // debug.
@@ -98,7 +101,7 @@
     return this;
   }
   /**
-   * get player position.
+   * get player position from cookie.
    *
    * @return <Number> position
    */
@@ -123,12 +126,11 @@
     return position;
   }
   /**
-   * add players.
+   * adds player.
    *
-   * @param <Object> room
    * @return <Object> this
    */
-  Game.prototype.addPlayers = function(room) {
+  Game.prototype.addPlayers = function() {
     // get players.
     var players = this.get('players');
     if (players.length > 1) $('.players.wait').removeClass('wait');
@@ -172,35 +174,34 @@
   /**
    * sets active player.
    *
-   * @param <Object> player
+   * @param <Object> players
    * @return <Object> this
    */
-  Game.prototype.setActivePlayer = function(player) {
-    // get player position.
-    var position = player.position;
-    // tell both players who's
-    // active player.
-    position = player.active ? position : ~~!position;
-    // if player is active
-    // allow this player
-    // to play game.
-    if (player.active) {
-      // activate game.
-      this.setActiveState(true);
+  Game.prototype.setActivePlayer = function(players) {
+    // get this player position.
+    var _position = this.getPlayerPosition();
+    // check for position.
+    if (_position !== -1) {
+      // get player by position.
+      var player = players[_position];
+      // get active player position.
+      var position = player.position;
+      // tell both player who's
+      // active player.
+      position = player.active ? position : ~~!position;
+      // if player is active allow 
+      // this player to play game
+      // otherwise deactivate it.
+      player.active ? this.setActiveState(true) : this.setActiveState(false);
+      // set opacity 1 to
+      // active player.
+      $('.id-player-' + position).addClass('whole-in');
+      // set opacity 0.5 to
+      // non-active player.
+      $('div[class*="id-player-"]').filter(function(index) {
+        return index !== position;
+      }).removeClass('whole-in');
     }
-    else {
-      // deactivate game.
-      this.setActiveState(false);
-    }
-    // set opacity 1 to
-    // active player.
-    $('.id-player-' + position).addClass('whole-in');
-    // set opacity 0.5 to
-    // non-active player.
-    $('div[class*="id-player-"]').filter(function(index) {
-      return index !== position;
-    }).removeClass('whole-in');
-
     return this;
   }
   /**
@@ -249,10 +250,9 @@
    * @return <Object> this
    */
   Game.prototype.updateSquare = function(target, index, figure) {
-    // set index and figure
-    // to the target and 
-    // set evented to 
-    // false.
+    // update index and figure values
+    // to the specified target and 
+    // set evented to false.
     target.set({
       index: index,
       figure: figure
@@ -285,7 +285,7 @@
         figure: figure,
       },
       over: false,
-      won: []
+      combination: []
     };
     // combinations.
     var combinations = {
@@ -335,7 +335,7 @@
       var c = this.__canvas.item(combination[2]).get('figure');
       if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c)) {
         game.over = true;
-        game.won = combination;
+        game.combination = combination;
       }
     }
     // calling callback function
@@ -389,10 +389,10 @@
               else {
                 // emit server that game is over
                 // passing room id and winner
-                // object.
+                // combination object.
                 socket.emit('game over', {
                   room: room,
-                  won: game.won
+                  combination: game.combination
                 });
               }
             });
@@ -400,10 +400,31 @@
         }
         else {
           // debug.
-          console.debug('its not your turn!');
+          console.debug('this target has already have figure or its not your turn!');
         }
       }
     });
+
+    return this;
+  }
+  /**
+   * switches player.
+   *
+   * @param <Object> data
+   * @return <Object> this
+   */
+  Game.prototype.switchPlayer = function(data) {
+    // get room object.
+    var room = data.room;
+    // get players object.
+    var players = data.players;
+    this
+      // set room.
+      .set('room', room)
+      // set players.
+      .set('players', players)
+      // set active player.
+      .setActivePlayer(players);
 
     return this;
   }
@@ -420,44 +441,37 @@
     // get players object.
     var players = data.players;
     // get winner combination object.
-    var won = data.won;
-    // get player position.
-    var position = this.getPlayerPosition();
-    // check for position.
-    if (position !== -1) {
-      // get player.
-      var player = players[position];
-      this
-        // set room.
-        .set('room', room)
-        // set players.
-        .set('players', players)
-        // draw cross out.
-        .drawCrossOut(won)
-      // execute after 1s.
-      setTimeout(function() {
-        // get count.
-        var count = _this.getCanvasCountObjects();
-        // loop until current count doesn't
-        // equals to the initial count.
-        while (count !== _this.count) {
-          // game is over remove all figures
-          // from canvas.
-          _this.__canvas.fxRemove(_this.__canvas.item(count), {
-            // on complete reset squares
-            // and set active player.
-            onComplete: function() {
-              _this
-                // initialize squares.
-                .initSquares()
-                // set active player.
-                .setActivePlayer(player);
-            }
-          });
-          count--;
-        }
-      }, 1000);
-    }
+    var combination = data.combination;
+    this
+      // set room.
+      .set('room', room)
+      // set players.
+      .set('players', players)
+      // draw cross out.
+      .drawCrossOut(combination)
+    // execute after 1s.
+    setTimeout(function() {
+      // get count.
+      var count = _this.getCanvasCountObjects();
+      // loop until current count doesn't
+      // equals to the initial count.
+      while (count !== _this.count) {
+        // game is over remove all figures
+        // from canvas.
+        _this.__canvas.fxRemove(_this.__canvas.item(count), {
+          // on complete reset squares
+          // and set active player.
+          onComplete: function() {
+            _this
+              // initialize squares.
+              .initSquares()
+              // set active player.
+              .setActivePlayer(players);
+          }
+        });
+        count--;
+      }
+    }, 1000);
 
     return this;
   }
@@ -686,72 +700,77 @@
 
     return figure;
   }
-
-  Game.prototype.drawCrossOut = function(win) {
-    if (win.length) {
-      var a = win[0];
-      var b = win[2];
+  /**
+   * draws cross out.
+   *
+   * @param <Object> combination
+   * @return <Object> this
+   */
+  Game.prototype.drawCrossOut = function(combination) {
+    // check for combination object.
+    if (combination.length) {
+      // get first index from combination.
+      var a = combination[0];
+      // get last index from combination. 
+      var b = combination[2];
+      // diff among first and last index.
       var c = b - a;
-
-      var _a_group = this.__canvas.item(a);
-      var _c_group = this.__canvas.item(b);
-
-      var _a_groupWidth = _a_group.getWidth() / 2.5;
-      var _c_groupWidth = _c_group.getWidth() / 2.5;
-
-      var _a_groupHeight = _a_group.getHeight() / 2.5;
-      var _c_groupHeight = _c_group.getHeight() / 2.5;
-
-      var _a_groupOriginCenter = _a_group.getPointByOrigin('center', 'center');
-      var _c_groupOriginCenter = _c_group.getPointByOrigin('center', 'center');
-
-      var coords = null;
-
-      var setCoords = function(coords) {
-        var coords_default = {
-          x1: _a_groupOriginCenter.x,
+      // get first square by index.
+      var _a_square = this.__canvas.item(a);
+      // get last square by index.
+      var _c_square = this.__canvas.item(b);
+      // get first square width.
+      var _a_squareWidth = _a_square.getWidth() / 2.5;
+      // get last square width.
+      var _c_squareWidth = _c_square.getWidth() / 2.5;
+      // get first square height.
+      var _a_squareHeight = _a_square.getHeight() / 2.5;
+      // get last square height.
+      var _c_squareHeight = _c_square.getHeight() / 2.5;
+      // get first square center points.
+      var _a_groupOriginCenter = _a_square.getPointByOrigin('center', 'center');
+      // get last square center points.
+      var _c_groupOriginCenter = _c_square.getPointByOrigin('center', 'center');
+      // coordinates object.
+      var coordinates = {};
+      // set coordinates for c = 2 case.
+      if (c === 2) {
+        coordinates = {
+          x1: _a_groupOriginCenter.x - _a_squareWidth,
           y1: _a_groupOriginCenter.y,
-          x2: _c_groupOriginCenter.x,
+          x2: _c_groupOriginCenter.x + _c_squareWidth,
           y2: _c_groupOriginCenter.y
         };
-        for (var i in coords) {
-          coords_default[i] = coords[i];
-        }
-        return coords_default;
       }
-
-      if (c === 2) {
-        coords = setCoords({
-          x1: _a_groupOriginCenter.x - _a_groupWidth,
-          x2: _c_groupOriginCenter.x + _c_groupWidth
-        });
-      }
+      // set coordinates for c = 4 case.
       else if (c === 4) {
-        coords = setCoords({
-          x1: _a_groupOriginCenter.x + _a_groupWidth,
-          y1: _a_groupOriginCenter.y - _a_groupHeight,
-          x2: _c_groupOriginCenter.x - _c_groupWidth,
-          y2: _c_groupOriginCenter.y + _c_groupHeight
-        });
+        coordinates = {
+          x1: _a_groupOriginCenter.x + _a_squareWidth,
+          y1: _a_groupOriginCenter.y - _a_squareHeight,
+          x2: _c_groupOriginCenter.x - _c_squareWidth,
+          y2: _c_groupOriginCenter.y + _c_squareHeight
+        };
       }
+      // set coordinates for c = 6 case.
       else if (c === 6) {
-        coords = setCoords({
-          y1: _a_groupOriginCenter.y - _a_groupHeight,
-          y2: _c_groupOriginCenter.y + _a_groupHeight
-        });
+        coordinates = {
+          x1: _a_groupOriginCenter.x,
+          y1: _a_groupOriginCenter.y - _a_squareHeight,
+          x2: _c_groupOriginCenter.x,
+          y2: _c_groupOriginCenter.y + _c_squareHeight
+        };
       }
+      // set coordinates for c = 8 case.
       else if (c === 8) {
-        coords = setCoords({
-          x1: _a_groupOriginCenter.x - _a_groupWidth,
-          y1: _a_groupOriginCenter.y - _a_groupHeight,
-          x2: _c_groupOriginCenter.x + _c_groupWidth,
-          y2: _c_groupOriginCenter.y + _c_groupHeight
-        });
+        coordinates = {
+          x1: _a_groupOriginCenter.x - _a_squareWidth,
+          y1: _a_groupOriginCenter.y - _a_squareHeight,
+          x2: _c_groupOriginCenter.x + _c_squareWidth,
+          y2: _c_groupOriginCenter.y + _c_squareHeight
+        };
       }
-
-      if (coords) {
-        this.__canvas.add(this.drawGroup([this.drawLine([coords.x1, coords.y1, coords.x2, coords.y2])]));
-      }
+      // add cross out onto the canvas.
+      this.__canvas.add(this.drawGroup([this.drawLine([coordinates.x1, coordinates.y1, coordinates.x2, coordinates.y2])]));
     }
 
     return this;
@@ -798,36 +817,13 @@
       })
       // set active player event.
       .on('set active player', function(players) {
-        // get player position.
-        var position = _this.getPlayerPosition();
-        // check for position.
-        if (position !== -1) {
-          // get player by position.
-          var player = players[position];
-          // set active player.
-          _this.setActivePlayer(player);
-        }
+        // set active player.
+        _this.setActivePlayer(players);
       })
       // switch event.
       .on('switch', function(data) {
-        // get room object.
-        var room = data.room;
-        // get players object.
-        var players = data.players;
-        // get player position.
-        var position = _this.getPlayerPosition();
-        // check for position.
-        if (position !== -1) {
-          // get player by position.
-          var player = players[position];
-          _this
-            // set room.
-            .set('room', room)
-            // set players.
-            .set('players', players)
-            // set active player.
-            .setActivePlayer(player)
-        }
+        // switch player.
+        _this.switchPlayer(data);
       })
       // play event.
       .on('play', function(index) {
@@ -845,7 +841,7 @@
   
    return this; 
   }
-  
+
   // make sure page is loaded.
   $(function() {
     // create new game object.

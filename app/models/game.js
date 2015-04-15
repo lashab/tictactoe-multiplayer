@@ -242,7 +242,7 @@ module.exports = {
               io.in(id).emit('restart', {
                 room: room,
                 players: players,
-                won: data.won
+                combination: data.combination
               });
             });
           });
