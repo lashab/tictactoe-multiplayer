@@ -108,23 +108,24 @@ module.exports = {
     });
   },
   /**
-   * saves or deletes state.
+   * modifys room state.
    *
    * @param <Object> db
    * @param <Object> id
-   * @param <Object> figures
+   * @param <Object> target
    * @param <String> action
    * @param <Function> callback
    * @return <Function> callback
    */
-  state: function(db, id, figures, action, callback) {
+  updateFiguresState: function(db, id, target, action, callback) {
+    // define figures array like object
+    // assign empty array if target is
+    // emtpy.
+    var figures = target || [];
     // define update variable
     // defaults to empty 
     // object.
     var update = {};
-    // define optional figures
-    // variable.
-    var figures = figures || [];
     // if the id type is a string
     // cast it to the number.
     if (typeof id === 'string') {
@@ -157,7 +158,7 @@ module.exports = {
     });
   },
   /**
-   * changes figure.
+   * switches figure.
    *
    * @param <Object> db
    * @param <Object> id
@@ -165,7 +166,7 @@ module.exports = {
    * @param <Function> callback
    * @return <Function> callback
    */
-  figureStateChange: function(db, id, figure, callback) {
+  switchActiveFigure: function(db, id, figure, callback) {
     // change figure.
     var figure = !figure ? 1 : 0;
     // if the id type is a string

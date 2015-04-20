@@ -89,11 +89,11 @@
    * @param <Object> socket
    * @return <Object> this
    */
-  Game.prototype.notifyRoom = function(socket) {
+  Game.prototype.init = function(socket) {
     var room = this.getRoomIdByPathName();
     if (room) {
       // emit server room id.
-      socket.emit('room', {
+      socket.emit('init', {
         room: room
       });
     }
@@ -202,6 +202,71 @@
         return index !== position;
       }).removeClass('whole-in');
     }
+    return this;
+  }
+  /**
+   * attachs timer to active player.
+   *
+   * @return <Object> this
+   */
+  Game.prototype.attachActivePlayerTimer = function(targets) {
+    var _this = this;
+    // // start after half second.
+    // setTimeout(function() {
+    //   // get players object.
+    //   var players = _this.get('players');
+    //   // check for players length
+    //   // if both players are in
+    //   // then attach timer.
+    //   if (players.length > 1) {
+    //       // get player position.
+    //       var position = _this.getPlayerPosition();
+    //       // check for position.
+    //       if (position !== -1) {
+    //       // get player by position.
+    //       var player = players[position];
+    //       // get active player postion.
+    //       position = player.active ? position : ~~!position;
+
+    //       var progress = $('.progress-' + position).children('.progress-bar');
+    //       // set opacity 1 to progress bar
+    //       // by position.
+    //       progress.parent().addClass('whole-in');
+    //       var targets = targets || [];
+    //       if (!targets.length) {
+    //         var i = 0;
+    //         var count = _this.get('count');
+    //         for (; i <= count; i++) {
+    //            targets.push(i);
+    //         };
+    //       }
+
+    //       // get width in percentage.
+    //       var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
+    //       var interval = setInterval(function() {
+    //         progress.width(width-- + '%');
+    //         if (width < 0) {
+    //           var random = targets[Math.floor(Math.random() * targets.length)];
+    //           var target = _this.__canvas.item(random);
+    //           if (isNaN(target.figure)) {
+    //             _this.__canvas.trigger('mouse:down', {target: target});
+    //             var index = targets.indexOf(random);
+    //             progress.removeClass('whole-in');
+    //             progress.width(100 + '%');
+    //             clearInterval(interval);
+    //             targets.splice(index, 1);
+    //             _this.attachActivePlayerTimer(targets);
+    //           }
+    //         }
+    //       }, 80);
+    //     }
+    //   }
+    //   else {
+    //     // debug.
+    //     console.debug('timer could\'t be attached.');
+    //   }
+    // }, 500);
+
     return this;
   }
   /**
@@ -387,10 +452,10 @@
                 });
               }
               else {
-                // emit server that game is over
+                // emit server to restart the game
                 // passing room id and winner
                 // combination object.
-                socket.emit('game over', {
+                socket.emit('restart', {
                   room: room,
                   combination: game.combination
                 });
@@ -413,7 +478,7 @@
    * @param <Object> data
    * @return <Object> this
    */
-  Game.prototype.switchPlayer = function(data) {
+  Game.prototype.switchActivePlayer = function(data) {
     // get room object.
     var room = data.room;
     // get players object.
@@ -663,18 +728,18 @@
     var room = this.get('room');
     // map figures, draw each
     // figure, setting state.
-    room.figures.map(function(figure) {
-      // square index.
-      var index = Object.keys(figure)[0];
-      // figure value.
-      var value = figure[index];
-      // get square.
-      var target = _this.__canvas.item(index);
+    room.figures.map(function(target) {
+      // get target index.
+      var index = target.index;
+      // get target figure.
+      var figure = target.figure;
+      // get target.
+      var _target = _this.__canvas.item(index);
       _this
         // draw figures.
-        .drawFigure(target, value)
-        // set square state.
-        .updateSquare(target, index, value);
+        .drawFigure(_target, figure)
+        // update square state.
+        .updateSquare(_target, index, figure);
     });
 
     return this;
@@ -785,11 +850,11 @@
     var _this = this;
     // notify server about
     // this room.
-    this.notifyRoom(socket);
+    this.init(socket);
     // connect event.
     socket.on('connect', function() {
       // init room event.
-      socket.on('init room', function(room) {
+      socket.on('init', function(room) {
         _this
           // set room object.
           .set('room', room)
@@ -809,6 +874,8 @@
           .set('players', players)
           // add players.
           .addPlayers()
+          // attach timer.
+          .attachActivePlayerTimer([]);
       })
       // waiting for player event.
       .on('waiting for player', function(player) {
@@ -819,18 +886,87 @@
       .on('set active player', function(players) {
         // set active player.
         _this.setActivePlayer(players);
+    // start after half second.
+    setTimeout(function() {
+      // get players object.
+      // var players = _this.get('players');
+      // check for players length
+      // if both players are in
+      // then attach timer.
+      if (players.length > 1) {
+          // get player position.
+          var position = _this.getPlayerPosition();
+          // check for position.
+          if (position !== -1) {
+          // get player by position.
+          var player = players[position];
+          // get active player postion.
+          position = player.active ? position : ~~!position;
+
+          var progress = $('.progress-' + position).children('.progress-bar');
+          // set opacity 1 to progress bar
+          // by position.
+          progress.parent().addClass('whole-in');
+          var targets = targets || [];
+          if (!targets.length) {
+            var i = 0;
+            var count = _this.get('count');
+            for (; i <= count; i++) {
+               targets.push(i);
+            };
+          }
+
+          // get width in percentage.
+          var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
+          var interval = setInterval(function() {
+            progress.width(width-- + '%');
+            if (width < 0) {
+              var random = targets[Math.floor(Math.random() * targets.length)];
+              var target = _this.__canvas.item(random);
+              if (isNaN(target.figure)) {
+                _this.__canvas.trigger('mouse:down', {target: target});
+                var index = targets.indexOf(random);
+                progress.removeClass('whole-in');
+                progress.width(100 + '%');
+                clearInterval(interval);
+                targets.splice(index, 1);
+                _this.attachActivePlayerTimer(targets);
+              }
+            }
+          }, 80);
+        }
+      }
+      else {
+        // debug.
+        console.debug('timer could\'t be attached.');
+      }
+    }, 500);
+      })
+      // play event.
+      .on('play', function(data) {
+        // check for data.
+        if (!$.isEmptyObject(data)) {
+          // get target.
+          var target = _this.__canvas.item(data.index);
+          // play game.
+          _this.play(target);
+        }
+        else {
+          // debug.
+          console.debug('play event - data couldn\t be found.');
+        }
       })
       // switch event.
       .on('switch', function(data) {
-        // switch player.
-        _this.switchPlayer(data);
-      })
-      // play event.
-      .on('play', function(index) {
-        // get target.
-        var target = _this.__canvas.item(index);
-        // play game.
-        _this.play(target);
+        if (!$.isEmptyObject(data)) {
+          // switch player.
+          _this
+            .switchActivePlayer(data);
+        }
+        else {
+          // debug.
+          console.debug('switch event - data couldn\t be found.');
+        }
       })
       // restart event.
       .on('restart', function(data) {
@@ -844,7 +980,6 @@
 
   // make sure page is loaded.
   $(function() {
-    // create new game object.
     new Game({
       id: 'tictactoe',
       width: window.innerWidth - (window.innerWidth - window.innerHeight),

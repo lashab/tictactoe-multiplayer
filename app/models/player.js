@@ -213,14 +213,14 @@ module.exports = {
     });
   },
   /**
-   * switches active player.
+   * switches player.
    *
    * @param <Object> db
    * @param <Number|String> id
    * @param <Function> callback
    * @return <Function> callback
    */
-  switch: function(db, id, callback) {
+  switchActivePlayer: function(db, id, callback) {
     var _this = this;
     // get players by room.
     this.getPlayersByRoomId(db, id, function(err, db, players) {
