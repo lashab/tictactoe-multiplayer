@@ -117,7 +117,7 @@ module.exports = {
             // emit client to set
             // active player pass
             // players object.
-            socket.emit('set active player', players);
+            io.in(id).emit('set active player', players);
           }
           else {
             // debug if players could not

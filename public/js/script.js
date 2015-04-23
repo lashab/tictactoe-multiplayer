@@ -193,98 +193,135 @@
       // this player to play game
       // otherwise deactivate it.
       player.active ? this.setActiveState(true) : this.setActiveState(false);
-      // set opacity 1 to
-      // active player.
-      $('.id-player-' + position).addClass('whole-in');
-      // set opacity 0.5 to
-      // non-active player.
-      $('div[class*="id-player-"]').filter(function(index) {
-        return index !== position;
-      }).removeClass('whole-in');
+
+      // fade class.
+      var fade = 'whole-in';
+      // active player class;
+      var active = 'active';
+      var _player = $('div[class*="id-player-"]');
+      var _progress = $('div[class*="id-progress-"]');
+
+      _player.filter(function(_position) {
+        return _position === position;
+      })
+      .addClass(fade)
+      .addClass(active)
+      .addBack()
+      // set default opacity to non-active
+      // player.
+      .filter(function(_position) {
+        return _position !== position;
+      }).removeClass(fade);
+
+      setTimeout(function() {
+        _progress.filter(function(_position) {
+          return _position === position;
+        }).addClass(fade);
+      }, 1000);
+
+      _progress.filter(function(_position) {
+        return _position !== position;
+      }).removeClass(fade);
     }
+
     return this;
   }
   /**
-   * attachs timer to active player.
+   * auto play.
    *
    * @return <Object> this
    */
-  Game.prototype.attachActivePlayerTimer = function(targets) {
+  Game.prototype.autoPlay = function(autoplay) {
     var _this = this;
-    // // start after half second.
-    // setTimeout(function() {
-    //   // get players object.
-    //   var players = _this.get('players');
-    //   // check for players length
-    //   // if both players are in
-    //   // then attach timer.
-    //   if (players.length > 1) {
-    //       // get player position.
-    //       var position = _this.getPlayerPosition();
-    //       // check for position.
-    //       if (position !== -1) {
-    //       // get player by position.
-    //       var player = players[position];
-    //       // get active player postion.
-    //       position = player.active ? position : ~~!position;
-
-    //       var progress = $('.progress-' + position).children('.progress-bar');
-    //       // set opacity 1 to progress bar
-    //       // by position.
-    //       progress.parent().addClass('whole-in');
-    //       var targets = targets || [];
-    //       if (!targets.length) {
-    //         var i = 0;
-    //         var count = _this.get('count');
-    //         for (; i <= count; i++) {
-    //            targets.push(i);
-    //         };
-    //       }
-
-    //       // get width in percentage.
-    //       var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
-    //       var interval = setInterval(function() {
-    //         progress.width(width-- + '%');
-    //         if (width < 0) {
-    //           var random = targets[Math.floor(Math.random() * targets.length)];
-    //           var target = _this.__canvas.item(random);
-    //           if (isNaN(target.figure)) {
-    //             _this.__canvas.trigger('mouse:down', {target: target});
-    //             var index = targets.indexOf(random);
-    //             progress.removeClass('whole-in');
-    //             progress.width(100 + '%');
-    //             clearInterval(interval);
-    //             targets.splice(index, 1);
-    //             _this.attachActivePlayerTimer(targets);
-    //           }
-    //         }
-    //       }, 80);
-    //     }
-    //   }
-    //   else {
-    //     // debug.
-    //     console.debug('timer could\'t be attached.');
-    //   }
-    // }, 500);
+    // start after 1ms.
+    setTimeout(function() {
+      // init autoplay value defaults
+      // to true.
+          console.log(autoplay);
+      if (autoplay) {
+        _this.set('autoplay', true);
+      }
+      // get players object.
+      var players = _this.get('players');
+      // check for players length
+      // if both players are in
+      // then attach timer.
+      if (players.length > 1) {
+        // // get player position.
+        var _position = _this.getPlayerPosition();
+        // check for position.
+        if (_position !== -1) {
+          // get player by position.
+          var player = players[_position];
+          // get active player postion.
+          var position = player.active ? player.position : ~~!player.position;
+          // get progress bar.
+          var progress = $('.id-progress-' + position).children('.progress-bar');
+          // get width in percentage.
+          var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
+          // get auto play value check 
+          // whether its allowed or
+          // not.
+          var autoplay = _this.get('autoplay');
+          // get avaiable targets.
+          var targets = _this.getAvaiableTargets();
+          // set time interval repeat after
+          // each 100ms.
+          var interval = setInterval(function() {
+            if (!autoplay) {
+              progress.css('width', 100 + '%');
+              clearInterval(interval);
+            }
+            else {
+              progress.width(width-- + '%');
+              if (width < 0) {
+                var random = targets[Math.floor(Math.random() * targets.length)];
+                var target = _this.__canvas.item(random);
+                if (isNaN(target.figure) && position === _position) {
+                  _this.__canvas.trigger('mouse:down', {
+                    target: target
+                  });
+                }
+                progress.width(100 + '%');
+                clearInterval(interval);
+              }
+            }
+          }, 100);
+        }
+      }
+      else {
+        // debug.
+        console.debug('timer could\'t be attached.');
+      }
+    }, 1000);
 
     return this;
   }
   /**
-   * activates or deactivates game.
+   * set game active state.
    *
-   * @param <Boolean> evented
-   * @return <Object> this
+   * @param {Boolean} evented
+   * @return {Object} this
    */
   Game.prototype.setActiveState = function(evented) {
-    // loop through each canvas object
-    // set evented property if the 
-    // object figure property
-    // value is not NaN.
-    this.__canvas.forEachObject(function(object, index) {
-      if (object.hasOwnProperty('figure') && isNaN(object.figure)) {
-        object.set('evented', evented);
-      }
+    var evented = evented || false;
+    // loop through each avaiable object
+    // and set evented property.
+    this.getAvaiableTargets(function(object) {
+      object.set('evented', evented);
     });
+
+    return this;
+  }
+  Game.prototype.activate = function() {
+    // activate game.
+    this.setActiveState(true);
+
+    return this;
+  }
+  Game.prototype.deActivate = function() {
+    // deactivate game.
+    this.setActiveState();
 
     return this;
   }
@@ -408,6 +445,8 @@
     if (callback && $.isFunction(callback)) {
       callback.call(this, game);
     }
+
+    this.set('autoplay', false);
 
     return this;
   }
@@ -543,13 +582,33 @@
   /**
    * count canvas objects.
    *
-   * @return <Number> getCanvasCountObjects
+   * @return <Number> count
    */
   Game.prototype.getCanvasCountObjects = function() {
     // get count.
-    var count = this.__canvas.getObjects().length - 1;
+    var count = this.__canvas.size() - 1;
 
     return count;
+  }
+  /**
+   * get avaiable targets.
+   *
+   * @return <Array> targets 
+   */
+  Game.prototype.getAvaiableTargets = function(callback) {
+    var targets = [];
+    this.__canvas.forEachObject(function(object, index) {
+      if ('figure' in object && isNaN(object.figure)) {
+        targets.push(object.index);
+
+        if (callback && $.isFunction(callback)) {
+          callback(object);
+        }
+      }
+    });
+
+    return targets;
+    
   }
   /**
    * draws line.
@@ -874,8 +933,6 @@
           .set('players', players)
           // add players.
           .addPlayers()
-          // attach timer.
-          .attachActivePlayerTimer([]);
       })
       // waiting for player event.
       .on('waiting for player', function(player) {
@@ -886,61 +943,9 @@
       .on('set active player', function(players) {
         // set active player.
         _this.setActivePlayer(players);
-    // start after half second.
-    setTimeout(function() {
-      // get players object.
-      // var players = _this.get('players');
-      // check for players length
-      // if both players are in
-      // then attach timer.
-      if (players.length > 1) {
-          // get player position.
-          var position = _this.getPlayerPosition();
-          // check for position.
-          if (position !== -1) {
-          // get player by position.
-          var player = players[position];
-          // get active player postion.
-          position = player.active ? position : ~~!position;
 
-          var progress = $('.progress-' + position).children('.progress-bar');
-          // set opacity 1 to progress bar
-          // by position.
-          progress.parent().addClass('whole-in');
-          var targets = targets || [];
-          if (!targets.length) {
-            var i = 0;
-            var count = _this.get('count');
-            for (; i <= count; i++) {
-               targets.push(i);
-            };
-          }
+        _this.autoPlay(true);
 
-          // get width in percentage.
-          var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
-          var interval = setInterval(function() {
-            progress.width(width-- + '%');
-            if (width < 0) {
-              var random = targets[Math.floor(Math.random() * targets.length)];
-              var target = _this.__canvas.item(random);
-              if (isNaN(target.figure)) {
-                _this.__canvas.trigger('mouse:down', {target: target});
-                var index = targets.indexOf(random);
-                progress.removeClass('whole-in');
-                progress.width(100 + '%');
-                clearInterval(interval);
-                targets.splice(index, 1);
-                _this.attachActivePlayerTimer(targets);
-              }
-            }
-          }, 80);
-        }
-      }
-      else {
-        // debug.
-        console.debug('timer could\'t be attached.');
-      }
-    }, 500);
       })
       // play event.
       .on('play', function(data) {
@@ -959,9 +964,10 @@
       // switch event.
       .on('switch', function(data) {
         if (!$.isEmptyObject(data)) {
-          // switch player.
           _this
-            .switchActivePlayer(data);
+            // switch player.
+            .switchActivePlayer(data)
+            .autoPlay(false);
         }
         else {
           // debug.
