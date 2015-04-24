@@ -2,9 +2,9 @@
   'use strict';
 
   /**
-   * constructor.
+   * initializes game.
    *
-   * @param <Object> canvas
+   * @param {Object} canvas
    */
   var Game = function(canvas) {
     // create new fabric object.
@@ -17,9 +17,9 @@
   /**
    * setter.
    *
-   * @param <String> property
-   * @param <Mixed> value
-   * @return <Object> this
+   * @param {String} property
+   * @param {Mixed} value
+   * @return {Object} this
    */
   Game.prototype.set = function(property, value) {
     // set value.
@@ -30,8 +30,8 @@
   /**
    * getter.
    *
-   * @param <String> property
-   * @return <Mixed> value
+   * @param {String} property
+   * @return {Mixed} value
    */
   Game.prototype.get = function(property) {
     // get value.
@@ -42,7 +42,7 @@
   /**
    * get room id by pathname.
    *
-   * @return <Number|Boolean> room|false
+   * @return {Number|Boolean} room|false
    */
   Game.prototype.getRoomIdByPathName = function() {
     var pathname = ''; 
@@ -56,7 +56,7 @@
         pathname = window.location.pathname;
       }
       else {
-        // throws error if pathname
+        // throws error if the pathname 
         // couldn't be found.
         throw new Error('pathname couldn\'t be found.');
       }
@@ -86,10 +86,11 @@
    * let the server know about
    * this room.
    *
-   * @param <Object> socket
-   * @return <Object> this
+   * @param {Object} socket
+   * @return {Object} this
    */
   Game.prototype.init = function(socket) {
+    // get room id.
     var room = this.getRoomIdByPathName();
     if (room) {
       // emit server room id.
@@ -103,7 +104,7 @@
   /**
    * get player position from cookie.
    *
-   * @return <Number> position
+   * @return {Number} position
    */
   Game.prototype.getPlayerPosition = function() {
     // get player position from cookie.
@@ -128,15 +129,19 @@
   /**
    * adds player.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
   Game.prototype.addPlayers = function() {
     // get players.
     var players = this.get('players');
-    if (players.length > 1) $('.players.wait').removeClass('wait');
-    // map each player and
-    // add image and name.
-    players.map(function(player, position) {
+    // if players length is more then 1
+    // remove wait class.
+    if (players.length > 1) {
+      $('.players.wait').removeClass('wait');
+    }
+    // loop through each player add image
+    // and player name.
+    players.forEach(function(player, position) {
       $('.id-player-' + position)
         .children('img')
         // TODO: remove image path from client.
@@ -155,13 +160,12 @@
   /**
    * waits for next player.
    *
-   * @param <Object> waiting
-   * @return <Object> this
+   * @param {Object} player
+   * @return {Object} this
    */
   Game.prototype.waitForPlayer = function(player) {
-    // add loading animation 
-    // acoording to player
-    // position.
+    // add loading animation according to the
+    // player position.
     $('.id-player-' + player.position)
       .children('img')
         .prop('src', player.image)
@@ -296,7 +300,7 @@
             // progress bar danger.
             var danger = 'progress-bar-danger';
             // check for autoplay value and width if autoplay 
-            // is false or width is zero this means that
+            // is false or width is zero this means that the
             // event is fired! set progress bar to init 
             // state and recursively call autoplay.
             if (!autoplay || width < 0) {
@@ -370,12 +374,22 @@
 
     return this;
   }
+  /**
+   * activates game.
+   *
+   * @return {Object} this
+   */
   Game.prototype.activate = function() {
     // activate game.
     this.setActiveState(true);
 
     return this;
   }
+  /**
+   * deactivates game.
+   *
+   * @return {Object} this
+   */
   Game.prototype.deActivate = function() {
     // deactivate game.
     this.setActiveState();
@@ -383,13 +397,13 @@
     return this;
   }
   /**
-   * initializes squares.
+   * set initial targets index and figure.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
-  Game.prototype.initSquares = function() {
+  Game.prototype.initTargets = function() {
     // loop over each drawn
-    // square and set index
+    // target and set index
     // and figure defaults
     // to NaN.
     this.__canvas.forEachObject(function(object, index) {
@@ -404,11 +418,11 @@
     return this;
   }
   /**
-   * updates target (square).
+   * updates target.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
-  Game.prototype.updateSquare = function(target, index, figure) {
+  Game.prototype.updateTarget = function(target, index, figure) {
     // update index and figure values
     // to the specified target and 
     // set evented to false.
@@ -463,7 +477,7 @@
       // update square state and
       // prevent this square to
       // be clickable.
-      .updateSquare(target, index, figure);
+      .updateTarget(target, index, figure);
     // loop while count doesn't 
     // equals to -1.
     while (count !== -1) {
@@ -510,7 +524,7 @@
   }
   /**
    * starts playing on target
-   * click event.
+   * click event fire.
    *
    * @param {Object} socket
    * @return {Object} this
@@ -570,10 +584,10 @@
     return this;
   }
   /**
-   * switches player.
+   * switches active player.
    *
-   * @param <Object> data
-   * @return <Object> this
+   * @param {Object} data
+   * @return {Object} this
    */
   Game.prototype.switchActivePlayer = function(data) {
     // get room object.
@@ -593,8 +607,8 @@
   /**
    * restarts the game.
    *
-   * @param <Object> data
-   * @return <Object> this
+   * @param {Object} data
+   * @return {Object} this
    */
   Game.prototype.restart = function(data) {
     var _this = this;
@@ -626,7 +640,7 @@
           onComplete: function() {
             _this
               // initialize squares.
-              .initSquares()
+              .initTargets()
               // set active player.
               .setActivePlayer(players);
           }
@@ -640,7 +654,7 @@
   /**
    * count canvas objects.
    *
-   * @return <Number> count
+   * @return {Number} count
    */
   Game.prototype.getCanvasCountObjects = function() {
     // get count.
@@ -656,11 +670,17 @@
    * @return {Array} targets 
    */
   Game.prototype.getAvaiableTargets = function(callback) {
+    // define targets defaults to empty array.
     var targets = [];
+    // loop throuch each canvas object.
     this.__canvas.forEachObject(function(object, index) {
+      // if object has figure and this object
+      // is NaN then push its index into 
+      // targets array.
       if ('figure' in object && isNaN(object.figure)) {
         targets.push(object.index);
-
+        // if callback is provided passing
+        // object in it.
         if (callback && $.isFunction(callback)) {
           callback(object);
         }
@@ -671,10 +691,10 @@
     
   }
   /**
-   * draws line.
+   * draws the line.
    *
-   * @param <Array> coords
-   * @return <Object> line
+   * @param {Array} coords
+   * @return {Object} line
    */
   Game.prototype.drawLine = function(coords) {
     // set options.
@@ -692,10 +712,10 @@
   /**
    * draws circle.
    *
-   * @param <Number> top
-   * @param <Number> left
-   * @param <Number> radius
-   * @return <Object> circle
+   * @param {Number} top
+   * @param {Number} left
+   * @param {Number} radius
+   * @return {Object} circle
    */
   Game.prototype.drawCircle = function(top, left, radius) {
     // set options.
@@ -719,8 +739,8 @@
   /**
    * draws group.
    *
-   * @param <Array> groups
-   * @return <Object> group
+   * @param {Array} groups
+   * @return {Object} group
    */
   Game.prototype.drawGroup = function(groups) {
     // set options.
@@ -740,7 +760,7 @@
   /**
    * draws game.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
   Game.prototype.drawGame = function() {
     // get x.
@@ -793,9 +813,9 @@
   /**
    * draws figure.
    *
-   * @param <Object> target
-   * @param <Number> figure
-   * @return <Object> this
+   * @param {Object} target
+   * @param {Number} figure
+   * @return {Object} this
    */
   Game.prototype.drawFigure = function(target, figure) {
     // get top.
@@ -839,15 +859,15 @@
   /**
    * draws figures state.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
-  Game.prototype.drawStateSquares = function() {
+  Game.prototype.drawGameState = function() {
     var _this = this;
     // get room object.
     var room = this.get('room');
-    // map figures, draw each
+    // loop through figures, draw each
     // figure, setting state.
-    room.figures.map(function(target) {
+    room.figures.forEach(function(target) {
       // get target index.
       var index = target.index;
       // get target figure.
@@ -858,19 +878,19 @@
         // draw figures.
         .drawFigure(_target, figure)
         // update square state.
-        .updateSquare(_target, index, figure);
+        .updateTarget(_target, index, figure);
     });
 
     return this;
   }
   /**
-   * figures fade in.
+   * adds fade-in effects to figures.
    *
-   * @param <Object> figure
-   * @param <Number> from
-   * @param <Number> to
-   * @param <Number> duration
-   * @return <Object> this
+   * @param {Object} figure
+   * @param {Number} from
+   * @param {Number} to
+   * @param {Number} duration
+   * @return {Object} this
    */
   Game.prototype.figureFadeIn = function(figure, from, to, duration) {
     // set opacity (from where to start).
@@ -887,8 +907,8 @@
   /**
    * draws cross out.
    *
-   * @param <Object> combination
-   * @return <Object> this
+   * @param {Object} combination
+   * @return {Object} this
    */
   Game.prototype.drawCrossOut = function(combination) {
     // check for combination object.
@@ -962,8 +982,8 @@
   /**
    * runs the game.
    *
-   * @param <Object> socket
-   * @return <Object> this
+   * @param {Object} socket
+   * @return {Object} this
    */
   Game.prototype.run = function(socket) {
     var _this = this;
@@ -974,38 +994,63 @@
     socket.on('connect', function() {
       // init room event.
       socket.on('init', function(room) {
-        _this
-          // set room object.
-          .set('room', room)
-          // draw game.
-          .drawGame()
-          // initialize squares.
-          .initSquares()
-          // draw squares state.
-          .drawStateSquares()
-          // play game.
-          ._play(socket);
+        if (!$.isEmptyObject(room)) {
+          _this
+            // set room object.
+            .set('room', room)
+            // draw game.
+            .drawGame()
+            // initialize targets.
+            .initTargets()
+            // draw game state.
+            .drawGameState()
+            // play game.
+            ._play(socket);
+        }
+        else {
+          // debug.
+          console.debug('init event - room couldn\t be found.');
+        }
       })
       // add players event.
       .on('add players', function(players) {
-        _this
-          // set players object.
-          .set('players', players)
-          // add players.
-          .addPlayers()
+        if (players.length) {
+          _this
+            // set players object.
+            .set('players', players)
+            // add players.
+            .addPlayers()
+        }
+        else {
+          // debug.
+          console.debug('add players event - players couldn\t be found.');
+        }
       })
       // waiting for player event.
       .on('waiting for player', function(player) {
-        // waiting for player.
-        _this.waitForPlayer(player);
+        if (!$.isEmptyObject(player)) {
+          // waiting for player.
+          _this.waitForPlayer(player);
+        }
+        else {
+          // debug.
+          console.debug('waiting for player event - player couldn\t be found.');
+        }
       })
       // set active player event.
       .on('set active player', function(players) {
-        // set active player.
-        _this.setActivePlayer(players);
-
-        _this.autoPlay(true);
-
+        // check for players.
+        if (players.length) {
+          _this
+            // set active player.
+            .setActivePlayer(players)
+            // auto play.
+            .autoPlay();
+        }
+        else {
+          // debug.
+          console.debug('set active player event - data couldn\t be found.');
+        }
       })
       // play event.
       .on('play', function(data) {
@@ -1023,6 +1068,7 @@
       })
       // switch event.
       .on('switch', function(data) {
+        // check for data.
         if (!$.isEmptyObject(data)) {
           _this
             // switch player.
@@ -1035,8 +1081,14 @@
       })
       // restart event.
       .on('restart', function(data) {
-        // restart game.
-        _this.restart(data);
+        if (!$.isEmptyObject(data)) {
+        // restart the game.
+          _this.restart(data);
+        }
+        else {
+          // debug.
+          console.debug('restart event - data couldn\t be found.');
+        }
       });
    });
   
