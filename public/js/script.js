@@ -174,8 +174,8 @@
   /**
    * sets active player.
    *
-   * @param <Object> players
-   * @return <Object> this
+   * @param {Object} players
+   * @return {Object} this
    */
   Game.prototype.setActivePlayer = function(players) {
     // get this player position.
@@ -184,41 +184,43 @@
     if (_position !== -1) {
       // get player by position.
       var player = players[_position];
-      // get active player position.
+      // get player position.
       var position = player.position;
-      // tell both player who's
-      // active player.
+      // get active player position.
       position = player.active ? position : ~~!position;
-      // if player is active allow 
-      // this player to play game
-      // otherwise deactivate it.
-      player.active ? this.setActiveState(true) : this.setActiveState(false);
-
-      // fade class.
+      // if player is active activate game
+      // otherwise deactivate game.
+      player.active ? this.activate() : this.deActivate();
+      // prepare fade class.
       var fade = 'whole-in';
-      // active player class;
-      var active = 'active';
+      // get player(s) element.
       var _player = $('div[class*="id-player-"]');
+      // get progress(es) element.
       var _progress = $('div[class*="id-progress-"]');
-
+      // filter player element by positon 
+      // and add whole-in class.
       _player.filter(function(_position) {
         return _position === position;
       })
+      // add whole-in class.
       .addClass(fade)
-      .addClass(active)
+      // back.
       .addBack()
-      // set default opacity to non-active
-      // player.
+      // filter player element by positon 
+      // and remove whole-in class.
       .filter(function(_position) {
         return _position !== position;
       }).removeClass(fade);
-
+      // start after 1s.
       setTimeout(function() {
+        // filter progress bar element by positon 
+        // and add whole-in class.
         _progress.filter(function(_position) {
           return _position === position;
         }).addClass(fade);
       }, 1000);
-
+      // filter progress bar element by positon 
+      // and remove whole-in class.
       _progress.filter(function(_position) {
         return _position !== position;
       }).removeClass(fade);
@@ -229,60 +231,117 @@
   /**
    * auto play.
    *
-   * @return <Object> this
+   * @return {Object} this
    */
   Game.prototype.autoPlay = function() {
     var _this = this;
-    // start after 1ms.
+    // start after 1s.
     setTimeout(function() {
-      // init autoplay value defaults
-      // to true.
+      // set autoplay value defaults to true.
       _this.set('autoplay', true);
       // get players object.
       var players = _this.get('players');
-      // check for players length
-      // if both players are in
-      // then attach timer.
+      // check for players length if both players
+      // are in then start count down.
       if (players.length > 1) {
-        // // get player position.
+        // get player position.
         var _position = _this.getPlayerPosition();
         // check for position.
         if (_position !== -1) {
           // get player by position.
           var player = players[_position];
+          // get player position.
+          var position = player.position;
           // get active player postion.
-          var position = player.active ? player.position : ~~!player.position;
-          // get progress bar.
+          position = player.active ? position : ~~!position;
+          // get progress bar by active player position.
           var progress = $('.id-progress-' + position).children('.progress-bar');
           // get width in percentage.
           var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
-          // get auto play value check 
-          // whether its allowed or
-          // not.
-          // get avaiable targets.
-          // set time interval repeat after
-          // each 100ms.
-          
+          // repeat after 1/10 second.
           var time = setInterval(function() {
+            // get available targets.
             var targets = _this.getAvaiableTargets();
+            // get autoplay value.
             var autoplay = _this.get('autoplay');
-              if (autoplay) {
-                progress.width(width-- + '%');
-                if (width < 0) {
-                  var random = targets[Math.floor(Math.random() * targets.length)];
-                  console.log(random);
-                  var target = _this.__canvas.item(random);
-                  if (isNaN(target.figure) && position === _position) {
-                    _this.__canvas.trigger('mouse:down', {
-                      target: target
-                    });
-                  }
+            // check for autoplay value if its true
+            // substract width 1, get random
+            // avaiable target and trigger
+            // it to draw figure.
+            if (autoplay) {
+              // substract 1 and update width for progress bar.
+              progress.width(width-- + '%');
+              // check whether the width is less then zero
+              // or not.
+              if (width < 0) {
+                // get random index from targets array.
+                var random = targets[Math.floor(Math.random() * targets.length)];
+                // get random target.
+                var target = _this.__canvas.item(random);
+                // check whether the target has no figure 
+                // and position is active player postion.
+                if (isNaN(target.figure) && position === _position) {
+                  // trigger to mouse down on specific 
+                  // target.
+                  _this.__canvas.trigger('mouse:down', {
+                    target: target
+                  });
                 }
               }
+            }
+            // progress bar success.
+            var success = 'progress-bar-success';
+            // progress bar warning.
+            var warning = 'progress-bar-warning';
+            // progress bar danger.
+            var danger = 'progress-bar-danger';
+            // check for autoplay value and width if autoplay 
+            // is false or width is zero this means that
+            // event is fired! set progress bar to init 
+            // state and recursively call autoplay.
             if (!autoplay || width < 0) {
-              progress.width(100 + '%');
-              _this.autoPlay();
-              clearInterval(time);
+              // start after 1s.
+              setTimeout(function() {
+                // set width to 100%.
+                progress.width(100 + '%');
+                // check for danger progress bar class.
+                if(progress.hasClass(danger)) {
+                  progress
+                    // remove danger progress bar.
+                    .removeClass(danger)
+                    // add success progress bar.
+                    .addClass(success)
+                }
+                // recursively call autoplay method.
+                _this.autoPlay();
+              }, 1000);
+              // check for time interval id.
+              if (time) {
+                // clear time interval by id.
+                clearInterval(time);
+              }
+            }
+            // width case 50%.
+            else if (width === 50) {
+              // check for success progress bar class.
+              if (progress.hasClass(success)) {
+                progress
+                  // remove success progress bar.
+                  .removeClass(success)
+                  // add warning progress bar.
+                  .addClass(warning);
+              }
+            }
+            // width case 20%.
+            else if (width === 20) {
+              // check for warning progress bar class.
+              if (progress.hasClass(warning)) {
+                progress
+                  // remove warning progress bar.
+                  .removeClass(warning)
+                  // add danger progress bar.
+                  .addClass(danger);
+              }
             }
           }, 100);
         }
@@ -361,11 +420,11 @@
     return this;
   }
   /**
-   * plays game.
+   * plays the game.
    *
-   * @param <Object> target
-   * @param <Function> callback
-   * @return <Object> this
+   * @param {Object} target
+   * @param {Function} callback
+   * @return {Object} this
    */
   Game.prototype.play = function(target, callback) {
     // get room object.
@@ -444,6 +503,7 @@
       callback.call(this, game);
     }
 
+    // set autoplay to false.
     this.set('autoplay', false);
 
     return this;
@@ -452,8 +512,8 @@
    * starts playing on target
    * click event.
    *
-   * @param <Object> socket
-   * @return <Object> this
+   * @param {Object} socket
+   * @return {Object} this
    */
   Game.prototype._play = function(socket) {
     var _this = this;
@@ -589,9 +649,11 @@
     return count;
   }
   /**
-   * get avaiable targets.
+   * get avaiable targets, passing each object to 
+   * callback function if its provided.
    *
-   * @return <Array> targets 
+   * @param {Function} callback
+   * @return {Array} targets 
    */
   Game.prototype.getAvaiableTargets = function(callback) {
     var targets = [];
