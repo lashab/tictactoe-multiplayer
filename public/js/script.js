@@ -231,16 +231,13 @@
    *
    * @return <Object> this
    */
-  Game.prototype.autoPlay = function(autoplay) {
+  Game.prototype.autoPlay = function() {
     var _this = this;
     // start after 1ms.
     setTimeout(function() {
       // init autoplay value defaults
       // to true.
-          console.log(autoplay);
-      if (autoplay) {
-        _this.set('autoplay', true);
-      }
+      _this.set('autoplay', true);
       // get players object.
       var players = _this.get('players');
       // check for players length
@@ -262,29 +259,30 @@
           // get auto play value check 
           // whether its allowed or
           // not.
-          var autoplay = _this.get('autoplay');
           // get avaiable targets.
-          var targets = _this.getAvaiableTargets();
           // set time interval repeat after
           // each 100ms.
-          var interval = setInterval(function() {
-            if (!autoplay) {
-              progress.css('width', 100 + '%');
-              clearInterval(interval);
-            }
-            else {
-              progress.width(width-- + '%');
-              if (width < 0) {
-                var random = targets[Math.floor(Math.random() * targets.length)];
-                var target = _this.__canvas.item(random);
-                if (isNaN(target.figure) && position === _position) {
-                  _this.__canvas.trigger('mouse:down', {
-                    target: target
-                  });
+          
+          var time = setInterval(function() {
+            var targets = _this.getAvaiableTargets();
+            var autoplay = _this.get('autoplay');
+              if (autoplay) {
+                progress.width(width-- + '%');
+                if (width < 0) {
+                  var random = targets[Math.floor(Math.random() * targets.length)];
+                  console.log(random);
+                  var target = _this.__canvas.item(random);
+                  if (isNaN(target.figure) && position === _position) {
+                    _this.__canvas.trigger('mouse:down', {
+                      target: target
+                    });
+                  }
                 }
-                progress.width(100 + '%');
-                clearInterval(interval);
               }
+            if (!autoplay || width < 0) {
+              progress.width(100 + '%');
+              _this.autoPlay();
+              clearInterval(time);
             }
           }, 100);
         }
@@ -967,7 +965,6 @@
           _this
             // switch player.
             .switchActivePlayer(data)
-            .autoPlay(false);
         }
         else {
           // debug.
