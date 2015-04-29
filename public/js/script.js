@@ -255,30 +255,30 @@
    */
   Game.prototype.updatePlayerScore = function() {
     var players = this.get('players');
-    var badges = $('.players').find('.badge');
 
-    var _player = players[0];
-    var __player = players[1];
+    if (players.length > 1) {
+      var badges = $('.players').find('.badge');
 
-    if (_player.score > __player.score) {
-      badges.eq(0).toggleClass('badge-loosing', false);
-      badges.eq(1).toggleClass('badge-loosing');
-    }
-    else if (_player.score < __player.score) {
-            console.log('xo aq var');
-      badges.eq(0).toggleClass('badge-loosing');
-      badges.eq(1).toggleClass('badge-loosing', false);
-    }
-    else {
-      badges.eq(0).toggleClass('badge-loosing', false);
-      badges.eq(1).toggleClass('badge-loosing', false);
-    }
+      var _player = players[0];
+      var __player = players[1];
 
+      if (_player.score > __player.score) {
+        badges.eq(0).removeClass('badge-loosing');
+        badges.eq(1).addClass('badge-loosing');
+      }
+      else if (_player.score < __player.score) {
+        badges.eq(0).addClass('badge-loosing');
+        badges.eq(1).removeClass('badge-loosing');
+      }
+      else {
+        badges.eq(0).removeClass('badge-loosing');
+        badges.eq(1).removeClass('badge-loosing');
+      }
+    }
     players.forEach(function(player) {
       var badge = $('.id-player-' + player.position).find('.badge');
       badge.text(player.score);
     });
-
     return this;
   }
   /**
