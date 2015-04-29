@@ -6,7 +6,7 @@
    *
    * @param {Object} canvas
    */
-  var Game = function(canvas) {
+  var Game = function (canvas) {
     // create new fabric object.
     this.__canvas = new fabric.Canvas(canvas.id);
     // set canvas width.
@@ -21,7 +21,7 @@
    * @param {Mixed} value
    * @return {Object} this
    */
-  Game.prototype.set = function(property, value) {
+  Game.prototype.set = function (property, value) {
     // set value.
     this[property] = value;
 
@@ -33,7 +33,7 @@
    * @param {String} property
    * @return {Mixed} value
    */
-  Game.prototype.get = function(property) {
+  Game.prototype.get = function (property) {
     // get value.
     var value = this[property];
 
@@ -44,7 +44,7 @@
    *
    * @return {Number|Boolean} room|false
    */
-  Game.prototype.getRoomIdByPathName = function() {
+  Game.prototype.getRoomIdByPathName = function () {
     var pathname = ''; 
     // regular expression for instance:
     // room/1, room/2 etc.
@@ -89,7 +89,7 @@
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype.init = function(socket) {
+  Game.prototype.init = function (socket) {
     // get room id.
     var room = this.getRoomIdByPathName();
     if (room) {
@@ -106,7 +106,7 @@
    *
    * @return {Number} position
    */
-  Game.prototype.getPlayerPosition = function() {
+  Game.prototype.getPlayerPosition = function () {
     // get player position from cookie.
     // cast it to the number.
     var position = docCookies.getItem('position') >> 0;
@@ -131,7 +131,7 @@
    *
    * @return {Object} this
    */
-  Game.prototype.addPlayers = function() {
+  Game.prototype.addPlayers = function () {
     // get players.
     var players = this.get('players');
     // if players length is more then 1
@@ -144,15 +144,16 @@
     players.forEach(function(player, position) {
       $('.id-player-' + position)
         .children('img')
-        // TODO: remove image path from client.
-        .prop('src', '../images/default.png')
-          .next()
-            .children()
-              .text(player.name)
-            .end()
-          .end()
+          // TODO: remove image path from client.
+          .prop('src', '../images/default.png')
         .end()
-      .addClass('show');
+        .find('.player-name')
+          .text(player.name)
+        .end()
+        .find('.player-score')
+          .html($('<span class="badge">' + player.score + '</span>'))
+        .end()
+        .addClass('show');
     });
     
     return this;
@@ -163,7 +164,7 @@
    * @param {Object} player
    * @return {Object} this
    */
-  Game.prototype.waitForPlayer = function(player) {
+  Game.prototype.waitForPlayer = function (player) {
     // add loading animation according to the
     // player position.
     $('.id-player-' + player.position)
@@ -181,7 +182,7 @@
    * @param {Object} players
    * @return {Object} this
    */
-  Game.prototype.setActivePlayer = function(players) {
+  Game.prototype.setActivePlayer = function (players) {
     // get this player position.
     var _position = this.getPlayerPosition();
     // check for position.
@@ -233,11 +234,59 @@
     return this;
   }
   /**
+   * gets active player.
+   *
+   * @return {Object} player
+   */
+  Game.prototype.getActivePlayer = function() {
+    // get players.
+    var players = this.get('players');
+    // filter players, get active player.
+    var player = players.filter(function(player) {
+      return player.active;
+    })[0];
+
+    return player;
+  }
+  /**
+   * updates player score.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.updatePlayerScore = function() {
+    var players = this.get('players');
+    var badges = $('.players').find('.badge');
+
+    var _player = players[0];
+    var __player = players[1];
+
+    if (_player.score > __player.score) {
+      badges.eq(0).toggleClass('badge-loosing', false);
+      badges.eq(1).toggleClass('badge-loosing');
+    }
+    else if (_player.score < __player.score) {
+            console.log('xo aq var');
+      badges.eq(0).toggleClass('badge-loosing');
+      badges.eq(1).toggleClass('badge-loosing', false);
+    }
+    else {
+      badges.eq(0).toggleClass('badge-loosing', false);
+      badges.eq(1).toggleClass('badge-loosing', false);
+    }
+
+    players.forEach(function(player) {
+      var badge = $('.id-player-' + player.position).find('.badge');
+      badge.text(player.score);
+    });
+
+    return this;
+  }
+  /**
    * auto play.
    *
    * @return {Object} this
    */
-  Game.prototype.autoPlay = function() {
+  Game.prototype.autoPlay = function () {
     var _this = this;
     // start after 1s.
     setTimeout(function() {
@@ -309,10 +358,12 @@
                 // set width to 100%.
                 progress.width(100 + '%');
                 // check for danger progress bar class.
-                if(progress.hasClass(danger)) {
+                if(progress.hasClass(danger) || progress.hasClass(warning)) {
                   progress
                     // remove danger progress bar.
                     .removeClass(danger)
+                    // remove warning progress bar.
+                    .removeClass(warning)
                     // add success progress bar.
                     .addClass(success)
                 }
@@ -495,7 +546,9 @@
     // have already filled game is 
     // over but without winner.
     if (!figures.length) {
+      // pushing values in game object.
       game.over = true;
+      game.wins = '';
     }
     // if theres is a match in this
     // combination this means that
@@ -507,8 +560,12 @@
       var b = this.__canvas.item(combination[1]).get('figure');
       var c = this.__canvas.item(combination[2]).get('figure');
       if ((!isNaN(a) && !isNaN(b) && !isNaN(c)) && (a === b && b === c)) {
+        // get active player.
+        var player = this.getActivePlayer();
+        // pushing values in game object.
         game.over = true;
         game.combination = combination;
+        game.wins = player._id;
       }
     }
     // calling callback function
@@ -563,11 +620,12 @@
                 });
               }
               else {
-                // emit server to restart the game
-                // passing room id and winner
-                // combination object.
+                // emit server to restart the game passing
+                // room id, winner combination and winner
+                // player id.
                 socket.emit('restart', {
                   room: room,
+                  wins: game.wins,
                   combination: game.combination
                 });
               }
@@ -625,6 +683,8 @@
       .set('players', players)
       // draw cross out.
       .drawCrossOut(combination)
+      // update player score.
+      .updatePlayerScore();
     // execute after 1s.
     setTimeout(function() {
       // get count.
@@ -1020,6 +1080,7 @@
             .set('players', players)
             // add players.
             .addPlayers()
+            .updatePlayerScore();
         }
         else {
           // debug.

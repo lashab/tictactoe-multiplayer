@@ -62,3 +62,19 @@ body.rooms {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+
+.player-score span {
+  padding: 5px 10px;
+  background-color: #5CB85C;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.badge-loosing {
+  background-color: #BF1E2D !important;
+}
+
+.badge-winning {
+  background-color: #5CB85C !important;
+}
+

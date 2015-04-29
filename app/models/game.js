@@ -32,7 +32,8 @@ module.exports = {
           room: id,
           name: player,
           active: room.available ? true : false,
-          position: room.available ? 0 : 1
+          position: room.available ? 0 : 1,
+          score: 0
         }, room, function(err, db, player) {
           // if error happens pass it to
           // the callback and return.
@@ -207,9 +208,11 @@ module.exports = {
       // check whether the data
       // has room property with
       // the value room id.
-      if (data.hasOwnProperty('room') && data.room) {
+      if ('room' in data && data.room) {
         // get room id.
         var id = data.room;
+        // get winner player id.
+        var player = data.wins;
         // dalete state.
         Room.updateFiguresState(db, id, null, '$set', function(err, db, room) {
           // if error happens pass it to
@@ -224,20 +227,27 @@ module.exports = {
             if (err) {
               return callback(err);
             }
-            // get players.
-            Player.getPlayersByRoomId(db, id, function(err, db, players) {
+            Player.updatePlayerScore(db, player, function(err, db) {
               // if error happens pass it to
               // the callback and return.
               if (err) {
                 return callback(err);
               }
-              // emit clients to restart game, passing
-              // room, players and winner combination 
-              // objects.
-              io.in(id).emit('restart', {
-                room: room,
-                players: players,
-                combination: data.combination
+              // get players by id.
+              Player.getPlayersByRoomId(db, id, function(err, db, players) {
+                // if error happens pass it to
+                // the callback and return.
+                if (err) {
+                  return callback(err);
+                }
+                // emit clients to restart game, passing
+                // room, players and winner combination 
+                // objects.
+                io.in(id).emit('restart', {
+                  room: room,
+                  players: players, 
+                  combination: data.combination
+                });
               });
             });
           });

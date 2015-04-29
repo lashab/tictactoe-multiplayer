@@ -63,26 +63,23 @@ module.exports = {
   add: function(db, player, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // initialize room.
-    this.init(player, function(player) {
-      // save room.
-      collection.save(player, function(err, check) {
-        // if error happens pass it to
-        // the callback and return.
-        if (err) {
-          return callback(err);
-        }
-        // if succeeds pass the player
-        // data to the callback and
-        // return.
-        if (check) {
-          return callback(null, db, player);
-        }
-        // if fails pass the null
-        // to the callback and
-        // return.
-        return callback(null, db, null);
-      });
+    // save room.
+    collection.save(player, function(err, check) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // if succeeds pass the player
+      // data to the callback and
+      // return.
+      if (check) {
+        return callback(null, db, player);
+      }
+      // if fails pass the null
+      // to the callback and
+      // return.
+      return callback(null, db, null);
     });
   },
   /**
@@ -238,15 +235,9 @@ module.exports = {
       // change active state and save.
       if (players.length) {
         // loop through players.
-        players.map(function(player) {
+        players.forEach(function(player) {
           // change active player.
-          if (player.active) {
-            player.active = false;
-          }
-          else {
-            player.active = true;
-          }
-          // player.active = player.active ? false : true;
+          player.active = player.active ? false : true;
           // update player.
           _this.add(db, player, function(err, db, player) {
             // if error happens pass it to
@@ -260,6 +251,36 @@ module.exports = {
         // to the callback and return.
         return callback(null, db, players);
       }
+    });
+  },
+  /**
+   * updates player score.
+   *
+   * @param <Object> db
+   * @param <Number|String> id
+   * @param <Function> callback
+   * @return <Function> callback
+   */
+  updatePlayerScore: function(db, id, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    if (!id) {
+      return callback(null, db);
+    }
+    collection.findAndModify({
+      _id: new objectID(id)
+    }, [], {
+      $inc: {
+        score: 1
+      }
+    }, {}, function(err) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+
+      return callback(null, db);
     });
   }
 };
