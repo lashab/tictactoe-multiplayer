@@ -150,9 +150,6 @@
         .find('.player-name')
           .text(player.name)
         .end()
-        .find('.player-score')
-          .html($('<span class="badge">' + player.score + '</span>'))
-        .end()
         .addClass('show');
     });
     
@@ -249,11 +246,11 @@
     return player;
   }
   /**
-   * updates player score.
+   * sets player score.
    *
    * @return {Object} this
    */
-  Game.prototype.updatePlayerScore = function() {
+  Game.prototype.setPlayerScore = function() {
     var players = this.get('players');
 
     if (players.length > 1) {
@@ -263,16 +260,16 @@
       var __player = players[1];
 
       if (_player.score > __player.score) {
-        badges.eq(0).removeClass('badge-loosing');
-        badges.eq(1).addClass('badge-loosing');
+        badges.eq(0).toggleClass('badge-loosing', false);
+        badges.eq(1).toggleClass('badge-loosing', true);
       }
       else if (_player.score < __player.score) {
-        badges.eq(0).addClass('badge-loosing');
-        badges.eq(1).removeClass('badge-loosing');
+        badges.eq(0).toggleClass('badge-loosing', true);
+        badges.eq(1).toggleClass('badge-loosing', false);
       }
       else {
-        badges.eq(0).removeClass('badge-loosing');
-        badges.eq(1).removeClass('badge-loosing');
+        badges.eq(0).toggleClass('badge-loosing', false);
+        badges.eq(1).toggleClass('badge-loosing', false);
       }
     }
     players.forEach(function(player) {
