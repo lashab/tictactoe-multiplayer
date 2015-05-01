@@ -11,10 +11,10 @@ module.exports = {
   /**
    * joins player to the game.
    *
-   * @param <Object> db
-   * @param <String> player
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {String} player
+   * @param {Function} callback
+   * @return {Function} callback
    */
   join: function(db, player, callback) {
     // open room.
@@ -68,8 +68,16 @@ module.exports = {
       }
     });
   },
+  /**
+   * runs the game.
+   *
+   * @param {Object} db
+   * @param {Object} io
+   * @param {Object} socket
+   * @return {Function} callback
+   */
   run: function(db, io, socket, callback) {
-    // room event.
+    // init event.
     socket.on('init', function(data) {
       // check whether the data
       // has room property with

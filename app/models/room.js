@@ -10,8 +10,8 @@ module.exports = {
   /**
    * get rooms collection.
    *
-   * @param <Object> db
-   * @return <Object> collection
+   * @param {Object} db
+   * @return {Object} collection
    */
   getCollection: function(db) {
     // get collection.
@@ -22,8 +22,8 @@ module.exports = {
    * initialize rooms data merged
    * with default data.
    *
-   * @param <Object> data
-   * @return <Function> callback
+   * @param {Object} data
+   * @return {Function} callback
    */
   init: function(data, callback) {
     // default data.
@@ -52,10 +52,10 @@ module.exports = {
   /**
    * count rooms.
    *
-   * @param <Object> db
-   * @param <Object> query
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Object} query
+   * @param {Function} callback
+   * @return {Function} callback
    */
   count: function(db, query, callback) {
     // optional query variable.
@@ -77,10 +77,10 @@ module.exports = {
    * adds new or updates 
    * existent room.
    *
-   * @param <Object> db
-   * @param <Object> room
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
    */
   add: function(db, room, callback) {
     // get collection.
@@ -110,12 +110,12 @@ module.exports = {
   /**
    * modifys room state.
    *
-   * @param <Object> db
-   * @param <Object> id
-   * @param <Object> target
-   * @param <String> action
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Object} id
+   * @param {Object} target
+   * @param {String} action
+   * @param {Function} callback
+   * @return {Function} callback
    */
   updateFiguresState: function(db, id, target, action, callback) {
     // define figures array like object
@@ -160,11 +160,11 @@ module.exports = {
   /**
    * switches figure.
    *
-   * @param <Object> db
-   * @param <Object> id
-   * @param <Object> figure
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Object} id
+   * @param {Object} figure
+   * @param {Function} callback
+   * @return {Function} callback
    */
   switchActiveFigure: function(db, id, figure, callback) {
     // change figure.
@@ -202,10 +202,10 @@ module.exports = {
   /**
    * get room by id.
    *
-   * @param <Object> db
-   * @param <Number|String> id
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Number|String} id
+   * @param {Function} callback
+   * @return {Function} callback
    */
   getRoomById: function(db, id, callback) {
     // if the id type is a string
@@ -235,9 +235,9 @@ module.exports = {
   /**
    * get random avaiable room.
    *
-   * @param <Object> db
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Function} callback
+   * @return {Function} callback
    */
   getRandomAvailableRoom: function(db, callback) {
     // get collection.
@@ -276,9 +276,9 @@ module.exports = {
   /**
    * opens room.
    *
-   * @param <Object> db
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Function} callback
+   * @return {Function} callback
    */
   open: function(db, callback) {
     var _this = this;

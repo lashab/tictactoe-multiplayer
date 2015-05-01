@@ -184,6 +184,7 @@
     var _position = this.getPlayerPosition();
     // check for position.
     if (_position !== -1) {
+      // get players.
       var players = this.get('players');
       // get player by position.
       var player = players[_position];
@@ -252,31 +253,51 @@
    * @return {Object} this
    */
   Game.prototype.setPlayerScores = function() {
+    // get players.
     var players = this.get('players');
-
+    // check for players.
     if (players.length > 1) {
+      // get badges.
       var badges = $('.players').find('.badge');
-
+      // get first player object.
       var _player = players[0];
+      // get second player object.
       var __player = players[1];
-
+      // get first badge.
+      var _badge = badges.eq(0);
+      // get second badge.
+      var __badge = badges.eq(1);
+      // case 1 - first player score is more then second.
       if (_player.score > __player.score) {
-        badges.eq(0).toggleClass('badge-loosing', false);
-        badges.eq(1).toggleClass('badge-loosing', true);
+        // remove badge-loosing class for first player.
+        _badge.toggleClass('badge-loosing', false);
+        // add badge-loosing class for second player.
+        __badge.toggleClass('badge-loosing', true);
       }
+      // case 2 - second player score is more then first.
       else if (_player.score < __player.score) {
-        badges.eq(0).toggleClass('badge-loosing', true);
-        badges.eq(1).toggleClass('badge-loosing', false);
+        // add badge-loosing class for first player.
+        _badge.toggleClass('badge-loosing', true);
+        // remove badge-loosing class for second player.
+        __badge.toggleClass('badge-loosing', false);
       }
+      // case 3 - first and second players scores are equal.
       else {
-        badges.eq(0).toggleClass('badge-loosing', false);
-        badges.eq(1).toggleClass('badge-loosing', false);
+        // remove badge-loosing class for first player.
+        _badge.toggleClass('badge-loosing', false);
+        // remove badge-loosing class for second player.
+        __badge.toggleClass('badge-loosing', false);
       }
     }
+    // loop through each players, get badge
+    // by positon and set score.
     players.forEach(function(player) {
+      // get badge by position.
       var badge = $('.id-player-' + player.position).find('.badge');
+      // set score.
       badge.text(player.score);
     });
+
     return this;
   }
   /**
@@ -975,7 +996,7 @@
       var a = combination[0];
       // get last index from combination. 
       var b = combination[2];
-      // diff among first and last index.
+      // diff between first and last index.
       var c = b - a;
       // get first square by index.
       var _a_square = this.__canvas.item(a);

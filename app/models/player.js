@@ -11,8 +11,8 @@ module.exports = {
   /**
    * get players collection.
    *
-   * @param <Object> db
-   * @return <Object> collection
+   * @param {Object} db
+   * @return {Object} collection
    */
   getCollection: function(db) {
     // get collection.
@@ -20,45 +20,14 @@ module.exports = {
     return collection;
   },
   /**
-   * initialize players data merged
-   * with default data.
-   *
-   * @param <Object> data
-   * @param <Function> callback
-   * @return <Function> callback
-   */
-  init: function(data, callback) {
-    // default data.
-    var player = {
-      score: 0
-    };
-    // loop through data.
-    for (var i in data) {
-      // check whether the default data
-      // has provided property.
-      if (!player.hasOwnProperty(i)) {
-        player[i] = data[i];
-      }
-      else {
-        // don't push existent property
-        // debug if it happens.
-        debug('Property %s already exists', i);
-      }
-    }
-    // pass the player data
-    // to the callback and
-    // return.
-    return callback(player);
-  },
-  /**
    * adds new or updates 
    * existent player.
    *
-   * @param <Object> db
-   * @param <Object> options
-   * @param <Boolean> update
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Object} options
+   * @param {Boolean} update
+   * @param {Function} callback
+   * @return {Function} callback
    */
   add: function(db, player, callback) {
     // get collection.
@@ -86,11 +55,11 @@ module.exports = {
    * adds new player to 
    * specified room.
    *
-   * @param <Object> db
-   * @param <String> player
-   * @param <Object> room
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {String} player
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
    */
   in : function(db, player, room, callback) {
     // get collection.
@@ -153,10 +122,10 @@ module.exports = {
   /**
    * get player by id.
    *
-   * @param <Object> db
-   * @param <String> id
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {String} id
+   * @param {Function} callback
+   * @return {Function} callback
    */
   getPlayerById: function(db, id, callback) {
     // get collection.
@@ -179,10 +148,10 @@ module.exports = {
   /**
    * get players by room id.
    *
-   * @param <Object> db
-   * @param <Number|String> id
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Number|String} id
+   * @param {Function} callback
+   * @return {Function} callback
    */
   getPlayersByRoomId: function(db, id, callback) {
     // if the id type is a string
@@ -212,10 +181,10 @@ module.exports = {
   /**
    * switches player.
    *
-   * @param <Object> db
-   * @param <Number|String> id
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {Number|String} id
+   * @param {Function} callback
+   * @return {Function} callback
    */
   switchActivePlayer: function(db, id, callback) {
     var _this = this;
