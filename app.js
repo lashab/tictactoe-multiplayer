@@ -19,15 +19,6 @@ var Routes = require(join(__dirname, 'app/routes'));
 var Game = require(join(__dirname, 'app/models/game'));
 var Player = require(join(__dirname, 'app/models/player'));
 
-database.connect(config.get('tictactoe.mongodb.url'), function(err, db) {
-  if (err) throw err;
-
-  Player.updatePlayerScore(db, '553fcc63a8ff8e282c0bb0ae', function(err, db) {
-    if (err) throw err;
-    console.log('sss');
-  });
-})
-
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
 app.set('views', join(__dirname, config.get('tictactoe.views.path')));

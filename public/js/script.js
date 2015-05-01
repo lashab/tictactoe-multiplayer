@@ -179,11 +179,12 @@
    * @param {Object} players
    * @return {Object} this
    */
-  Game.prototype.setActivePlayer = function (players) {
+  Game.prototype.setActivePlayer = function () {
     // get this player position.
     var _position = this.getPlayerPosition();
     // check for position.
     if (_position !== -1) {
+      var players = this.get('players');
       // get player by position.
       var player = players[_position];
       // get player position.
@@ -250,7 +251,7 @@
    *
    * @return {Object} this
    */
-  Game.prototype.setPlayerScore = function() {
+  Game.prototype.setPlayerScores = function() {
     var players = this.get('players');
 
     if (players.length > 1) {
@@ -655,7 +656,7 @@
       // set players.
       .set('players', players)
       // set active player.
-      .setActivePlayer(players);
+      .setActivePlayer();
 
     return this;
   }
@@ -680,8 +681,8 @@
       .set('players', players)
       // draw cross out.
       .drawCrossOut(combination)
-      // update player score.
-      .updatePlayerScore();
+      // reset player score.
+      .setPlayerScores();
     // execute after 1s.
     setTimeout(function() {
       // get count.
@@ -1070,18 +1071,24 @@
         }
       })
       // add players event.
-      .on('add players', function(players) {
+      .on('join players', function(players) {
+        // check for players.
         if (players.length) {
           _this
-            // set players object.
+            // set players
             .set('players', players)
             // add players.
             .addPlayers()
-            .updatePlayerScore();
+            // set active player.
+            .setActivePlayer()
+            // set player scores.
+            .setPlayerScores()
+            // auto play.
+            .autoPlay();
         }
         else {
           // debug.
-          console.debug('add players event - players couldn\t be found.');
+          console.debug('join players event - players couldn\t be found.');
         }
       })
       // waiting for player event.
@@ -1093,21 +1100,6 @@
         else {
           // debug.
           console.debug('waiting for player event - player couldn\t be found.');
-        }
-      })
-      // set active player event.
-      .on('set active player', function(players) {
-        // check for players.
-        if (players.length) {
-          _this
-            // set active player.
-            .setActivePlayer(players)
-            // auto play.
-            .autoPlay();
-        }
-        else {
-          // debug.
-          console.debug('set active player event - data couldn\t be found.');
         }
       })
       // play event.

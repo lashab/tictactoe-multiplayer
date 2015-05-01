@@ -256,17 +256,21 @@ module.exports = {
   /**
    * updates player score.
    *
-   * @param <Object> db
-   * @param <Number|String> id
-   * @param <Function> callback
-   * @return <Function> callback
+   * @param {Object} db
+   * @param {String} id
+   * @param {Function} callback
+   * @return {Function} callback
    */
   updatePlayerScore: function(db, id, callback) {
     // get collection.
     var collection = this.getCollection(db);
+    // do not update score if the id
+    // is null pass database object
+    // to the callback and return. 
     if (!id) {
       return callback(null, db);
     }
+    // find player by id and increment score by 1.
     collection.findAndModify({
       _id: new objectID(id)
     }, [], {
@@ -279,7 +283,8 @@ module.exports = {
       if (err) {
         return callback(err);
       }
-
+      // pass database object to the callback
+      // and return.
       return callback(null, db);
     });
   }

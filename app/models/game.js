@@ -74,7 +74,7 @@ module.exports = {
       // check whether the data
       // has room property with
       // the value room id.
-      if (data.hasOwnProperty('room') && data.room) {
+      if ('room' in data && data.room) {
         // define room id.
         var id = data.room;
         // get room by id.
@@ -86,45 +86,42 @@ module.exports = {
           }
           // socket rooms join.
           socket.join(id);
-          // emit client room object.
+          // emit client to initialize room.
+          // passing room object.
           socket.emit('init', room);
-        });
-        // get players by room id.
-        Player.getPlayersByRoomId(db, id, function(err, db, players) {
-          // set loader image path.
-          var image = join('..', 'images', 'loading.gif');
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-          // check for players existence.
-          if (players.length) {
-            // if there is only one player
-            // wait for another player.
-            if (players.length === 1) {
-              // emit client to wait next
-              // player pass player wait
-              // seat position and wait
-              // image.
-              socket.emit('waiting for player', {
-                position: ~~!players[0].position,
-                image: image
-              });
+          // get players by room id.
+          Player.getPlayersByRoomId(db, id, function(err, db, players) {
+            // set loader image path.
+            var image = join('..', 'images', 'loading.gif');
+            // if error happens pass it to
+            // the callback and return.
+            if (err) {
+              return callback(err);
             }
-            // emit client to add players
-            // pass players object.
-            io.in(id).emit('add players', players);
-            // emit client to set
-            // active player pass
-            // players object.
-            io.in(id).emit('set active player', players);
-          }
-          else {
-            // debug if players could not
-            // be found in database.
-            debug('players could\'t be found.')
-          }
+            // check for players existence.
+            if (players.length) {
+              // if there is only one player
+              // wait for another player.
+              if (players.length === 1) {
+                // emit client to wait next
+                // player pass player wait
+                // seat position and wait
+                // image.
+                socket.emit('waiting for player', {
+                  position: 1,
+                  image: image
+                });
+              }
+              // emit client to join player passing
+              // players array-object.
+              io.in(id).emit('join players', players);
+            }
+            else {
+              // debug if players could not
+              // be found in database.
+              debug('players could\'t be found.')
+            }
+          });
         });
       }
       else {
@@ -139,7 +136,7 @@ module.exports = {
       // check whether the data
       // has room property with
       // the value room id.
-      if (data.hasOwnProperty('room') && data.room) {
+      if ('room' in data && data.room) {
         // get room id.
         var id = data.room;
         // get target.
@@ -170,7 +167,7 @@ module.exports = {
       // check whether the data
       // has room property with
       // the value room id.
-      if (data.hasOwnProperty('room') && data.room) {
+      if ('room' in data && data.room) {
         // get room id.
         var id = data.room;
         // switch player.
@@ -227,6 +224,7 @@ module.exports = {
             if (err) {
               return callback(err);
             }
+            // update player score.
             Player.updatePlayerScore(db, player, function(err, db) {
               // if error happens pass it to
               // the callback and return.
