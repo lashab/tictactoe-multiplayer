@@ -22,14 +22,14 @@ body.rooms {
   filter: alpha(opacity=50) !important;
   opacity: .5 !important;
 }
-.fade-effect:not(.wait) {
+.fade-effect:not(.waiting) {
   opacity: 0;
   -webkit-transition: opacity .4s ease-in;
   -o-transition: opacity .4s ease-in;
   transition: opacity .4s ease-in;
 }
 
-.players:not(.wait) {opacity: 0.5;}
+.players:not(.waiting) {opacity: 0.5;}
 .players {display: none;}
 
 

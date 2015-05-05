@@ -179,7 +179,7 @@ module.exports = {
     });
   },
   /**
-   * switches player.
+   * switches active player.
    *
    * @param {Object} db
    * @param {Number|String} id
@@ -255,6 +255,32 @@ module.exports = {
       // pass database object to the callback
       // and return.
       return callback(null, db);
+    });
+  },
+  /**
+   * removes player.
+   *
+   * @param {Object} db
+   * @param {String} id
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  remove: function(db, id, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // remove player by id.
+    collection.findAndModify({
+      _id: new objectID(id)
+    }, [], {
+      remove: true
+    }, function(err, data) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+
+      return callback(null, data);
     });
   }
 };

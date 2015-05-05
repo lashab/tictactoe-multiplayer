@@ -134,22 +134,27 @@
   Game.prototype.addPlayers = function () {
     // get players.
     var players = this.get('players');
-    // if players length is more then 1
-    // remove wait class.
+    // check for players length.
     if (players.length > 1) {
-      $('.players.wait').removeClass('wait');
+      // set waiting property to false.
+      this.set('waiting', false);
+      // remove waiting class.
+      $('.players.waiting').removeClass('waiting');
     }
     // loop through each player add image
     // and player name.
     players.forEach(function(player, position) {
       $('.id-player-' + position)
-        .children('img')
+        .children(':first-child')
           // TODO: remove image path from client.
           .prop('src', '../images/default.png')
-        .end()
-        .find('.player-name')
-          .text(player.name)
-        .end()
+          .next()
+            .children(':first-child')
+              .text(player.name)
+              .end()
+            .addClass('whole-in')
+            .end()
+          .end()
         .addClass('show');
     });
     
@@ -164,11 +169,21 @@
   Game.prototype.waitForPlayer = function (player) {
     // add loading animation according to the
     // player position.
+    this
+      .set('waiting', true)
+      .set('autoplay', false);
+
     $('.id-player-' + player.position)
-      .children('img')
+      .children(':first-child')
         .prop('src', player.image)
+        .next()
+          .removeClass('whole-in')
+          .end()
         .end()
-      .addClass('wait')
+      .children(':last-child')
+        .removeClass('whole-in')
+        .end()
+      .addClass('waiting')
       .addClass('show');
 
     return this;
@@ -215,6 +230,8 @@
       .filter(function(_position) {
         return _position !== position;
       }).removeClass(fade);
+
+      if (players.length > 1) {}
       // start after 1s.
       setTimeout(function() {
         // filter progress bar element by positon 
@@ -309,13 +326,15 @@
     var _this = this;
     // start after 1s.
     setTimeout(function() {
-      // set autoplay value defaults to true.
-      _this.set('autoplay', true);
       // get players object.
       var players = _this.get('players');
+      // get waiting value.
+      var isWaiting = _this.get('waiting');
       // check for players length if both players
       // are in then start count down.
-      if (players.length > 1) {
+      if (!isWaiting) {
+        // set autoplay value defaults to true.
+        _this.set('autoplay', true);
         // get player position.
         var _position = _this.getPlayerPosition();
         // check for position.
@@ -336,6 +355,10 @@
             var targets = _this.getAvaiableTargets();
             // get autoplay value.
             var autoplay = _this.get('autoplay');
+
+            isWaiting = _this.get('waiting');
+
+            if (!isWaiting) {
             // check for autoplay value if its true
             // substract width 1, get random
             // avaiable target and trigger
@@ -417,6 +440,7 @@
                   .addClass(danger);
               }
             }
+          }
           }, 100);
         }
       }
@@ -1058,6 +1082,29 @@
 
     return this;
   }
+  Game.prototype.leave = function(socket) {
+    var _this = this;
+    $('.id-player-0').bind('click', function(e) {
+      e.preventDefault();
+      // get player position.
+      var position = _this.getPlayerPosition();
+      // get room.
+      var room = _this.get('room');
+      // check for position.
+      if (position !== -1) {
+        // get players.
+        var players = _this.get('players');
+        // get player by position.
+        var player = players[position];
+
+        // emit to leave.
+        socket.emit('leave', {
+          player: player._id,
+          room: room._id
+        });
+      }
+    })
+  }
   /**
    * runs the game.
    *
@@ -1066,11 +1113,13 @@
    */
   Game.prototype.run = function(socket) {
     var _this = this;
-    // notify server about
-    // this room.
-    this.init(socket);
     // connect event.
     socket.on('connect', function() {
+      // notify server about
+      // this room.
+      _this
+        .init(socket)
+        .leave(socket);
       // init room event.
       socket.on('init', function(room) {
         if (!$.isEmptyObject(room)) {
@@ -1091,7 +1140,7 @@
           console.debug('init event - room couldn\t be found.');
         }
       })
-      // add players event.
+      // join players event.
       .on('join players', function(players) {
         // check for players.
         if (players.length) {
@@ -1161,7 +1210,10 @@
           console.debug('restart event - data couldn\t be found.');
         }
       });
-   });
+   }).on('disconnect', function() {
+      window.location.replace('/');
+      console.log('client disconnected');
+    });
   
    return this; 
   }

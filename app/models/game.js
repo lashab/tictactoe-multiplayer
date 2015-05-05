@@ -116,7 +116,7 @@ module.exports = {
                 // seat position and wait
                 // image.
                 socket.emit('waiting for player', {
-                  position: 1,
+                  position: ~~!players[0].position,
                   image: image
                 });
               }
@@ -265,6 +265,26 @@ module.exports = {
         // room id.
         debug('room couldn\'t be found.');
       }
+    }).on('leave', function(data) {
+      if ('room' in data && data.room) {
+        var id = data.room;
+        var player = data.player;
+        Player.remove(db, player, function(err, player) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+          // set loader image path.
+          var image = join('..', 'images', 'loading.gif');
+          socket.broadcast.in(id).emit('waiting for player', {
+            position: player.position,
+            image: image
+          });
+          socket.disconnect();
+        });
+      }
+      // socket.disconnect();
     });
   }
 };
