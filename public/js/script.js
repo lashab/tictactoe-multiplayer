@@ -1225,6 +1225,8 @@
       width: window.innerWidth - (window.innerWidth - window.innerHeight),
       height: window.innerHeight
     }).run(io());
+
+    $('[data-toggle="tooltip"]').tooltip();
   });
 
 })(jQuery);

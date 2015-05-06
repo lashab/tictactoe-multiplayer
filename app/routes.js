@@ -19,7 +19,7 @@ module.exports = function(app, db) {
     res.render('index', { 
       title: app.get('title'),
       body: Template.render('room'),
-      $class: 'rooms'
+      $class: 'room'
     });
   });
 
