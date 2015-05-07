@@ -45,7 +45,7 @@
    * @return {Number|Boolean} room|false
    */
   Game.prototype.getRoomIdByPathName = function () {
-    var pathname = ''; 
+    var pathname = '';
     // regular expression for instance:
     // room/1, room/2 etc.
     var regex = /^\/room\/(\d+)$/;
@@ -125,6 +125,27 @@
     }
     
     return position;
+  }
+  Game.prototype.getPlayerByPosition = function(position) {
+    // get player position from cookie if position 
+    // paramenter is not provided.
+    var position = position || this.getPlayerPosition();
+    // check for position.
+    if (position !== -1) {
+      // get players.
+      var players = this.get('players') || [];
+      // check for players.
+      if (players.length) {
+        // get player by position.
+        var player = players[position];
+      }
+      else {
+        // debug.
+        console.debug('players could\'t be found.');
+      }
+
+      return player;
+    }
   }
   /**
    * adds player.
@@ -207,44 +228,52 @@
       var position = player.position;
       // get active player position.
       position = player.active ? position : ~~!position;
+      // get waiting state.
+      var isWaiting = this.get('waiting');
+      // prepare fade-in class.
+      var fadeIn = 'whole-in';
+      // prepare fade-out class.
+      var fadeOut = 'half-in';
+      // get player element(s).
+      var _player = $('div[class*="id-player-"]');
+      // get progress element(es).
+      var _progress = $('div[class*="id-progress-"]');
       // if player is active activate game
       // otherwise deactivate game.
-      player.active ? this.activate() : this.deActivate();
-      // prepare fade class.
-      var fade = 'whole-in';
-      // get player(s) element.
-      var _player = $('div[class*="id-player-"]');
-      // get progress(es) element.
-      var _progress = $('div[class*="id-progress-"]');
+      player.active && !isWaiting ? this.activate() : this.deActivate();
       // filter player element by positon 
-      // and add whole-in class.
+      // add whole-in class and remove
+      // half-in class.
       _player.filter(function(_position) {
         return _position === position;
       })
-      // add whole-in class.
-      .addClass(fade)
-      // back.
+      .toggleClass(fadeIn, true)
+      .toggleClass(fadeOut, false)
       .addBack()
       // filter player element by positon 
-      // and remove whole-in class.
+      // remove whole-in class and add
+      // half-in class.
       .filter(function(_position) {
         return _position !== position;
-      }).removeClass(fade);
+      })
+      .toggleClass(fadeIn, false)
+      .toggleClass(fadeOut, true);
 
-      if (players.length > 1) {}
-      // start after 1s.
-      setTimeout(function() {
+      if (!isWaiting) {
+        // start after 1s.
+        setTimeout(function() {
+          // filter progress bar element by positon 
+          // and add whole-in class.
+          _progress.filter(function(_position) {
+            return _position === position;
+          }).addClass(fadeIn);
+        }, 1000);
         // filter progress bar element by positon 
-        // and add whole-in class.
+        // and remove whole-in class.
         _progress.filter(function(_position) {
-          return _position === position;
-        }).addClass(fade);
-      }, 1000);
-      // filter progress bar element by positon 
-      // and remove whole-in class.
-      _progress.filter(function(_position) {
-        return _position !== position;
-      }).removeClass(fade);
+          return _position !== position;
+        }).removeClass(fadeIn);
+      }
     }
 
     return this;
@@ -745,7 +774,7 @@
               // initialize squares.
               .initTargets()
               // set active player.
-              .setActivePlayer(players);
+              .setActivePlayer();
           }
         });
         count--;
@@ -1084,26 +1113,28 @@
   }
   Game.prototype.leave = function(socket) {
     var _this = this;
-    $('.id-player-0').bind('click', function(e) {
+    $('.room .glyphicon-log-out').click(function(e) {
       e.preventDefault();
-      // get player position.
-      var position = _this.getPlayerPosition();
       // get room.
       var room = _this.get('room');
+      // get this player position.
+      var position = _this.getPlayerPosition();
       // check for position.
       if (position !== -1) {
         // get players.
         var players = _this.get('players');
         // get player by position.
         var player = players[position];
-
         // emit to leave.
-        socket.emit('leave', {
+        socket.emit('player:leave', {
+          room: room._id,
           player: player._id,
-          room: room._id
+          waiting: _this.get('waiting')
         });
       }
-    })
+    });
+
+    return this;
   }
   /**
    * runs the game.
@@ -1162,8 +1193,9 @@
         }
       })
       // waiting for player event.
-      .on('waiting for player', function(player) {
+      .on('waiting', function(player) {
         if (!$.isEmptyObject(player)) {
+
           // waiting for player.
           _this.waitForPlayer(player);
         }
@@ -1212,7 +1244,6 @@
       });
    }).on('disconnect', function() {
       window.location.replace('/');
-      console.log('client disconnected');
     });
   
    return this; 
@@ -1225,8 +1256,16 @@
       width: window.innerWidth - (window.innerWidth - window.innerHeight),
       height: window.innerHeight
     }).run(io());
-
     $('[data-toggle="tooltip"]').tooltip();
+
+  function performance_debug() {
+    var a = performance.now();
+    Game.prototype.getPlayerByPosition();
+    var b = performance.now();
+    alert('Executed in ' + (b - a) + ' ms.');
+  }
+
+    performance_debug();
   });
 
 })(jQuery);

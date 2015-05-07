@@ -115,7 +115,7 @@ module.exports = {
                 // player pass player wait
                 // seat position and wait
                 // image.
-                socket.emit('waiting for player', {
+                socket.emit('waiting', {
                   position: ~~!players[0].position,
                   image: image
                 });
@@ -277,7 +277,7 @@ module.exports = {
           }
           // set loader image path.
           var image = join('..', 'images', 'loading.gif');
-          socket.broadcast.in(id).emit('waiting for player', {
+          socket.broadcast.in(id).emit('waiting', {
             position: player.position,
             image: image
           });
