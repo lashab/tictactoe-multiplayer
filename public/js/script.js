@@ -6,7 +6,7 @@
    *
    * @param {Object} canvas
    */
-  var Game = function (canvas) {
+  var Game = function(canvas) {
     // create new fabric object.
     this.__canvas = new fabric.Canvas(canvas.id);
     // set canvas width.
@@ -21,7 +21,7 @@
    * @param {Mixed} value
    * @return {Object} this
    */
-  Game.prototype.set = function (property, value) {
+  Game.prototype.set = function(property, value) {
     // set value.
     this[property] = value;
 
@@ -33,11 +33,24 @@
    * @param {String} property
    * @return {Mixed} value
    */
-  Game.prototype.get = function (property) {
+  Game.prototype.get = function(property) {
     // get value.
     var value = this[property];
 
     return value;
+  }
+  /**
+   * get room object.
+   *
+   * @return {Object} room
+   */
+  Game.prototype.getRoom = function() {
+    // get room object.
+    var room = this.get('room') || {};
+
+    return !$.isEmptyObject(room) 
+        ? room 
+          : console.debug('room object could\'t be found.');
   }
   /**
    * get room id by pathname.
@@ -46,8 +59,8 @@
    */
   Game.prototype.getRoomIdByPathName = function () {
     var pathname = '';
-    // regular expression for instance:
-    // room/1, room/2 etc.
+    // regular expression that matches to the following 
+    // paths example: room/1, room/2 room/3 etc.
     var regex = /^\/room\/(\d+)$/;
     try {
       // check for pathname.
@@ -56,8 +69,7 @@
         pathname = window.location.pathname;
       }
       else {
-        // throws error if the pathname 
-        // couldn't be found.
+        // throws error if the pathname couldn't be found.
         throw new Error('pathname couldn\'t be found.');
       }
     }
@@ -67,12 +79,10 @@
 
       return false;
     }
-    // check whether the pathname
-    // matches to the regex if
-    // matches return room id.
+    // if the pathname matches to the regex return room id.
     var matches = pathname.match(regex);
     if (matches) {
-      // cast it to the number.
+      // get room id and cast it to the number.
       var room = matches[1] >> 0;
 
       return room;
@@ -89,8 +99,8 @@
     // get player position from cookie.
     var position = docCookies.getItem('position');
     try {
-      // cast it to the number if position is provided
-      // otherwise throw error.
+      // cast position to the number if the position 
+      // is provided otherwise throw error.
       position ? position >> 0 : (function() {
         throw new Error('cookie position couldn\'t be found.')
       })();
@@ -118,6 +128,7 @@
     position = position >> 0;
     // check for position.
     if (position !== -1) {
+      var player = {};
       // get players.
       var players = this.get('players') || [];
       // check for players.
@@ -160,25 +171,19 @@
    */
   Game.prototype.playerLeave = function(socket) {
     var _this = this;
+    // add click event.
     $('.room .glyphicon-log-out').click(function(e) {
       e.preventDefault();
       // get room.
       var room = _this.get('room');
-      // get this player position.
-      var position = _this.getPlayerPosition();
-      // check for position.
-      if (position !== -1) {
-        // get players.
-        var players = _this.get('players');
-        // get player by position.
-        var player = players[position];
-        // emit to leave.
-        socket.emit('player:leave', {
-          room: room._id,
-          player: player._id,
-          waiting: _this.get('waiting')
-        });
-      }
+      // get player.
+      var player = _this.getPlayerByPosition();
+      // emit to leave.
+      socket.emit('player:leave', {
+        room: room._id,
+        player: player._id,
+        waiting: _this.get('waiting')
+      });
     });
 
     return this;
@@ -1274,6 +1279,7 @@
   // perfomance debug.
   function performance_debug() {
     var a = performance.now();
+    Game.prototype.getRoom();
     var b = performance.now();
     console.debug('Executed in ' + (b - a) + ' ms.');
   }
