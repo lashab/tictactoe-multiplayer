@@ -112,7 +112,7 @@
    */
   Game.prototype.getPlayerByPosition = function(position) {
     // get player position from cookie if position 
-    // paramenter is not provided.
+    // is not provided.
     var position = position || this.getPlayerPosition();
     // cast position to the number.
     position = position >> 0;
@@ -1180,7 +1180,7 @@
         }
         else {
           // debug.
-          console.debug('init event - room couldn\t be found.');
+          console.debug('game:init event - room object couldn\t be found.');
         }
       })
       // join players event.
