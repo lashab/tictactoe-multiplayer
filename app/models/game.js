@@ -4,8 +4,9 @@
  */
 var join = require('path').join
 var debug = require('debug')('game');
-var Room = require(join(__dirname, 'room'));
+var common = require(join(__dirname, '..', 'helpers', 'common'));
 var Player = require(join(__dirname, 'player'));
+var Room = require(join(__dirname, 'room'));
 
 module.exports = {
   /**
@@ -77,28 +78,29 @@ module.exports = {
    * @return {Function} callback
    */
   run: function(db, io, socket, callback) {
-    // init event.
-    socket.on('init', function(data) {
+    // player:join event.
+    socket.on('player:join', function(room) {
+      console.log(common.isEmptyObject(room));
       // check whether the data
       // has room property with
       // the value room id.
-      if ('room' in data && data.room) {
-        // define room id.
-        var id = data.room;
+      if (!common.isEmptyObject(room)) {
+        // get room id.
+        var room = room.id;
         // get room by id.
-        Room.getRoomById(db, id, function(err, db, room) {
+        Room.getRoomById(db, room, function(err, db, _room) {
           // if error happens pass it to
           // the callback and return.
           if (err) {
             return callback(err);
           }
           // socket rooms join.
-          socket.join(id);
+          socket.join(room);
           // emit client to initialize room.
           // passing room object.
-          socket.emit('init', room);
+          socket.emit('game:init', _room);
           // get players by room id.
-          Player.getPlayersByRoomId(db, id, function(err, db, players) {
+          Player.getPlayersByRoomId(db, room, function(err, db, players) {
             // set loader image path.
             var image = join('..', 'images', 'loading.gif');
             // if error happens pass it to
@@ -122,12 +124,12 @@ module.exports = {
               }
               // emit client to join player passing
               // players array-object.
-              io.in(id).emit('join players', players);
+              io.in(room).emit('join players', players);
             }
             else {
               // debug if players could not
               // be found in database.
-              debug('players could\'t be found.')
+              debug('data could\'t be found.');
             }
           });
         });
@@ -136,7 +138,32 @@ module.exports = {
         // debug if the data do not have
         // property room with the value
         // room id.
-        debug('room property couldn\'t be found.');
+        debug('data couldn\'t be found.');
+      }
+    })
+    // player:leave event.
+    .on('player:leave', function(data) {
+      if ('room' in data && data.room) {
+        // room id.
+        var room = data.room;
+        // player id.
+        var player = data.player;
+        // waiting state.
+        var isWaiting = data.waiting;
+        Player.remove(db, player, function(err, player) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+          // set loader image path.
+          var image = join('..', 'images', 'loading.gif');
+          socket.broadcast.in(room).emit('waiting', {
+            position: player.position,
+            image: image
+          });
+          socket.disconnect();
+        });
       }
     })
     // play event.
@@ -265,26 +292,6 @@ module.exports = {
         // room id.
         debug('room couldn\'t be found.');
       }
-    }).on('leave', function(data) {
-      if ('room' in data && data.room) {
-        var id = data.room;
-        var player = data.player;
-        Player.remove(db, player, function(err, player) {
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-          // set loader image path.
-          var image = join('..', 'images', 'loading.gif');
-          socket.broadcast.in(id).emit('waiting', {
-            position: player.position,
-            image: image
-          });
-          socket.disconnect();
-        });
-      }
-      // socket.disconnect();
     });
   }
 };

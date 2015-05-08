@@ -2,7 +2,7 @@
   'use strict';
 
   /**
-   * initializes game.
+   * constructor.
    *
    * @param {Object} canvas
    */
@@ -77,29 +77,8 @@
 
       return room;
     }
-    // debug.
-    console.debug('you\'re not joined to the room.');
 
     return false;
-  }
-  /**
-   * let the server know about
-   * this room.
-   *
-   * @param {Object} socket
-   * @return {Object} this
-   */
-  Game.prototype.init = function (socket) {
-    // get room id.
-    var room = this.getRoomIdByPathName();
-    if (room) {
-      // emit server room id.
-      socket.emit('init', {
-        room: room
-      });
-    }
-
-    return this;
   }
   /**
    * get player position from cookie.
@@ -108,14 +87,13 @@
    */
   Game.prototype.getPlayerPosition = function () {
     // get player position from cookie.
-    // cast it to the number.
-    var position = docCookies.getItem('position') >> 0;
+    var position = docCookies.getItem('position');
     try {
-      // throw TypeError if position
-      // type is not number.
-      if ($.type(position) !== 'number') {
-        throw TypeError('cookie position couldn\'t be found.');
-      }
+      // cast it to the number if position is provided
+      // otherwise throw error.
+      position ? position >> 0 : (function() {
+        throw new Error('cookie position couldn\'t be found.')
+      })();
     }
     catch(e) {
       // debug.
@@ -126,10 +104,18 @@
     
     return position;
   }
+  /**
+   * get player by position.
+   *
+   * @param {Number|String} position
+   * @return {Object} player
+   */
   Game.prototype.getPlayerByPosition = function(position) {
     // get player position from cookie if position 
     // paramenter is not provided.
     var position = position || this.getPlayerPosition();
+    // cast position to the number.
+    position = position >> 0;
     // check for position.
     if (position !== -1) {
       // get players.
@@ -147,6 +133,57 @@
       return player;
     }
   }
+  /**
+   * joins to the game.
+   *
+   * @param {Object} socket
+   * @return {Object} this
+   */
+  Game.prototype.playerJoin = function (socket) {
+    // get room id.
+    var room = this.getRoomIdByPathName();
+    // check for room.
+    if (room) {
+      // emit server to join, passing room id.
+      socket.emit('player:join', {
+        id: room
+      });
+    }
+
+    return this;
+  }
+  /**
+   * leaves the game.
+   *
+   * @param {Object} socket
+   * @return {Object} this
+   */
+  Game.prototype.playerLeave = function(socket) {
+    var _this = this;
+    $('.room .glyphicon-log-out').click(function(e) {
+      e.preventDefault();
+      // get room.
+      var room = _this.get('room');
+      // get this player position.
+      var position = _this.getPlayerPosition();
+      // check for position.
+      if (position !== -1) {
+        // get players.
+        var players = _this.get('players');
+        // get player by position.
+        var player = players[position];
+        // emit to leave.
+        socket.emit('player:leave', {
+          room: room._id,
+          player: player._id,
+          waiting: _this.get('waiting')
+        });
+      }
+    });
+
+    return this;
+  }
+
   /**
    * adds player.
    *
@@ -1111,31 +1148,6 @@
 
     return this;
   }
-  Game.prototype.leave = function(socket) {
-    var _this = this;
-    $('.room .glyphicon-log-out').click(function(e) {
-      e.preventDefault();
-      // get room.
-      var room = _this.get('room');
-      // get this player position.
-      var position = _this.getPlayerPosition();
-      // check for position.
-      if (position !== -1) {
-        // get players.
-        var players = _this.get('players');
-        // get player by position.
-        var player = players[position];
-        // emit to leave.
-        socket.emit('player:leave', {
-          room: room._id,
-          player: player._id,
-          waiting: _this.get('waiting')
-        });
-      }
-    });
-
-    return this;
-  }
   /**
    * runs the game.
    *
@@ -1146,13 +1158,13 @@
     var _this = this;
     // connect event.
     socket.on('connect', function() {
-      // notify server about
-      // this room.
       _this
-        .init(socket)
-        .leave(socket);
+        // player join.
+        .playerJoin(socket)
+        // player leave.
+        .playerLeave(socket);
       // init room event.
-      socket.on('init', function(room) {
+      socket.on('game:init', function(room) {
         if (!$.isEmptyObject(room)) {
           _this
             // set room object.
@@ -1256,16 +1268,16 @@
       width: window.innerWidth - (window.innerWidth - window.innerHeight),
       height: window.innerHeight
     }).run(io());
+    // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
 
+  // perfomance debug.
   function performance_debug() {
     var a = performance.now();
-    Game.prototype.getPlayerByPosition();
     var b = performance.now();
-    alert('Executed in ' + (b - a) + ' ms.');
+    console.debug('Executed in ' + (b - a) + ' ms.');
   }
-
-    performance_debug();
+  performance_debug();
   });
 
 })(jQuery);
