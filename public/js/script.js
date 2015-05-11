@@ -47,10 +47,38 @@
   Game.prototype.getRoom = function() {
     // get room object.
     var room = this.get('room') || {};
+    // check for room object.
+    if ($.isEmptyObject(room)) {
+      console.debug('room could\'t be found.');
+    }
 
-    return !$.isEmptyObject(room) 
-        ? room 
-          : console.debug('room object could\'t be found.');
+    return room;
+  }
+  /**
+   * get players object.
+   *
+   * @return {Array} players
+   */
+  Game.prototype.getPlayers = function() {
+    // get players object.
+    var players = this.get('players') || [];
+    // check for players object.
+    if (!players.length) {
+      console.debug('players could\'t be found.');
+    }
+
+    return players;
+  }
+  /**
+   * get waiting state.
+   *
+   * @return {Boolean} true|false
+   */
+  Game.prototype.isWaiting = function() {
+    // get waiting.
+    var waiting = this.get('waiting') || false;
+
+    return waiting;
   }
   /**
    * get room id by pathname.
@@ -101,7 +129,7 @@
     try {
       // cast position to the number if the position 
       // is provided otherwise throw error.
-      position ? position >> 0 : (function() {
+      position = position ? position >> 0 : (function() {
         throw new Error('cookie position couldn\'t be found.')
       })();
     }
@@ -121,6 +149,7 @@
    * @return {Object} player
    */
   Game.prototype.getPlayerByPosition = function(position) {
+    var player = {};
     // get player position from cookie if position 
     // is not provided.
     var position = position || this.getPlayerPosition();
@@ -128,21 +157,13 @@
     position = position >> 0;
     // check for position.
     if (position !== -1) {
-      var player = {};
       // get players.
-      var players = this.get('players') || [];
-      // check for players.
-      if (players.length) {
-        // get player by position.
-        var player = players[position];
-      }
-      else {
-        // debug.
-        console.debug('players could\'t be found.');
-      }
-
-      return player;
+      var players = this.getPlayers();
+      // get player object by position.
+      player = players[position];
     }
+
+    return player;
   }
   /**
    * joins to the game.
@@ -150,7 +171,7 @@
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype.playerJoin = function (socket) {
+  Game.prototype.playerJoin = function(socket) {
     // get room id.
     var room = this.getRoomIdByPathName();
     // check for room.
@@ -174,21 +195,23 @@
     // add click event.
     $('.room .glyphicon-log-out').click(function(e) {
       e.preventDefault();
-      // get room.
-      var room = _this.get('room');
-      // get player.
+      // get room object.
+      var room = _this.getRoom();
+      // get player object.
       var player = _this.getPlayerByPosition();
-      // emit to leave.
+      // get waiting state.
+      var isWaiting = _this.isWaiting();
+      // emit to leave passing room id, player id 
+      // and waiting state.
       socket.emit('player:leave', {
-        room: room._id,
-        player: player._id,
-        waiting: _this.get('waiting')
+        room: room,
+        player: player,
+        isWaiting: isWaiting
       });
     });
 
     return this;
   }
-
   /**
    * adds player.
    *
@@ -1169,7 +1192,7 @@
         // player leave.
         .playerLeave(socket);
       // init room event.
-      socket.on('game:init', function(room) {
+      socket.on('room:init', function(room) {
         if (!$.isEmptyObject(room)) {
           _this
             // set room object.
@@ -1185,11 +1208,11 @@
         }
         else {
           // debug.
-          console.debug('game:init event - room object couldn\t be found.');
+          console.debug('room:init event - room object couldn\'t be found.');
         }
       })
       // join players event.
-      .on('join players', function(players) {
+      .on('players:init', function(players) {
         // check for players.
         if (players.length) {
           _this
@@ -1209,8 +1232,8 @@
           console.debug('join players event - players couldn\t be found.');
         }
       })
-      // waiting for player event.
-      .on('waiting', function(player) {
+      // player:waiting event.
+      .on('player:waiting', function(player) {
         if (!$.isEmptyObject(player)) {
 
           // waiting for player.
@@ -1261,7 +1284,7 @@
       });
    }).on('disconnect', function() {
       window.location.replace('/');
-    });
+   });
   
    return this; 
   }
@@ -1279,7 +1302,8 @@
   // perfomance debug.
   function performance_debug() {
     var a = performance.now();
-    Game.prototype.getRoom();
+    var k = Game.prototype.getPlayerByPosition();
+
     var b = performance.now();
     console.debug('Executed in ' + (b - a) + ' ms.');
   }

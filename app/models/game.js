@@ -2,11 +2,12 @@
 /**
  * Module dependencies.
  */
+var path = require('path');
 var join = require('path').join
 var debug = require('debug')('game');
-var common = require(join(__dirname, '..', 'helpers', 'common'));
 var Player = require(join(__dirname, 'player'));
 var Room = require(join(__dirname, 'room'));
+var c = require(join(__dirname, '..', 'helpers', 'common'));
 
 module.exports = {
   /**
@@ -80,11 +81,8 @@ module.exports = {
   run: function(db, io, socket, callback) {
     // player:join event.
     socket.on('player:join', function(room) {
-      console.log(common.isEmptyObject(room));
-      // check whether the data
-      // has room property with
-      // the value room id.
-      if (!common.isEmptyObject(room)) {
+      // check for room object.
+      if (!c.isEmptyObject(room)) {
         // get room id.
         var room = room.id;
         // get room by id.
@@ -94,77 +92,90 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          // socket rooms join.
+          // socket rooms join by id.
           socket.join(room);
           // emit client to initialize room.
           // passing room object.
-          socket.emit('game:init', _room);
+          socket.emit('room:init', _room);
           // get players by room id.
           Player.getPlayersByRoomId(db, room, function(err, db, players) {
-            // set loader image path.
-            var image = join('..', 'images', 'loading.gif');
             // if error happens pass it to
             // the callback and return.
             if (err) {
               return callback(err);
             }
-            // check for players existence.
+            // check for players.
             if (players.length) {
-              // if there is only one player
-              // wait for another player.
+              // check for players, if only one player found
+              // emit to wait for oppononet.
               if (players.length === 1) {
-                // emit client to wait next
-                // player pass player wait
-                // seat position and wait
-                // image.
-                socket.emit('waiting', {
-                  position: ~~!players[0].position,
-                  image: image
-                });
+                // get waiting object.
+                var waiting = Player.waiting(1);
+                // emit client to wait next player passing
+                // waiting object.
+                socket.emit('player:waiting', waiting);
               }
-              // emit client to join player passing
-              // players array-object.
-              io.in(room).emit('join players', players);
+              // emit clients to initialize players passing
+              // players object.
+              io.in(room).emit('players:init', players);
             }
             else {
-              // debug if players could not
-              // be found in database.
-              debug('data could\'t be found.');
+              // debug if the players object couldn't be found.
+              debug('players could\'t be found.');
             }
           });
         });
       }
       else {
-        // debug if the data do not have
-        // property room with the value
-        // room id.
-        debug('data couldn\'t be found.');
+        // debug if the room object couldn't be found.
+        debug('room couldn\'t be found.');
       }
     })
     // player:leave event.
     .on('player:leave', function(data) {
-      if ('room' in data && data.room) {
-        // room id.
+      // check for data object.
+      if (!c.isEmptyObject(data)) {
+        // get room object.
         var room = data.room;
-        // player id.
+        // get player object.
         var player = data.player;
-        // waiting state.
-        var isWaiting = data.waiting;
-        Player.remove(db, player, function(err, player) {
+        // get waiting.
+        var isWaiting = data.isWaiting;
+        // get room id.
+        var id = room._id;
+        // if the room is in waiting state
+        // remove room.
+        if (isWaiting) {
+          // remove room.
+          Room.remove(db, id, function(err, db) {
+            // if error happens pass it to
+            // the callback and return.
+            if (err) {
+              return callback(err);
+            }
+          });
+        }
+        // remove player.
+        Player.remove(db, player._id, function(err, db) {
+          // get waiting object.
+          var waiting = Player.waiting(player.position);
           // if error happens pass it to
           // the callback and return.
           if (err) {
             return callback(err);
           }
-          // set loader image path.
-          var image = join('..', 'images', 'loading.gif');
-          socket.broadcast.in(room).emit('waiting', {
-            position: player.position,
-            image: image
-          });
+          // disconnect.
           socket.disconnect();
+
+          socket.broadcast.in(id).emit('player:waiting', waiting);
+
+          return callback(null, db);
+
         });
       }
+    })
+    .on('error', function() {
+
     })
     // play event.
     .on('play', function(data) {

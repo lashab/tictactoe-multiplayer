@@ -2,9 +2,10 @@
 /**
  * Module dependencies.
  */
-var join = require('path').join;
-var debug = require('debug')('player');
+var path = require('path');
 var objectID = require('mongodb').ObjectID;
+var debug = require('debug')('player');
+var join = path.join;
 
 module.exports = {
   collection: 'players',
@@ -49,6 +50,30 @@ module.exports = {
       // to the callback and
       // return.
       return callback(null, db, null);
+    });
+  },
+  /**
+   * removes player.
+   *
+   * @param {Object} db
+   * @param {String} id
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  remove: function(db, id, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // remove player by id.
+    collection.remove({
+      _id: new objectID(id)
+    }, function(err, done) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+
+      return callback(null, db);
     });
   },
   /**
@@ -165,7 +190,7 @@ module.exports = {
     var collection = this.getCollection(db);
     // find room.
     collection.find({
-      room: id,
+      room: id
     }).toArray(function(err, players) {
       // if error happens pass it to
       // the callback and return.
@@ -177,6 +202,23 @@ module.exports = {
       // return.
       return callback(null, db, players);
     });
+  },
+  /**
+   * get player waiting object.
+   *
+   * @param {Object} player
+   * @return {Object} waiting
+   */
+  waiting: function(position) {
+    // get waiting (loading) image.
+    var image = join('..', 'images', 'loading.gif');
+    // prepare waiting object.
+    var waiting = {
+      position: position,
+      image: image
+    }
+    // return waiting object.
+    return waiting;
   },
   /**
    * switches active player.
@@ -207,7 +249,7 @@ module.exports = {
         players.forEach(function(player) {
           // change active player.
           player.active = player.active ? false : true;
-          // update player.
+          // modify player.
           _this.add(db, player, function(err, db, player) {
             // if error happens pass it to
             // the callback and return.
@@ -216,7 +258,7 @@ module.exports = {
             }
           });
         });
-        // pass updated players object 
+        // passing modified players object 
         // to the callback and return.
         return callback(null, db, players);
       }
@@ -257,30 +299,4 @@ module.exports = {
       return callback(null, db);
     });
   },
-  /**
-   * removes player.
-   *
-   * @param {Object} db
-   * @param {String} id
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  remove: function(db, id, callback) {
-    // get collection.
-    var collection = this.getCollection(db);
-    // remove player by id.
-    collection.findAndModify({
-      _id: new objectID(id)
-    }, [], {
-      remove: true
-    }, function(err, data) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-
-      return callback(null, data);
-    });
-  }
 };

@@ -107,6 +107,21 @@ module.exports = {
       });
     });
   },
+  remove: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    collection.remove({
+      _id: room
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+
+      return callback(null, db, room);
+    });
+  },
   /**
    * modifys room state.
    *
