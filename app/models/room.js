@@ -19,37 +19,6 @@ module.exports = {
     return collection;
   },
   /**
-   * initialize rooms data merged
-   * with default data.
-   *
-   * @param {Object} data
-   * @return {Function} callback
-   */
-  init: function(data, callback) {
-    // default data.
-    var room = {
-      figure: 1,
-      figures: []
-    };
-    // loop through data.
-    for (var i in data) {
-      // check whether the default data
-      // has provided property.
-      if (!room.hasOwnProperty(i)) {
-        room[i] = data[i];
-      }
-      else {
-        // don't push existent property
-        // debug if it happens.
-        debug('Property %s already exists', i);
-      }
-    }
-    // pass room data to
-    // the callback and
-    // return.
-    return callback(room);
-  },
-  /**
    * count rooms.
    *
    * @param {Object} db
@@ -74,8 +43,7 @@ module.exports = {
     });
   },
   /**
-   * adds new or updates 
-   * existent room.
+   * adds new or modifys existent room.
    *
    * @param {Object} db
    * @param {Object} room
@@ -85,133 +53,39 @@ module.exports = {
   add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // initialize room.
-    this.init(room, function(room) {
-      // save room.
-      collection.save(room, function(err, check) {
-        // if error happens pass it to
-        // the callback and return.
-        if (err) {
-          return callback(err);
-        }
-        // if succeeds pass the room
-        // data to the callback and
-        // return.
-        if (check) {
-          return callback(null, db, room);
-        }
-        // if fails pass the null
-        // to the callback and
-        // return.
-        return callback(null, db, null);
-      });
+    // save room.
+    collection.save(room, function(err, done) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      
+      return callback(null, db);
     });
   },
-  remove: function(db, room, callback) {
+  /**
+   * removes room by id.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  remove: function(db, id, callback) {
     // get collection.
     var collection = this.getCollection(db);
+    // remove room by id.
     collection.remove({
-      _id: room
-    }, function(err, room) {
+      _id: id
+    }, function(err, done) {
       // if error happens pass it to
       // the callback and return.
       if (err) {
         return callback(err);
       }
 
-      return callback(null, db, room);
-    });
-  },
-  /**
-   * modifys room state.
-   *
-   * @param {Object} db
-   * @param {Object} id
-   * @param {Object} target
-   * @param {String} action
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  updateFiguresState: function(db, id, target, action, callback) {
-    // define figures array like object
-    // assign empty array if target is
-    // emtpy.
-    var figures = target || [];
-    // define update variable
-    // defaults to empty 
-    // object.
-    var update = {};
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
-    // get collection.
-    var collection = this.getCollection(db);
-    // prepare update.
-    update[action] = {
-      figures: figures
-    }
-    // find room by id and
-    // push figures.
-    collection.findAndModify({
-      _id: id
-    }, [], update, {
-      new: true
-    }, function(err, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      // pass the room data to
-      // the callback and
-      // return.
-      return callback(null, db, room);
-    });
-  },
-  /**
-   * switches figure.
-   *
-   * @param {Object} db
-   * @param {Object} id
-   * @param {Object} figure
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  switchActiveFigure: function(db, id, figure, callback) {
-    // change figure.
-    var figure = !figure ? 1 : 0;
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
-    // get collection.
-    var collection = this.getCollection(db);
-    // update figure.
-    collection.findAndModify({
-      _id: id
-    }, [], {
-      $set: {
-        figure: figure
-      }
-    }, {
-      new: true
-    }, function(err, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      // pass the room data to
-      // the callback and
-      // return.
-      return callback(null, db, room);
+      return callback(null, db);
     });
   },
   /**
@@ -245,6 +119,32 @@ module.exports = {
       // the callback and
       // return.
       return callback(null, db, room);
+    });
+  },
+  /**
+   * set avaiable room by id.
+   *
+   * @param {Object} db
+   * @param {Number} id
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  makeRoomAvailable: function(db, id, callback) {
+    this.add(db, {
+      _id: id,
+      available: true
+    }, function(err, db, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+
+      if (room) {
+        return callback(null, db, room);
+      }
+
+      return callback()
     });
   },
   /**
@@ -289,13 +189,13 @@ module.exports = {
     });
   },
   /**
-   * opens room.
+   * creates room.
    *
    * @param {Object} db
    * @param {Function} callback
    * @return {Function} callback
    */
-  open: function(db, callback) {
+  create: function(db, callback) {
     var _this = this;
     // count rooms.
     this.count(db, null, function(err, db, count) {
@@ -376,13 +276,73 @@ module.exports = {
       }
       else {
         // add debug string and
-        // fresh room.
+        // create fresh room.
         debug('fresh room %d has been created.', id);
         add(db, {
           id: id,
           available: true,
           fresh: true
         });
+      }
+    });
+  },
+  /**
+   * joins player to the room.
+   *
+   * @param {Object} db
+   * @param {String} player
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  join: function(db, player, callback) {
+    // create / update room.
+    this.create(db, function(err, db, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      if (room) {
+        // room id.
+        var id = room._id;
+        // join player.
+        Player.join(db, {
+          room: id,
+          name: player,
+          active: room.available ? true : false,
+          position: room.available ? 0 : 1,
+          score: 0
+        }, room, function(err, db, player) {
+          // if error happens pass it to
+          // the callback and return.
+          if (err) {
+            return callback(err);
+          }
+          // if player has been added pass
+          // the redirect path, player id
+          // to the callback and return.
+          if (player) {
+            debug('%s has joined %d room', player.name, id);
+            return callback(null, db, {
+              redirect: join('room', '' + id),
+              position: player.position
+            });
+          }
+          else {
+            // if player has not been added
+            // pass null to the callback
+            // and return.
+            debug('player could not join %d room', id);
+            return callback(null, db, null);
+          }
+        });
+      }
+      else {
+        // if room has not been added
+        // pass null to the callback
+        // and return.
+        debug('room could not be opened');
+        return callback(null, db, null);
       }
     });
   }

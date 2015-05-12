@@ -10,6 +10,99 @@ var Room = require(join(__dirname, 'room'));
 var c = require(join(__dirname, '..', 'helpers', 'common'));
 
 module.exports = {
+  collection: 'game',
+  /**
+   * changes active figure.
+   *
+   * @param {Object} db
+   * @param {Object} id
+   * @param {Object} figure
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  changeActiveFigure: function(db, id, figure, callback) {
+    // change figure.
+    var figure = !figure ? 1 : 0;
+    // if the id type is a string
+    // cast it to the number.
+    if (typeof id === 'string') {
+      // Bitshifting casting is 
+      // a lot faster.
+      id = id >> 0;
+    }
+    // get collection.
+    var collection = this.getCollection(db);
+    // update figure.
+    collection.findAndModify({
+      _id: id
+    }, [], {
+      $set: {
+        figure: figure
+      }
+    }, {
+      new: true
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // pass the room data to
+      // the callback and
+      // return.
+      return callback(null, db, room);
+    });
+  },
+  /**
+   * modifys room state.
+   *
+   * @param {Object} db
+   * @param {Object} id
+   * @param {Object} target
+   * @param {String} action
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  setFigures: function(db, id, target, action, callback) {
+    // define figures array like object
+    // assign empty array if target is
+    // emtpy.
+    var figures = target || [];
+    // define update variable
+    // defaults to empty 
+    // object.
+    var update = {};
+    // if the id type is a string
+    // cast it to the number.
+    if (typeof id === 'string') {
+      // Bitshifting casting is 
+      // a lot faster.
+      id = id >> 0;
+    }
+    // get collection.
+    var collection = this.getCollection(db);
+    // prepare update.
+    update[action] = {
+      figures: figures
+    }
+    // find room by id and
+    // push figures.
+    collection.findAndModify({
+      _id: id
+    }, [], update, {
+      new: true
+    }, function(err, room) {
+      // if error happens pass it to
+      // the callback and return.
+      if (err) {
+        return callback(err);
+      }
+      // pass the room data to
+      // the callback and
+      // return.
+      return callback(null, db, room);
+    });
+  },
   /**
    * joins player to the game.
    *
@@ -155,6 +248,9 @@ module.exports = {
             }
           });
         }
+        else {
+          // Room.setAvaiable
+        }
         // remove player.
         Player.remove(db, player._id, function(err, db) {
           // get waiting object.
@@ -164,10 +260,10 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          // disconnect.
-          socket.disconnect();
 
           socket.broadcast.in(id).emit('player:waiting', waiting);
+
+          socket.disconnect();
 
           return callback(null, db);
 
