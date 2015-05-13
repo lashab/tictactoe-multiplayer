@@ -86,7 +86,7 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  in : function(db, player, room, callback) {
+  join : function(db, player, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // add new player.
@@ -216,7 +216,7 @@ module.exports = {
     var waiting = {
       position: position,
       image: image
-    }
+    };
     // return waiting object.
     return waiting;
   },
@@ -228,7 +228,7 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  switchActivePlayer: function(db, id, callback) {
+  switch: function(db, id, callback) {
     var _this = this;
     // get players by room.
     this.getPlayersByRoomId(db, id, function(err, db, players) {

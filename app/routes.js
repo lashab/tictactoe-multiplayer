@@ -3,8 +3,7 @@
 var join = require('path').join;
 var debug = require('debug')('routes');
 var Template = require(join(__dirname, 'helpers/template'));
-var Game = require(join(__dirname, 'models/game'));
-var Player = require(join(__dirname, 'models/player'));
+var Room = require(join(__dirname, 'models/room'));
 
 module.exports = function(app, db) {
   app.get('/', function(req, res) {
@@ -24,18 +23,16 @@ module.exports = function(app, db) {
   });
 
   app.post('/join', function(req, res) {
-    // check whether the name was provided
-    // successfuly otherwise back to the
-    // homepage.
+    // check for name.
     if (req.body.name) {
-      // open connection.
+      // open database connection.
       db.connect(app.get('mongodb'), function(err, db) {
         // if error happens debug it.
         if (err) {
           debug(err);
         }
-        // join player to the game.
-        Game.join(db, req.body.name, function(err, db, room) {
+        // join player to the room.
+        Room.join(db, req.body.name, function(err, db, room) {
           // if error happens debug it.
           if (err) {
             debug(err);
@@ -64,8 +61,6 @@ module.exports = function(app, db) {
     else {
       // back to the homepage
       res.redirect('/');
-      // close connection.
-      db.close();
     }
   });
 }

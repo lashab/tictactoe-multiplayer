@@ -18,6 +18,7 @@ var debug = require('debug')('app');
 var Routes = require(join(__dirname, 'app/routes'));
 var Game = require(join(__dirname, 'app/models/game'));
 var Player = require(join(__dirname, 'app/models/player'));
+var Room = require(join(__dirname, 'app/models/room'));
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -47,17 +48,24 @@ server.listen(app.get('port'));
 // SocketIO.
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(err, db) {
+    Room.join(db, 'lasha', function(error, db, data) {
+      if (error) {
+        debug(error);
+      }
+
+      console.log(data);
+    })
     // if error happens debug it.
     if (err) {
       debug(err);
     }
-    // run game.
-    Game.run(db, io, socket, function(err) {
-      // if error happens debug it.
-      if (err) {
-        debug(err);
-      }
-    });
+    // // run game.
+    // Game.run(db, io, socket, function(err) {
+    //   // if error happens debug it.
+    //   if (err) {
+    //     debug(err);
+    //   }
+    // });
   });
 });
 

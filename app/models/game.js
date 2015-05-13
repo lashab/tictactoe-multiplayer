@@ -10,7 +10,7 @@ var Room = require(join(__dirname, 'room'));
 var c = require(join(__dirname, '..', 'helpers', 'common'));
 
 module.exports = {
-  collection: 'game',
+  collection: 'games',
   /**
    * changes active figure.
    *
@@ -63,7 +63,7 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  setFigures: function(db, id, target, action, callback) {
+  updateFigures: function(db, id, target, action, callback) {
     // define figures array like object
     // assign empty array if target is
     // emtpy.
@@ -101,66 +101,6 @@ module.exports = {
       // the callback and
       // return.
       return callback(null, db, room);
-    });
-  },
-  /**
-   * joins player to the game.
-   *
-   * @param {Object} db
-   * @param {String} player
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  join: function(db, player, callback) {
-    // open room.
-    Room.open(db, function(err, db, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      if (room) {
-        // room id.
-        var id = room._id;
-        // join player.
-        Player.in(db, {
-          room: id,
-          name: player,
-          active: room.available ? true : false,
-          position: room.available ? 0 : 1,
-          score: 0
-        }, room, function(err, db, player) {
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-          // if player has been added pass
-          // the redirect path, player id
-          // to the callback and return.
-          if (player) {
-            debug('%s has joined %d room', player.name, id);
-            return callback(null, db, {
-              redirect: join('room', '' + id),
-              position: player.position
-            });
-          }
-          else {
-            // if player has not been added
-            // pass null to the callback
-            // and return.
-            debug('player could not join %d room', id);
-            return callback(null, db, null);
-          }
-        });
-      }
-      else {
-        // if room has not been added
-        // pass null to the callback
-        // and return.
-        debug('room could not be opened');
-        return callback(null, db, null);
-      }
     });
   },
   /**
