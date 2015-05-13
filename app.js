@@ -48,7 +48,7 @@ server.listen(app.get('port'));
 // SocketIO.
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(err, db) {
-    Room.join(db, 'lasha', function(error, db, data) {
+    Player.join(db, 'lasha', function(error, db, data) {
       if (error) {
         debug(error);
       }

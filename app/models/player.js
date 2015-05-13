@@ -3,9 +3,10 @@
  * Module dependencies.
  */
 var path = require('path');
+var join = path.join;
 var objectID = require('mongodb').ObjectID;
 var debug = require('debug')('player');
-var join = path.join;
+var Room = require(join(__dirname, 'room'));
 
 module.exports = {
   collection: 'players',
@@ -21,35 +22,65 @@ module.exports = {
     return collection;
   },
   /**
-   * adds new or updates 
-   * existent player.
+   * adds player.
    *
    * @param {Object} db
-   * @param {Object} options
-   * @param {Boolean} update
+   * @param {String} player
+   * @param {Object} room
    * @param {Function} callback
    * @return {Function} callback
    */
-  add: function(db, player, callback) {
+  add: function(db, player, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // save room.
-    collection.save(player, function(err, check) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    // add new player.
+    collection.save(player, function(error, done) {
+      // room is fresh.
+      var fresh = room.fresh && room.available;
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // if succeeds pass the player
-      // data to the callback and
-      // return.
-      if (check) {
+      // fresh room & room is available ? add index to the room field.
+      if (fresh) {
+        // add index.
+        collection.ensureIndex({
+          room: 1
+        }, function(error, index) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // index has been added ?
+          if (index) {
+            // debug player.
+            debug('index has been added to the room field.');
+          }
+          // :
+          else {
+            // debug player.
+            debug('index has not been added.');
+            // return callback passing database object.
+            return callback(null, db, null);
+          }
+        });
+      }
+      // player has been added ? 
+      if (done) {
+        // fresh player ? append fresh debug string.
+        var _fresh = fresh ? '(fresh player)' : '';
+        // debug player.
+        debug('%s %s has been added.', _fresh, player.name);
+        // return callback - passing database object, player object.
         return callback(null, db, player);
       }
-      // if fails pass the null
-      // to the callback and
-      // return.
-      return callback(null, db, null);
+      // :
+      else {
+        // debug player.
+        debug('player hasn\'t been added.');
+        // return callback - passing database object.
+        return callback(null, db, null);
+      }
     });
   },
   /**
@@ -66,80 +97,71 @@ module.exports = {
     // remove player by id.
     collection.remove({
       _id: new objectID(id)
-    }, function(err, done) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    }, function(error, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-
+      // return callback - passing database object.
       return callback(null, db);
     });
   },
   /**
-   * adds new player to 
-   * specified room.
+   * joins player.
    *
    * @param {Object} db
    * @param {String} player
-   * @param {Object} room
    * @param {Function} callback
    * @return {Function} callback
    */
-  join : function(db, player, room, callback) {
-    // get collection.
-    var collection = this.getCollection(db);
-    // add new player.
-    this.add(db, player, function(err, db, player) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+  join: function(db, player, callback) {
+    var _this = this;
+    // create | update room.
+    Room.add(db, function(error, db, room) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // if its fresh room
-      // add index to the
-      // room property.
-      if (room.fresh) {
-        // add index.
-        collection.ensureIndex({
-          room: 1
-        }, function(err, index) {
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
+      // room has been created | updated ?
+      if (room) {
+        // get room id.
+        var id = room._id;
+        // add player.
+        _this.add(db, {
+          room: id,
+          name: player,
+          active: room.available ? true : false,
+          position: room.available ? 0 : 1,
+          score: 0
+        }, room, function(error, db, player) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
           }
-          // debug added index.
-          if (index) {
-            debug('index has been added for %s.', index);
+          // player has been added ?
+          if (player) {
+            // prepare redirect object.
+            var redirect = {
+              redirect: join('room', '' + id),
+              position: player.position
+            };
+            // debug room.
+            debug('%s has joined to #%d room', player.name, id);
+            // return callback - passing database object, redirect object.
+            return callback(null, db, redirect);
           }
           else {
-            // if the index has not been added
-            // add debug string, passing null
-            // to the callback and return.
-            debug('index has not been added.');
+            // debug room.
+            debug('player could\'t be joined to #%d room', id);
+            // return callback - passing database object.
             return callback(null, db, null);
           }
         });
       }
-      // if player has been added add
-      // debug string, passing player
-      // object to the callback and
-      // return. 
-      if (player) {
-        // if player is a fresh player
-        // append 'fresh' word to 
-        // the debug string.
-        var fresh = room.fresh ? 'fresh' : '';
-        debug('%s player %s has been added.', fresh, player.name);
-        return callback(null, db, player);
-      }
       else {
-        // if player has not been added
-        // add debug string, passing 
-        // null to the callback and
-        // return.
-        debug('player hasn\'t been added.');
+        // debug room.
+        debug('room couldn\'t be created or updated.');
+        // return callback - passing database object.
         return callback(null, db, null);
       }
     });
@@ -155,18 +177,15 @@ module.exports = {
   getPlayerById: function(db, id, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // find player.
+    // find player by id.
     collection.findOne({
       _id: new objectID(id)
-    }, function(err, player) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    }, function(error, player) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // pass player object to
-      // the callback and
-      // return.
+      // return callback - passing database object, player object.
       return callback(null, db, player);
     });
   },
@@ -179,27 +198,19 @@ module.exports = {
    * @return {Function} callback
    */
   getPlayersByRoomId: function(db, id, callback) {
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
+    // casting id.
+    id = id >> 0;
     // get collection.
     var collection = this.getCollection(db);
     // find room.
     collection.find({
       room: id
     }).toArray(function(err, players) {
-      // if error happens pass it to
-      // the callback and return.
+      // return callback - passing error object.
       if (err) {
         return callback(err);
       }
-      // pass players object to
-      // the callback and
-      // return.
+      // return callback - passing database object, player object.
       return callback(null, db, players);
     });
   },
