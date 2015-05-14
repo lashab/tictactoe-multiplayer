@@ -12,6 +12,44 @@ var c = require(join(__dirname, '..', 'helpers', 'common'));
 module.exports = {
   collection: 'games',
   /**
+   * get game collection.
+   *
+   * @param {Object} db
+   * @return {Object} collection
+   */
+  getCollection: function(db) {
+    // get collection.
+    var collection = db.collection(this.collection);
+    return collection;
+  },
+  /**
+   * add game.
+   *
+   * @param {Object} db
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  add: function(db, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+
+    collection.save({}, function(error, done) {
+      if (error) {
+        return callback(error);
+      }
+    });
+  },
+  /**
+   * remove game by id.
+   *
+   * @param {Object} db
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  remove: function() {
+    
+  },
+  /**
    * changes active figure.
    *
    * @param {Object} db
@@ -63,7 +101,7 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  updateFigures: function(db, id, target, action, callback) {
+  changeFiguresState: function(db, id, target, action, callback) {
     // define figures array like object
     // assign empty array if target is
     // emtpy.

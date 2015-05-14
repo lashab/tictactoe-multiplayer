@@ -41,7 +41,7 @@ module.exports = {
     });
   },
   /**
-   * adds | updates room.
+   * add | update room.
    *
    * @param {Object} db
    * @param {Function} callback
@@ -77,7 +77,7 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          // New room has been created | updated ?
+          // new room has been created | updated ?
           if (done) {
             // return callback - passing database object, room object.
             return callback(null, db, room);
@@ -155,7 +155,7 @@ module.exports = {
     });
   },
   /**
-   * removes room by id.
+   * remove room by id.
    *
    * @param {Object} db
    * @param {Object} room
@@ -178,7 +178,7 @@ module.exports = {
     });
   },
   /**
-   * opens room (makes it avaiable).
+   * open room (make it avaiable).
    *
    * @param {Object} db
    * @param {Number} id
@@ -208,27 +208,19 @@ module.exports = {
    * @return {Function} callback
    */
   getRoomById: function(db, id, callback) {
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
+    // casting id.
+    id = id >> 0;
     // get collection.
     var collection = this.getCollection(db);
     // find room.
     collection.findOne({
       _id: id,
-    }, function(err, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    }, function(error, room) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // pass the room data to
-      // the callback and
-      // return.
+      // return callback - passing database object, room object.
       return callback(null, db, room);
     });
   },
@@ -247,29 +239,23 @@ module.exports = {
       available: true
     };
     // find available room.
-    collection.find(query).toArray(function(err, rooms) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    collection.find(query).toArray(function(error, rooms) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
       // object ids.
       var ids = [];
-      // if available room(s) found.
+      // available room(s) found ?
       if (rooms.length) {
-        // loop through available rooms.
-        rooms.forEach(function(room, index) {
-          // push object ids.
+        rooms.forEach(function(room) {
+          // push ids.
           ids.push(room._id);
         });
-        // pass random room to
-        // the callback and 
-        // return.
+        // return callback - passing database object, random number.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
-      // if there is no avaiable
-      // room pass null to the
-      // callback and return.
+      // return callback - passing database object.
       return callback(null, db, null);
     });
   }
