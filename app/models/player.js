@@ -7,6 +7,7 @@ var join = path.join;
 var objectID = require('mongodb').ObjectID;
 var debug = require('debug')('player');
 var Room = require(join(__dirname, 'room'));
+var Game = require(join(__dirname, 'game'));
 
 module.exports = {
   collection: 'players',
@@ -22,7 +23,7 @@ module.exports = {
     return collection;
   },
   /**
-   * adds player.
+   * add player.
    *
    * @param {Object} db
    * @param {String} player
@@ -33,15 +34,26 @@ module.exports = {
   add: function(db, player, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
+    // get room id.
+    var id = room._id;
+    // room is fresh.
+    var fresh = room.fresh && room.available;
+    // prepare player object.
+    var _player = {
+      room: id,
+      name: player,
+      active: room.available ? true : false,
+      position: room.available ? 0 : 1,
+      score: 0,
+      fresh: fresh ? true : false
+    };
     // add new player.
-    collection.save(player, function(error, done) {
-      // room is fresh.
-      var fresh = room.fresh && room.available;
+    collection.save(_player, function(error, done) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      // fresh room & room is available ? add index to the room field.
+      // fresh room ?
       if (fresh) {
         // add index.
         collection.ensureIndex({
@@ -54,7 +66,7 @@ module.exports = {
           // index has been added ?
           if (index) {
             // debug player.
-            debug('index has been added to the room field.');
+            debug('index has been added.');
           }
           // :
           else {
@@ -67,24 +79,24 @@ module.exports = {
       }
       // player has been added ? 
       if (done) {
-        // fresh player ? append fresh debug string.
+        // fresh player ? concat fresh debug message : concat empty message.
         var _fresh = fresh ? '(fresh player)' : '';
         // debug player.
-        debug('%s %s has been added.', _fresh, player.name);
+        debug('%s %s has been added.', _fresh, player);
+        debug('%s has joined to #%d room', player, id);
         // return callback - passing database object, player object.
-        return callback(null, db, player);
+        return callback(null, db, _player);
       }
       // :
-      else {
-        // debug player.
-        debug('player hasn\'t been added.');
-        // return callback - passing database object.
-        return callback(null, db, null);
-      }
+      // debug player.
+      debug('player hasn\'t been added.');
+      debug('player could\'t be joined to #%d room', id);
+      // return callback - passing database object.
+      return callback(null, db, null);
     });
   },
   /**
-   * removes player.
+   * remove player.
    *
    * @param {Object} db
    * @param {String} id
@@ -107,7 +119,7 @@ module.exports = {
     });
   },
   /**
-   * joins player.
+   * join player.
    *
    * @param {Object} db
    * @param {String} player
@@ -116,24 +128,18 @@ module.exports = {
    */
   join: function(db, player, callback) {
     var _this = this;
-    // create | update room.
+    // create || update room.
     Room.add(db, function(error, db, room) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      // room has been created | updated ?
+      // room has been created || updated ?
       if (room) {
         // get room id.
         var id = room._id;
         // add player.
-        _this.add(db, {
-          room: id,
-          name: player,
-          active: room.available ? true : false,
-          position: room.available ? 0 : 1,
-          score: 0
-        }, room, function(error, db, player) {
+        _this.add(db, player, room, function(error, db, player) {
           // return callback - passing error object.
           if (error) {
             return callback(error);
@@ -145,22 +151,31 @@ module.exports = {
               redirect: join('room', '' + id),
               position: player.position
             };
-            // debug room.
-            debug('%s has joined to #%d room', player.name, id);
-            // return callback - passing database object, redirect object.
-            return callback(null, db, redirect);
+            // add game.
+            Game.add(db, room, function(error, db, done) {
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
+              // game has been added ?
+              if (done) {
+                // return callback - passing database object, redirect object.
+                return callback(null, db, redirect);
+              }
+              // :
+              // return callback - passing database object.
+              return callback(null, db, null);
+            });
           }
+          // :
           else {
-            // debug room.
-            debug('player could\'t be joined to #%d room', id);
             // return callback - passing database object.
             return callback(null, db, null);
           }
         });
       }
+      // :
       else {
-        // debug room.
-        debug('room couldn\'t be created or updated.');
         // return callback - passing database object.
         return callback(null, db, null);
       }

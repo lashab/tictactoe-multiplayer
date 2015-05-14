@@ -16,9 +16,7 @@ var database = require('mongodb').MongoClient;
 var debug = require('debug')('app');
 
 var Routes = require(join(__dirname, 'app/routes'));
-var Game = require(join(__dirname, 'app/models/game'));
 var Player = require(join(__dirname, 'app/models/player'));
-var Room = require(join(__dirname, 'app/models/room'));
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -53,7 +51,7 @@ io.on('connection', function (socket) {
         debug(error);
       }
 
-      console.log(data);
+      // console.log(data);
     })
     // if error happens debug it.
     if (err) {

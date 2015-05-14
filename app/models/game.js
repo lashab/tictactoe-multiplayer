@@ -7,7 +7,7 @@ var join = require('path').join
 var debug = require('debug')('game');
 var Player = require(join(__dirname, 'player'));
 var Room = require(join(__dirname, 'room'));
-var c = require(join(__dirname, '..', 'helpers', 'common'));
+var $ = require(join(__dirname, '..', 'helpers', 'common'));
 
 module.exports = {
   collection: 'games',
@@ -32,55 +32,66 @@ module.exports = {
   add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // room is fresh.
-    var fresh = room.fresh && room.avaiable;
-    // add game.
-    collection.save({
-      room: room._id
-      figure: 0,
-      figures: []
-    }, function(error, done) {
-      // return callback - passing error object.
-      if (error) {
-        return callback(error);
-      }
-      // room is fresh ?
-      if (fresh) {
-        // add index.
-        collection.ensureIndex({
-          room: 1
-        }, function(error, index) {
-          // return callback - passing error object.
-          if (error) {
-            return callback(error);
-          }
-          // index has been added ?
-          if (index) {
-            // debug game.
-            debug('index has been added to the room field.');
-          }
-          // :
-          else {
-            // debug game.
-            debug('index has not been added.');
-            // return callback - passing database object.
-            return callback(null, db, null);
-          }
-        });
-      }
-      // return callback - passing database object, done boolean.
-      return callback(null, db, done);
-    });
-  },
-  /**
-   * remove game by id.
-   *
-   * @param {Object} db
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  remove: function() {
-    
+    // get room id.
+    var id = room._id;
+    // room is available.
+    var available = room.available;
+    // room is avaiable ?
+    if (available) {
+      // room is fresh.
+      var fresh = room.fresh && available;
+      // add game.
+      collection.save({
+        room: id,
+        figure: 0,
+        figures: [],
+        fresh: fresh ? true : false
+      }, function(error, done) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // room is fresh ?
+        if (fresh) {
+          // add index.
+          collection.ensureIndex({
+            room: 1
+          }, function(error, index) {
+            // return callback - passing error object.
+            if (error) {
+              return callback(error);
+            }
+            // index has been added ?
+            if (index) {
+              // debug game.
+              debug('index has been added');
+            }
+            // :
+            else {
+              // debug game.
+              debug('index has not been added.');
+              // return callback - passing database object.
+              return callback(null, db, null);
+            }
+          });
+        }
+        var _fresh = fresh ? '(fresh game)' : '';
+        // debug message.
+        var message = done 
+          ? '%s for #%d room has been added.' 
+            : 'for #%d room hasn\'t been added.';
+        // debug game.
+        debug(message, _fresh, id);
+        // return callback - passing database object.
+        return callback(null, db, done);
+      });
+    }
+    // :
+    else {
+      debug('for #%d room already exists.', id);
+      // return callback - passing database object, boolean true.
+      return callback(null, db, true);
+    }
   },
   /**
    * changes active figure.
@@ -186,7 +197,7 @@ module.exports = {
     // player:join event.
     socket.on('player:join', function(room) {
       // check for room object.
-      if (!c.isEmptyObject(room)) {
+      if (!$.isEmptyObject(room)) {
         // get room id.
         var room = room.id;
         // get room by id.

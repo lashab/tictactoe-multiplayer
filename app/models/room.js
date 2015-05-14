@@ -8,7 +8,7 @@ var debug = require('debug')('room');
 module.exports = {
   collection: 'rooms',
   /**
-   * get rooms collection.
+   * get room collection.
    *
    * @param {Object} db
    * @return {Object} collection
@@ -41,7 +41,7 @@ module.exports = {
     });
   },
   /**
-   * add | update room.
+   * add || update room.
    *
    * @param {Object} db
    * @param {Function} callback
@@ -66,12 +66,12 @@ module.exports = {
         // prepare room object.
         var room = {
           _id: _room.id,
-          available: _room.available,
+          available: _room.available || false,
           fresh: _room.fresh || false
         };
         // id is an existent room ? update
-        // room make the room unavailable 
-        // : create new room. 
+        // room make the room unavailable
+        // : create new room.
         collection.save(room, function(error, done) {
           // return callback - passing error object.
           if (error) {
@@ -84,7 +84,7 @@ module.exports = {
           }
           // :
           // debug room.
-          debug('something went wrong, new room hasn\'t been created or updated.');
+          debug('room hasn\'t been created or updated.');
           // return callback - passing database object.
           return callback(null, db, null);
         });
@@ -104,7 +104,6 @@ module.exports = {
             // update room.
             add(db, {
               id: room,
-              available: false,
               fresh: room === 1 ? true : false
             }, function(error, db, _room) {
               // return callback - passing error object.
@@ -117,6 +116,7 @@ module.exports = {
               return callback(null, db, _room);
             });
           }
+          // :
           else {
             // create room.
             add(db, {
@@ -128,13 +128,14 @@ module.exports = {
                 return callback(error);
               }
               // debug room.
-              debug('#%d has been created.', id);
+              debug('#%d has been added.', id);
               // return callback - passing database object, room object.
               return callback(null, db, room);
             });
           }
         });
       }
+      // :
       else {
         // create fresh room.
         add(db, {
@@ -147,7 +148,7 @@ module.exports = {
             return callback(error);
           }
           // debug room.
-          debug('(fresh room) #%d has been created.', id);
+          debug('(fresh room) #%d has been added.', id);
           // return callback - passing database object, room object.
           return callback(null, db, room);
         });
@@ -234,12 +235,15 @@ module.exports = {
   getRandomAvailableRoom: function(db, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // prepare query.
+    // prepare query object.
     var query = {
       available: true
     };
     // find available room.
     collection.find(query).toArray(function(error, rooms) {
+      var _rooms = rooms.length;
+      // debug room.
+      debug('available rooms - %d', _rooms);
       // return callback - passing error object.
       if (error) {
         return callback(error);
@@ -247,7 +251,7 @@ module.exports = {
       // object ids.
       var ids = [];
       // available room(s) found ?
-      if (rooms.length) {
+      if (_rooms) {
         rooms.forEach(function(room) {
           // push ids.
           ids.push(room._id);
