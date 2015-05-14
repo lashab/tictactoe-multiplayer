@@ -29,14 +29,47 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  add: function(db, callback) {
+  add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-
-    collection.save({}, function(error, done) {
+    // room is fresh.
+    var fresh = room.fresh && room.avaiable;
+    // add game.
+    collection.save({
+      room: room._id
+      figure: 0,
+      figures: []
+    }, function(error, done) {
+      // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // room is fresh ?
+      if (fresh) {
+        // add index.
+        collection.ensureIndex({
+          room: 1
+        }, function(error, index) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // index has been added ?
+          if (index) {
+            // debug game.
+            debug('index has been added to the room field.');
+          }
+          // :
+          else {
+            // debug game.
+            debug('index has not been added.');
+            // return callback - passing database object.
+            return callback(null, db, null);
+          }
+        });
+      }
+      // return callback - passing database object, done boolean.
+      return callback(null, db, done);
     });
   },
   /**

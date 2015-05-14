@@ -60,7 +60,7 @@ module.exports = {
           else {
             // debug player.
             debug('index has not been added.');
-            // return callback passing database object.
+            // return callback - passing database object.
             return callback(null, db, null);
           }
         });
