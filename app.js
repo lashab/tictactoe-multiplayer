@@ -45,18 +45,41 @@ server.listen(app.get('port'));
 
 // SocketIO.
 io.on('connection', function (socket) {
+
   database.connect(app.get('mongodb'), function(err, db) {
-    Player.join(db, 'lasha', function(error, db, data) {
+  // @debug TODO: clean-up code.
+  var player = {
+    _id: '55565f54a8439f33db07e73d',
+    room: 1,
+    name: 'lasha'
+  };
+  var room = {
+    _id: 1,
+    available: true
+  };
+    // Player.join(db, 'lasha', function(error, db, data) {
+    //   if (error) {
+    //     debug(error);
+    //   }
+
+    //   // console.log(data);
+    // })
+
+    Player.leave(db, player, room, function(error, db, done) {
+      // debug error.
       if (error) {
         debug(error);
       }
-
-      // console.log(data);
-    })
+      if (done) {
+        // db.close();
+      }
+    });
+  
     // if error happens debug it.
     if (err) {
       debug(err);
     }
+
     // // run game.
     // Game.run(db, io, socket, function(err) {
     //   // if error happens debug it.

@@ -38,60 +38,86 @@ module.exports = {
     var available = room.available;
     // room is avaiable ?
     if (available) {
-      // room is fresh.
-      var fresh = room.fresh && available;
       // add game.
       collection.save({
         room: id,
         figure: 0,
-        figures: [],
-        fresh: fresh ? true : false
+        figures: []
       }, function(error, done) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
         }
-        // room is fresh ?
-        if (fresh) {
-          // add index.
-          collection.ensureIndex({
-            room: 1
-          }, function(error, index) {
-            // return callback - passing error object.
-            if (error) {
-              return callback(error);
-            }
-            // index has been added ?
-            if (index) {
-              // debug game.
-              debug('index has been added');
-            }
-            // :
-            else {
-              // debug game.
-              debug('index has not been added.');
-              // return callback - passing database object.
-              return callback(null, db, null);
-            }
-          });
-        }
-        var _fresh = fresh ? '(fresh game)' : '';
+        // add index.
+        collection.ensureIndex({
+          room: 1
+        }, function(error, index) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // index has been added ?
+          if (index) {
+            // debug game.
+            debug('room field has been indexed.');
+          }
+          // :
+          else {
+            // debug game.
+            debug('room field hasn\'t been indexed.');
+            // return callback - passing database object.
+            return callback(null, db, null);
+          }
+        });
         // debug message.
         var message = done 
-          ? '%s for #%d room has been added.' 
+          ? 'for #%d room has been added.' 
             : 'for #%d room hasn\'t been added.';
         // debug game.
-        debug(message, _fresh, id);
+        debug(message, id);
         // return callback - passing database object.
         return callback(null, db, done);
       });
     }
     // :
     else {
-      debug('for #%d room already exists.', id);
+      debug('for #%d room has already been added.', id);
       // return callback - passing database object, boolean true.
       return callback(null, db, true);
     }
+  },
+  /**
+   * remove game.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  remove: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // get room id.
+    var id = room._id;
+    // remove player by id.
+    collection.remove({
+      room: id
+    }, {
+      single: true
+    }, function(error, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // debug message.
+      var message = done
+        ? 'for #%d has been removed'
+          : 'for #%d hasn\'t been removed';
+      // debug player.
+      debug(message, id);
+      // return callback - passing database object done boolean.
+      return callback(null, db, done);
+    });
   },
   /**
    * changes active figure.
