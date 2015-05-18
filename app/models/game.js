@@ -26,14 +26,15 @@ module.exports = {
    * add game.
    *
    * @param {Object} db
+   * @param {Object} room
    * @param {Function} callback
    * @return {Function} callback
    */
   add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id.
-    var id = room._id;
+    // get room id && casting id.
+    var id = room._id >> 0;
     // room is available.
     var available = room.available;
     // room is avaiable ?
@@ -97,8 +98,8 @@ module.exports = {
   remove: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id.
-    var id = room._id;
+    // get room id && casting id.
+    var id = room._id >> 0;
     // remove player by id.
     collection.remove({
       room: id
@@ -113,102 +114,92 @@ module.exports = {
       var message = done
         ? 'for #%d has been removed'
           : 'for #%d hasn\'t been removed';
-      // debug player.
+      // debug game.
       debug(message, id);
-      // return callback - passing database object done boolean.
+      // return callback - passing database object, done boolean.
       return callback(null, db, done);
     });
   },
   /**
-   * changes active figure.
+   * change active figure.
    *
    * @param {Object} db
-   * @param {Object} id
-   * @param {Object} figure
+   * @param {Object} game
    * @param {Function} callback
    * @return {Function} callback
    */
-  changeActiveFigure: function(db, id, figure, callback) {
-    // change figure.
-    var figure = !figure ? 1 : 0;
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
+  changeActiveFigure: function(db, game, callback) {
     // get collection.
     var collection = this.getCollection(db);
+    // get room id && casting id.
+    var id = game.room >> 0;
+    // change active figure.
+    var figure = !game.figure ? 1 : 0;
     // update figure.
     collection.findAndModify({
-      _id: id
+      room: id
     }, [], {
       $set: {
         figure: figure
       }
     }, {
       new: true
-    }, function(err, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    }, function(error, game, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // pass the room data to
-      // the callback and
-      // return.
-      return callback(null, db, room);
+      // debug message.
+      var message = done
+        ? 'room #%d - figure has been updated'
+          : 'room #%d - figure hasn\'t updated';
+      // debug game.
+      debug(message, id);
+      // return callback - passing database object, game object.
+      return callback(null, db, game);
     });
   },
   /**
-   * modifys room state.
+   * change game state.
    *
    * @param {Object} db
-   * @param {Object} id
+   * @param {Object} game
    * @param {Object} target
    * @param {String} action
    * @param {Function} callback
    * @return {Function} callback
    */
-  changeFiguresState: function(db, id, target, action, callback) {
-    // define figures array like object
-    // assign empty array if target is
-    // emtpy.
-    var figures = target || [];
-    // define update variable
-    // defaults to empty 
-    // object.
-    var update = {};
-    // if the id type is a string
-    // cast it to the number.
-    if (typeof id === 'string') {
-      // Bitshifting casting is 
-      // a lot faster.
-      id = id >> 0;
-    }
+  changeGameState: function(db, game, target, action, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // prepare update.
+    // get room id && casting id.
+    var id = game.room >> 0;
+    // get taget.
+    target = target || [];
+    // prepare update object.
+    var update = {};
+    // prepare update object.
     update[action] = {
-      figures: figures
-    }
-    // find room by id and
-    // push figures.
+      figures: target
+    };
+    // push target || remove target.
     collection.findAndModify({
-      _id: id
+      room: id
     }, [], update, {
       new: true
-    }, function(err, room) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
+    }, function(error, game, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
       }
-      // pass the room data to
-      // the callback and
-      // return.
-      return callback(null, db, room);
+      // debug message.
+      var message = done
+        ? 'room #%d - figures has been updated'
+         : 'room #%d - figures hasn\'t been updated';
+      // debug game.
+      debug(message, id);
+      // return callback passing database object, game object. 
+      return callback(null, db, game);
     });
   },
   /**

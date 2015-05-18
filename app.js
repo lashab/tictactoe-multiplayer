@@ -17,6 +17,7 @@ var debug = require('debug')('app');
 
 var Routes = require(join(__dirname, 'app/routes'));
 var Player = require(join(__dirname, 'app/models/player'));
+var Game = require(join(__dirname, 'app/models/game'));
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -57,6 +58,24 @@ io.on('connection', function (socket) {
     _id: 1,
     available: true
   };
+
+
+  var data = {
+    room: 1,
+    figure: 1,
+    figures: []
+  };
+
+  Game.changeActiveFigure(db, data, function(error, db, data) {
+    if (error) {
+      debug(error);
+    }
+
+    // console.log(data);
+
+
+  });
+
     // Player.join(db, 'lasha', function(error, db, data) {
     //   if (error) {
     //     debug(error);
@@ -65,15 +84,15 @@ io.on('connection', function (socket) {
     //   // console.log(data);
     // })
 
-    Player.leave(db, player, room, function(error, db, done) {
-      // debug error.
-      if (error) {
-        debug(error);
-      }
-      if (done) {
-        // db.close();
-      }
-    });
+    // Player.leave(db, player, room, function(error, db, done) {
+    //   // debug error.
+    //   if (error) {
+    //     debug(error);
+    //   }
+    //   if (done) {
+    //     // db.close();
+    //   }
+    // });
   
     // if error happens debug it.
     if (err) {

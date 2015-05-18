@@ -642,8 +642,7 @@
     // game object.
     var game = {
       target: {
-        index: index,
-        figure: figure,
+        index: figure
       },
       over: false,
       combination: []
