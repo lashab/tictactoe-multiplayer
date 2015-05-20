@@ -48,35 +48,44 @@ server.listen(app.get('port'));
 io.on('connection', function (socket) {
 
   database.connect(app.get('mongodb'), function(err, db) {
+    var collection = Player.getCollection(db);
+
+    var stream = collection.find({room: 2}).toArray(function(error, players) {
+
+      Player.switch(db, players, function(error, db, players) {
+        console.log(players);
+      });
+    });
+
   // @debug TODO: clean-up code.
-  var player = {
-    _id: '55565f54a8439f33db07e73d',
-    room: 1,
-    name: 'lasha'
-  };
-  var room = {
-    _id: 1,
-    available: true
-  };
+  // var player = {
+  //   _id: '55565f54a8439f33db07e73d',
+  //   room: 1,
+  //   name: 'lasha'
+  // };
+  // var room = {
+  //   _id: 1,
+  //   available: true
+  // };
 
 
-  var data = {
-    room: 1,
-    figure: 1,
-    figures: []
-  };
+  // var data = {
+  //   room: 1,
+  //   figure: 1,
+  //   figures: []
+  // };
 
-  Game.changeActiveFigure(db, data, function(error, db, data) {
-    if (error) {
-      debug(error);
-    }
+  // Game.changeActiveFigure(db, data, function(error, db, data) {
+  //   if (error) {
+  //     debug(error);
+  //   }
 
-    // console.log(data);
+  //   // console.log(data);
 
 
-  });
+  // });
 
-    // Player.join(db, 'lasha', function(error, db, data) {
+    // Player.join(db, 'nika', function(error, db, data) {
     //   if (error) {
     //     debug(error);
     //   }

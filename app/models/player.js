@@ -281,31 +281,6 @@ module.exports = {
     });
   },
   /**
-   * get players by room id.
-   *
-   * @param {Object} db
-   * @param {Number|String} id
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  getPlayersByRoomId: function(db, id, callback) {
-    // casting id.
-    id = id >> 0;
-    // get collection.
-    var collection = this.getCollection(db);
-    // find room.
-    collection.find({
-      room: id
-    }).toArray(function(err, players) {
-      // return callback - passing error object.
-      if (err) {
-        return callback(err);
-      }
-      // return callback - passing database object, player object.
-      return callback(null, db, players);
-    });
-  },
-  /**
    * get player waiting object.
    *
    * @param {Object} player
@@ -323,58 +298,46 @@ module.exports = {
     return waiting;
   },
   /**
-   * switches active player.
+   * switch player.
    *
    * @param {Object} db
-   * @param {Number|String} id
+   * @param {Array} players
    * @param {Function} callback
    * @return {Function} callback
    */
-  switch: function(db, id, callback) {
-    var _this = this;
-    // get players by room.
-    this.getPlayersByRoomId(db, id, function(err, db, players) {
-      // define active player
-      // defaults to empty
-      // object.
-      var _player = {};
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      // if players exists on specified
-      // room id then loop through them
-      // change active state and save.
-      if (players.length) {
-        // loop through players.
-        players.forEach(function(player) {
-          // change active player.
-          player.active = player.active ? false : true;
-          // modify player.
-          _this.add(db, player, function(err, db, player) {
-            // if error happens pass it to
-            // the callback and return.
-            if (err) {
-              return callback(err);
-            }
-          });
-        });
-        // passing modified players object 
-        // to the callback and return.
-        return callback(null, db, players);
-      }
+  switch: function(db, players, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // loop through players.
+    players.forEach(function(player) {
+      // change active player.
+      player.active = !player.active ? true : false;
+      // update player.
+      collection.save(player, function(error, done) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // debug message.
+        var message = done
+          ? '#%d room - player %s has been switched.'
+            : '#%d room - player could\'t not be switched.';
+        // debug player.
+        debug(message, player.room, player.name);
+      });
     });
+    // return callback - passing database object, players array.
+    return callback(null, db, players);
   },
   /**
-   * updates player score.
+   * update player score.
    *
    * @param {Object} db
    * @param {String} id
    * @param {Function} callback
    * @return {Function} callback
    */
-  updatePlayerScore: function(db, id, callback) {
+  updateScore: function(db, id, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // do not update score if the id
