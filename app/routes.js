@@ -1,11 +1,14 @@
 'use strict';
-
+/**
+ * Module dependencies.
+ */
 var join = require('path').join;
-var debug = require('debug')('routes');
+var debug = require('debug')('route');
 var Template = require(join(__dirname, 'helpers/template'));
-var Room = require(join(__dirname, 'models/room'));
+var Player = require(join(__dirname, 'models/player'));
 
 module.exports = function(app, db) {
+  // GET - homepage
   app.get('/', function(req, res) {
     // render homepage.
     res.render('index', {
@@ -13,54 +16,59 @@ module.exports = function(app, db) {
       body: Template.render('home')
     });
   });
-
+  // GET - room page where :id is room id.
   app.get('/room/:id', function(req, res) {
+    // render room page.
     res.render('index', { 
       title: app.get('title'),
       body: Template.render('room'),
       $class: 'room'
     });
   });
-
+  // POST - join player.
   app.post('/join', function(req, res) {
-    // check for name.
+    // player name ?
     if (req.body.name) {
       // open database connection.
-      db.connect(app.get('mongodb'), function(err, db) {
-        // if error happens debug it.
-        if (err) {
-          debug(err);
+      db.connect(app.get('mongodb'), function(error, db) {
+        // debug route - error.
+        if (error) {
+          debug(error);
         }
+        // debug route - open database connection.
+        debug('open connection');
         // join player to the room.
-        Room.join(db, req.body.name, function(err, db, room) {
-          // if error happens debug it.
-          if (err) {
-            debug(err);
+        Player.join(db, req.body.name, function(error, db, player) {
+          // debug error.
+          if (error) {
+            debug(error);
           }
-          // if succeeds set cookie
-          // and redirect to the
-          // room otherwise back
-          // to the homepage.
-          if (room) {
+          // player has joined ?
+          if (player) {
             // set cookie.
-            res.cookie('position', room.position);
-            // do redirect.
-            res.redirect(room.redirect);
-            // close connection.
-            db.close();
+            res.cookie('position', player.position);
+            // redirect.
+            res.redirect(player.redirect);
           }
+          // :
           else {
-            // back to the homepage.
-            res.redirect('/');
-            // close connection.
+            // debug route.
+            debug('response end');
+            debug('close connection');
+            // end response.
+            res.end();
+            // close database connection.
             db.close();
           }
         });
       });
     }
+    //: 
     else {
-      // back to the homepage
-      res.redirect('/');
+      // debug route.
+      debug('response end');
+      // end response.
+      res.end();
     }
   });
 }

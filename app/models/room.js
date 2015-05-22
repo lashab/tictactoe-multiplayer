@@ -236,7 +236,7 @@ module.exports = {
     var query = {
       available: true
     };
-    // find available room.
+    // find available rooms.
     collection.find(query).toArray(function(error, rooms) {
       var _rooms = rooms.length;
       // debug room.
@@ -253,7 +253,7 @@ module.exports = {
           // push ids.
           ids.push(room._id);
         });
-        // return callback - passing database object, random number.
+        // return callback - passing database object, random objectID.
         return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
       }
       // return callback - passing database object.
