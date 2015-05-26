@@ -4,8 +4,10 @@
  */
 var join = require('path').join;
 var debug = require('debug')('route');
-var Template = require(join(__dirname, 'helpers/template'));
-var Player = require(join(__dirname, 'models/player'));
+var Template = require('./helpers/template');
+var Game = require('./models/game');
+var Room = require('./models/room');
+var Player = require('./models/player')(Room, Game);
 
 module.exports = function(app, db) {
   // GET - homepage

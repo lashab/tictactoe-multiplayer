@@ -206,13 +206,13 @@ module.exports = {
    * @return {Function} callback
    */
   getRoomById: function(db, id, callback) {
-    // casting id.
-    id = id >> 0;
     // get collection.
     var collection = this.getCollection(db);
+    // casting id.
+    id = id >> 0;
     // find room.
     collection.findOne({
-      _id: id,
+      _id: id
     }, function(error, room) {
       // return callback - passing error object.
       if (error) {

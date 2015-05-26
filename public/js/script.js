@@ -166,7 +166,7 @@
     return player;
   }
   /**
-   * joins to the game.
+   * join game.
    *
    * @param {Object} socket
    * @return {Object} this
@@ -174,9 +174,9 @@
   Game.prototype.playerJoin = function(socket) {
     // get room id.
     var room = this.getRoomIdByPathName();
-    // check for room.
+    // room id ?
     if (room) {
-      // emit server to join, passing room id.
+      // socket emit - player:join - passing room object.
       socket.emit('player:join', {
         id: room
       });
@@ -954,7 +954,7 @@
     return group;
   }
   /**
-   * draws game.
+   * draw game.
    *
    * @return {Object} this
    */
@@ -1190,8 +1190,9 @@
         .playerJoin(socket)
         // player leave.
         .playerLeave(socket);
-      // init room event.
-      socket.on('room:init', function(room) {
+      // socket event - room:open.
+      socket.on('room:open', function(room) {
+        // room object is not empty ? 
         if (!$.isEmptyObject(room)) {
           _this
             // set room object.
@@ -1207,7 +1208,7 @@
         }
         else {
           // debug.
-          console.debug('room:init event - room object couldn\'t be found.');
+          console.debug('room:open event - room object couldn\'t be found.');
         }
       })
       // join players event.

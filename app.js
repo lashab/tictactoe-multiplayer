@@ -15,9 +15,11 @@ var cookieParser = require('cookie-parser');
 var database = require('mongodb').MongoClient;
 var debug = require('debug')('app');
 
-var Routes = require(join(__dirname, 'app/routes'));
-var Player = require(join(__dirname, 'app/models/player'));
-var Game = require(join(__dirname, 'app/models/game'));
+var routes = require('./app/routes');
+var room = require('./app/models/room');
+var player = require('./app/models/player')(room, {});
+var common = require('./app/helpers/common');
+var game = require('./app/models/game')(room, player, common);
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -39,7 +41,7 @@ if ('development' == app.get('env')) {
 }
 
 // Routes.
-Routes(app, database);
+routes(app, database);
 
 // Server listens to port.
 server.listen(app.get('port'));
