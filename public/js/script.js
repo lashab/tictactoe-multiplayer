@@ -247,18 +247,13 @@
     return this;
   }
   /**
-   * waits for next player.
+   * wait for next player.
    *
    * @param {Object} player
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (player) {
-    // add loading animation according to the
-    // player position.
-    this
-      .set('waiting', true)
-      .set('autoplay', false);
-
+    // add loader according to player position.
     $('.id-player-' + player.position)
       .children(':first-child')
         .prop('src', player.image)
@@ -1060,10 +1055,10 @@
   Game.prototype.drawGameState = function() {
     var _this = this;
     // get room object.
-    var room = this.get('room');
+    var game = this.get('game');
     // loop through figures, draw each
     // figure, setting state.
-    room.figures.forEach(function(target) {
+    game.figures.forEach(function(target) {
       // get target index.
       var index = target.index;
       // get target figure.
@@ -1183,66 +1178,58 @@
    */
   Game.prototype.run = function(socket) {
     var _this = this;
-    // connect event.
+    // socket event - connect.
     socket.on('connect', function() {
       _this
         // player join.
         .playerJoin(socket)
         // player leave.
         .playerLeave(socket);
-      // socket event - room:open.
-      socket.on('room:open', function(room) {
-        // room object is not empty ? 
-        if (!$.isEmptyObject(room)) {
-          _this
-            // set room object.
-            .set('room', room)
-            // draw game.
-            .drawGame()
-            // initialize targets.
-            .initTargets()
-            // draw game state.
-            .drawGameState()
-            // play game.
-            ._play(socket);
-        }
-        else {
-          // debug.
-          console.debug('room:open event - room object couldn\'t be found.');
-        }
+      // socket event - room:init.
+      socket.on('room:init', function(room) {
+        console.log(room);
+        // _this
+        //   // set room.
+        //   .set('room', room)
+        //   // draw game.
+        //   .drawGame()
+        //   // initialize targets.
+        //   .initTargets()
+        //   // draw game state.
+        //   .drawGameState()
+        //   // play game.
+        //   ._play(socket);
       })
-      // join players event.
+      // socket event - game:init.
+      .on('game:init', function(game) {
+        console.log(game);
+        // set game.
+        // _this.set('game', game);
+      })
+      // socket event - players:init.
       .on('players:init', function(players) {
-        // check for players.
-        if (players.length) {
-          _this
-            // set players
-            .set('players', players)
-            // add players.
-            .addPlayers()
-            // set active player.
-            .setActivePlayer()
-            // set player scores.
-            .setPlayerScores()
-            // auto play.
-            .autoPlay();
-        }
-        else {
-          // debug.
-          console.debug('join players event - players couldn\t be found.');
-        }
+        console.log(players);
+        // _this
+        //   // set players.
+        //   .set('players', players)
+        //   // add players.
+        //   .addPlayers()
+        //   // set active player.
+        //   .setActivePlayer()
+        //   // set player scores.
+        //   .setPlayerScores()
+        //   // auto play.
+        //   .autoPlay();
       })
       // player:waiting event.
       .on('player:waiting', function(player) {
-        if (!$.isEmptyObject(player)) {
-
-          // waiting for player.
-          _this.waitForPlayer(player);
-        }
-        else {
-          // debug.
-          console.debug('waiting for player event - player couldn\t be found.');
-        }
+        _this
+          // set waiting.
+          .set('waiting', true)
+          // set autoplay.
+          .set('autoplay', false)
+          // wait for player.
+          .waitForPlayer(player);
       })
       // play event.
       .on('play', function(data) {

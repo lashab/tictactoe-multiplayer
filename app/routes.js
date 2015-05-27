@@ -3,11 +3,10 @@
  * Module dependencies.
  */
 var join = require('path').join;
-var debug = require('debug')('route');
-var Template = require('./helpers/template');
-var Game = require('./models/game');
-var Room = require('./models/room');
-var Player = require('./models/player')(Room, Game);
+var debug = require('debug')('routes');
+var template = require('./helpers/template');
+var game = require('./models/game');
+
 
 module.exports = function(app, db) {
   // GET - homepage
@@ -15,7 +14,7 @@ module.exports = function(app, db) {
     // render homepage.
     res.render('index', {
       title: app.get('title'),
-      body: Template.render('home')
+      body: template.render('home')
     });
   });
   // GET - room page where :id is room id.
@@ -23,7 +22,7 @@ module.exports = function(app, db) {
     // render room page.
     res.render('index', { 
       title: app.get('title'),
-      body: Template.render('room'),
+      body: template.render('room'),
       $class: 'room'
     });
   });
@@ -39,13 +38,13 @@ module.exports = function(app, db) {
         }
         // debug route - open database connection.
         debug('open connection');
-        // join player to the room.
-        Player.join(db, req.body.name, function(error, db, player) {
+        // join player to the game.
+        game.join(db, req.body.name, function(error, db, player) {
           // debug error.
           if (error) {
             debug(error);
           }
-          // player has joined ?
+          // player has been joined ?
           if (player) {
             // set cookie.
             res.cookie('position', player.position);
