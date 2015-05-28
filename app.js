@@ -45,17 +45,16 @@ server.listen(app.get('port'));
 
 // SocketIO.
 io.on('connection', function (socket) {
-
-  database.connect(app.get('mongodb'), function(err, db) {
+  database.connect(app.get('mongodb'), function(error, db) {
     // if error happens debug it.
-    if (err) {
+    if (error) {
       debug(err);
     }
     // run game.
-    game.run(db, io, socket, function(err) {
+    game.run(db, io, socket, function(error) {
       // if error happens debug it.
-      if (err) {
-        debug(err);
+      if (error) {
+        debug(error);
       }
     });
   });

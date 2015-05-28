@@ -31,7 +31,10 @@ module.exports = {
     var collection = this.getCollection(db);
     // find room.
     collection.findOne({}, {
-      _id: 1
+      _id: 1,
+      sort: {
+        $natural: -1
+      }
     }, function(error, room) {
       // return callback - passing error object.
       if (error) {
@@ -45,6 +48,7 @@ module.exports = {
       debug('- %d', id);
       //increment id by 1.
       id++;
+      console.log(id);
       // function for creating or updating room.
       var add = function(db, _room, callback) {
         // prepare room object.

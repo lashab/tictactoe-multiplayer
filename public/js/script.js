@@ -6,13 +6,15 @@
    *
    * @param {Object} canvas
    */
-  var Game = function(canvas) {
+  var Game = function(canvas, socket) {
     // create new fabric object.
     this.__canvas = new fabric.Canvas(canvas.id);
     // set canvas width.
     this.__canvas.setWidth(canvas.width);
     // set canvas height.
     this.__canvas.setHeight(canvas.height);
+    // set socket.
+    this.socket = socket;
   }
   /**
    * setter.
@@ -47,12 +49,29 @@
   Game.prototype.getRoom = function() {
     // get room object.
     var room = this.get('room') || {};
-    // check for room object.
+    // room object is empty ?
     if ($.isEmptyObject(room)) {
-      console.debug('room could\'t be found.');
+      // debug game.
+      console.debug('room object could\'t be found.');
     }
 
     return room;
+  }
+  /**
+   * get game object.
+   *
+   * @return {Object} game
+   */
+  Game.prototype.getGame = function() {
+    // get game object.
+    var game = this.get('game') || {};
+    // game object is empty ?
+    if ($.isEmptyObject(game)) {
+      // debug game.
+      console.debug('game object could\'t be found.');
+    }
+
+    return game;
   }
   /**
    * get players object.
@@ -62,8 +81,9 @@
   Game.prototype.getPlayers = function() {
     // get players object.
     var players = this.get('players') || [];
-    // check for players object.
+    // players object is empty ?
     if (!players.length) {
+      // debug game.
       console.debug('players could\'t be found.');
     }
 
@@ -171,13 +191,13 @@
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype.playerJoin = function(socket) {
+  Game.prototype.playerJoin = function() {
     // get room id.
     var room = this.getRoomIdByPathName();
     // room id ?
     if (room) {
       // socket emit - player:join - passing room object.
-      socket.emit('player:join', {
+      this.socket.emit('player:join', {
         id: room
       });
     }
@@ -190,7 +210,7 @@
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype.playerLeave = function(socket) {
+  Game.prototype.playerLeave = function() {
     var _this = this;
     // add click event.
     $('.room .glyphicon-log-out').click(function(e) {
@@ -203,7 +223,7 @@
       var isWaiting = _this.isWaiting();
       // emit to leave passing room id, player id 
       // and waiting state.
-      socket.emit('player:leave', {
+      _this.socket.emit('player:leave', {
         room: room,
         player: player,
         isWaiting: isWaiting
@@ -227,8 +247,7 @@
       // remove waiting class.
       $('.players.waiting').removeClass('waiting');
     }
-    // loop through each player add image
-    // and player name.
+    // loop in players add image, player name.
     players.forEach(function(player, position) {
       $('.id-player-' + position)
         .children(':first-child')
@@ -270,7 +289,7 @@
     return this;
   }
   /**
-   * sets active player.
+   * set active player.
    *
    * @param {Object} players
    * @return {Object} this
@@ -339,7 +358,7 @@
     return this;
   }
   /**
-   * gets active player.
+   * get active player.
    *
    * @return {Object} player
    */
@@ -354,7 +373,7 @@
     return player;
   }
   /**
-   * sets player score.
+   * set players score.
    *
    * @return {Object} this
    */
@@ -395,8 +414,7 @@
         __badge.toggleClass('badge-loosing', false);
       }
     }
-    // loop through each players, get badge
-    // by positon and set score.
+    // loop in players, get badge by positon and set score.
     players.forEach(function(player) {
       // get badge by position.
       var badge = $('.id-player-' + player.position).find('.badge');
@@ -558,7 +576,7 @@
     return this;
   }
   /**
-   * activates game.
+   * activate game.
    *
    * @return {Object} this
    */
@@ -569,7 +587,7 @@
     return this;
   }
   /**
-   * deactivates game.
+   * deactivate game.
    *
    * @return {Object} this
    */
@@ -580,18 +598,15 @@
     return this;
   }
   /**
-   * set initial targets index and figure.
+   * set initial targets.
    *
    * @return {Object} this
    */
   Game.prototype.initTargets = function() {
-    // loop over each drawn
-    // target and set index
-    // and figure defaults
-    // to NaN.
-    this.__canvas.forEachObject(function(object, index) {
+    // add key and figure value on targets.
+    this.__canvas.forEachObject(function(object, key) {
       object.set({
-        index: index,
+        key: key,
         figure: NaN
       });
     });
@@ -605,39 +620,37 @@
    *
    * @return {Object} this
    */
-  Game.prototype.updateTarget = function(target, index, figure) {
-    // update index and figure values
-    // to the specified target and 
-    // set evented to false.
+  Game.prototype.updateTarget = function(target, key, figure) {
+    // update target key & figure values, prevent this target clickable.
     target.set({
-      index: index,
+      key: key,
       figure: figure
     }).set('evented', false);
 
     return this;
   }
   /**
-   * plays the game.
+   * play game.
    *
    * @param {Object} target
    * @param {Function} callback
    * @return {Object} this
    */
   Game.prototype.play = function(target, callback) {
-    // get room object.
-    var room = this.get('room');
-    // get active figure;
-    var figure = room.figure;
+    // get game object.
+    var game = this.getGame();
     // get count objects.
     var count = this.get('count');
-    // figures array defaults to empty array.
-    var figures = [];
-    // get index.
-    var index = target.get('index');
-    // game object.
-    var game = {
+    // get active figure;
+    var figure = game.figure;
+    // prepare targets array.
+    var targets = [];
+    // get target key.
+    var key = target.get('key');
+    // set game object.
+    var _game = {
       target: {
-        index: figure
+        key: figure
       },
       over: false,
       combination: []
@@ -654,19 +667,15 @@
       7: [2, 4, 6]
     };
     this
-      // draw figure.
+      // draw figure onto the target.
       .drawFigure(target, figure)
-      // update square state and
-      // prevent this square to
-      // be clickable.
-      .updateTarget(target, index, figure);
-    // loop while count doesn't 
-    // equals to -1.
+      // update target.
+      .updateTarget(target, key, figure);
+    // loop while count doesn't equals to -1.
     while (count !== -1) {
-      // get figures.
+      // get figure.
       var _figure = this.__canvas.item(count).get('figure');
-      // pushing NaN figures 
-      // into array.
+      // pushing NaN figure into array.
       if (isNaN(_figure)) {
         figures.push(_figure);
       }
@@ -678,8 +687,8 @@
     // over but without winner.
     if (!figures.length) {
       // pushing values in game object.
-      game.over = true;
-      game.wins = '';
+      _game.over = true;
+      _game.wins = '';
     }
     // if theres is a match in this
     // combination this means that
@@ -694,77 +703,70 @@
         // get active player.
         var player = this.getActivePlayer();
         // pushing values in game object.
-        game.over = true;
-        game.combination = combination;
-        game.wins = player._id;
+        _game.over = true;
+        _game.combination = combination;
+        _game.wins = player._id;
       }
     }
     // calling callback function
     // if it is provided.
     if (callback && $.isFunction(callback)) {
-      callback.call(this, game);
+      callback.call(this, _game);
     }
 
-    // set autoplay to false.
+    // set autoplay.
     this.set('autoplay', false);
 
     return this;
   }
   /**
-   * starts playing on target
-   * click event fire.
+   * start play on target click.
    *
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype._play = function(socket) {
+  Game.prototype._play = function() {
     var _this = this;
+    // get socket object.
+    var socket = this.socket;
     this.__canvas.on({
       'mouse:down': function(e) {
-        // check for target.
+        // target is clickable ?
         if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
           // get target.
           var target = e.target;
-          // get room.
-          var room = _this.getRoomIdByPathName();
-          // check for room.
-          if (room) {
-            // start playing.
-            _this.play(target, function(game) {
-              // get target;
-              var _target = game.target;
-              // emit server to play game
-              // passing room id and 
-              // target object.
-              socket.emit('play', {
+          // get room object.
+          var room = _this.getRoom();
+          // start playing.
+          _this.play(target, function(game) {
+            // get target (key:value).
+            var _target = game.target;
+            // prepare data object.
+            var data = {
+              room: room,
+              target: _target
+            };
+            // socket emit - game:play - passing data object.
+            socket.emit('game:play', data);
+            // game isn't over ?
+            if (!game.over) {
+              // socket emit - player:switch - passing data object.
+              socket.emit('player:switch', data);
+            }
+            // : restart game.
+            else {
+              // socket emit - game:restart - passing object.
+              socket.emit('game:restart', {
                 room: room,
-                target: _target
+                wins: game.wins,
+                combination: game.combination
               });
-              // check for game over.
-              if (!game.over) {
-                // emit server to switch player
-                // and figure, passing room id
-                // and active figure.
-                socket.emit('switch', {
-                  room: room,
-                  figure: _target.figure
-                });
-              }
-              else {
-                // emit server to restart the game passing
-                // room id, winner combination and winner
-                // player id.
-                socket.emit('restart', {
-                  room: room,
-                  wins: game.wins,
-                  combination: game.combination
-                });
-              }
-            });
-          }
+            }
+          });
         }
+        // :
         else {
-          // debug.
+          // debug game.
           console.debug('this target has already have figure or its not your turn!');
         }
       }
@@ -854,14 +856,13 @@
     return count;
   }
   /**
-   * get avaiable targets, passing each object to 
+   * get avaiable targets, passing each object to the
    * callback function if its provided.
    *
    * @param {Function} callback
    * @return {Array} targets 
    */
   Game.prototype.getAvaiableTargets = function(callback) {
-    // define targets defaults to empty array.
     var targets = [];
     // loop throuch each canvas object.
     this.__canvas.forEachObject(function(object, index) {
@@ -882,7 +883,7 @@
     
   }
   /**
-   * draws the line.
+   * draw line.
    *
    * @param {Array} coords
    * @return {Object} line
@@ -901,7 +902,7 @@
     return line;
   }
   /**
-   * draws circle.
+   * draw circle.
    *
    * @param {Number} top
    * @param {Number} left
@@ -928,7 +929,7 @@
     return circle;
   }
   /**
-   * draws group.
+   * draw group.
    *
    * @param {Array} groups
    * @return {Object} group
@@ -958,8 +959,10 @@
     var x = this.__canvas.getWidth() / 3;
     // get y.
     var y = this.__canvas.getHeight() / 3;
-    // add new groups onto the canvas 
-    // combined with two lines.
+    // add new groups onto the canvas combined with two lines:
+    // _|_|_
+    // _|_|_
+    //  | |
     this.__canvas.add(
       this.drawGroup([
         this.drawLine([x, 0, x, y]),
@@ -1002,7 +1005,7 @@
     return this;
   }
   /**
-   * draws figure.
+   * draw figure (X || O).
    *
    * @param {Object} target
    * @param {Number} figure
@@ -1027,8 +1030,7 @@
     var centerX = center.x;
     // get center Y point.
     var centerY = center.y;
-    // if the figure is 1 draw cross
-    // otherwise draw circle.
+    // figure is 1 ?
     if (figure) {      
       // prepare cross.
       var cross = this.drawGroup([
@@ -1038,6 +1040,7 @@
       // add cross onto the canvas.
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
     }
+    // : figure is 0
     else {
       // prepare circle.
       var circle = this.drawCircle(centerY, centerX, radius);
@@ -1048,7 +1051,7 @@
     return this;
   }
   /**
-   * draws figures state.
+   * draw game state.
    *
    * @return {Object} this
    */
@@ -1056,8 +1059,7 @@
     var _this = this;
     // get room object.
     var game = this.get('game');
-    // loop through figures, draw each
-    // figure, setting state.
+    // loop in figures.
     game.figures.forEach(function(target) {
       // get target index.
       var index = target.index;
@@ -1066,9 +1068,9 @@
       // get target.
       var _target = _this.__canvas.item(index);
       _this
-        // draw figures.
+        // draw figure.
         .drawFigure(_target, figure)
-        // update square state.
+        // update target.
         .updateTarget(_target, index, figure);
     });
 
@@ -1171,57 +1173,52 @@
     return this;
   }
   /**
-   * runs the game.
+   * run game.
    *
    * @param {Object} socket
    * @return {Object} this
    */
-  Game.prototype.run = function(socket) {
+  Game.prototype.run = function() {
     var _this = this;
+    // get socket object.
+    var socket = this.socket;
     // socket event - connect.
     socket.on('connect', function() {
-      _this
-        // player join.
-        .playerJoin(socket)
-        // player leave.
-        .playerLeave(socket);
       // socket event - room:init.
       socket.on('room:init', function(room) {
-        console.log(room);
-        // _this
-        //   // set room.
-        //   .set('room', room)
-        //   // draw game.
-        //   .drawGame()
-        //   // initialize targets.
-        //   .initTargets()
-        //   // draw game state.
-        //   .drawGameState()
-        //   // play game.
-        //   ._play(socket);
+        _this
+          // set room.
+          .set('room', room);
       })
       // socket event - game:init.
       .on('game:init', function(game) {
-        console.log(game);
-        // set game.
-        // _this.set('game', game);
+        _this
+          // set game.
+          .set('game', game)
+          // draw game.
+          .drawGame()
+          // initialize targets.
+          .initTargets()
+          // draw game state.
+          .drawGameState()
+          // play game.
+          ._play();
       })
       // socket event - players:init.
       .on('players:init', function(players) {
-        console.log(players);
-        // _this
-        //   // set players.
-        //   .set('players', players)
-        //   // add players.
-        //   .addPlayers()
-        //   // set active player.
-        //   .setActivePlayer()
-        //   // set player scores.
-        //   .setPlayerScores()
-        //   // auto play.
-        //   .autoPlay();
+        _this
+          // set players.
+          .set('players', players)
+          // add players.
+          .addPlayers()
+          // set active player.
+          .setActivePlayer()
+          // set player scores.
+          .setPlayerScores()
+          // auto play.
+          .autoPlay();
       })
-      // player:waiting event.
+      // socket event - player:waiting.
       .on('player:waiting', function(player) {
         _this
           // set waiting.
@@ -1233,17 +1230,10 @@
       })
       // play event.
       .on('play', function(data) {
-        // check for data.
-        if (!$.isEmptyObject(data)) {
-          // get target.
-          var target = _this.__canvas.item(data.index);
-          // play game.
-          _this.play(target);
-        }
-        else {
-          // debug.
-          console.debug('play event - data couldn\t be found.');
-        }
+        // get target.
+        var target = _this.__canvas.item(data.index);
+        // play game.
+        _this.play(target);
       })
       // switch event.
       .on('switch', function(data) {
@@ -1278,11 +1268,21 @@
 
   // make sure page is loaded.
   $(function() {
-    new Game({
+    // instantiate game object.
+    var game = new Game({
       id: 'tictactoe',
       width: window.innerWidth - (window.innerWidth - window.innerHeight),
       height: window.innerHeight
-    }).run(io());
+    }, io());
+
+    game
+      // join game.
+      .playerJoin()
+      // run game.
+      .run()
+      // leave game.
+      .playerLeave();
+
     // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
 
