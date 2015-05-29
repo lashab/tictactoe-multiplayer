@@ -41,7 +41,7 @@ module.exports = {
       // add game.
       collection.save({
         room: id,
-        figure: 0,
+        figure: 1,
         targets: []
       }, function(error, done) {
         // return callback - passing error object.
@@ -291,7 +291,7 @@ module.exports = {
    * @param {Function} callback
    * @return {Function} callback
    */
-  changeActiveFigure: function(db, room, callback) {
+  changeActiveFigure: function(db, game, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // get room id && casting id.
@@ -326,17 +326,17 @@ module.exports = {
    * modify game state.
    *
    * @param {Object} db
-   * @param {Object} room
+   * @param {Object} game
    * @param {Object} target
    * @param {String} action
    * @param {Function} callback
    * @return {Function} callback
    */
-  modifyGameState: function(db, room, target, action, callback) {
+  modifyGameState: function(db, game, target, action, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // get room id && casting id.
-    var id = room._id >> 0;
+    var id = game.room >> 0;
     // get taget.
     target = target || [];
     // prepare update object.
@@ -427,22 +427,84 @@ module.exports = {
     // socket event - game:play.
     .on('game:play', function(data) {
       // get room object.
-      var room = data.room;
+      var game = data.game;
       // get target object.
       var target = data.target;
       // modify game state.
-      _this.modifyGameState(db, room, target, '$push', function(error, db, game) {
+      _this.modifyGameState(db, game, target, '$push', function(error, db, game) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
         }
         // get room id.
-        var id = room._id;
+        var id = game.room;
         // debug game.
-        debug('#%d room - targets: %s', id, game.targets);
+        debug('#%d room - targets: %s', id, JSON.stringify(game.targets));
         // socket emit - game:play - passing object.
-        socket.broadcast.in(id).emit('game:play', {
-          key: target.key
+        socket.broadcast.in(id).emit('game:play', target);
+      });
+    })
+    // socket event - players:switch.
+    .on('players:switch', function(data) {
+      // get room object.
+      var game = data.game;
+      // get target object.
+      var players = data.players;
+      // switch players.
+      player.switch(db, players, function(error, db, players) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // change active figure.
+        _this.changeActiveFigure(db, game, function(error, db, game) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // get room id.
+          var id = game.room;
+          // socket emit - players:switch - passing object.
+          io.in(id).emit('players:switch', {
+            game: game,
+            players: players
+          });
+        });
+      });
+    })
+    // socket event - game:restart.
+    .on('game:restart', function(data) {
+      // get game object.
+      var game = data.game;
+      // modify state.
+      _this.modifyGameState(db, game, null, '$set', function(error, db, game) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // reset figure.
+        game.figure = 0;
+        // change active figure.
+        _this.changeActiveFigure(db, game, function(error, db, game) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // get room object.
+          var room = data.room;
+          // update player score.
+          player.updateScore(db, room, data.player, function(error, db, players) {
+            // return callback - passing error object.
+            if (error) {
+              return callback(error);
+            }
+            // socket emit - game:restart - passing object.
+            io.in(game.room).emit('game:restart', {
+              game: game,
+              players: players, 
+              combination: data.combination
+            });
+          });
         });
       });
     })
@@ -492,101 +554,5 @@ module.exports = {
         });
       }
     })
-    // switch event.
-    .on('switch', function(data) {
-      // check whether the data
-      // has room property with
-      // the value room id.
-      if ('room' in data && data.room) {
-        // get room id.
-        var id = data.room;
-        // switch player.
-        Player.switchActivePlayer(db, id, function(err, db, players) {
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-          // switch figure.
-          Room.switchActiveFigure(db, id, data.figure, function(err, db, room) {
-            // if error happens pass it to
-            // the callback and return.
-            if (err) {
-              return callback(err);
-            }
-            // emit client to switch
-            // figure and player.
-            io.in(id).emit('switch', {
-              room: room,
-              players: players
-            });
-          });
-        });
-      }
-      else {
-        // debug if the data has not have
-        // property room with the value
-        // room id.
-        debug('room couldn\'t be found.');
-      }
-    })
-    // restart event.
-    .on('restart', function(data) {
-      // check whether the data
-      // has room property with
-      // the value room id.
-      if ('room' in data && data.room) {
-        // get room id.
-        var id = data.room;
-        // get winner player id.
-        var player = data.wins;
-        // dalete state.
-        Room.updateFiguresState(db, id, null, '$set', function(err, db, room) {
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-          // reset figure.
-          Room.switchActiveFigure(db, id, 0, function(err, db, room) {
-            // if error happens pass it to
-            // the callback and return.
-            if (err) {
-              return callback(err);
-            }
-            // update player score.
-            Player.updatePlayerScore(db, player, function(err, db) {
-              // if error happens pass it to
-              // the callback and return.
-              if (err) {
-                return callback(err);
-              }
-              // get players by id.
-              Player.getPlayersByRoomId(db, id, function(err, db, players) {
-                // if error happens pass it to
-                // the callback and return.
-                if (err) {
-                  return callback(err);
-                }
-                // emit clients to restart game, passing
-                // room, players and winner combination 
-                // objects.
-                io.in(id).emit('restart', {
-                  room: room,
-                  players: players, 
-                  combination: data.combination
-                });
-              });
-            });
-          });
-        });
-      }
-      else {
-        // debug if the data has not have
-        // property room with the value
-        // room id.
-        debug('room couldn\'t be found.');
-      }
-    });
   }
 };

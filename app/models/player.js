@@ -184,7 +184,7 @@ module.exports = {
     return waiting;
   },
   /**
-   * switch player.
+   * switch players.
    *
    * @param {Object} db
    * @param {Array} players
@@ -194,7 +194,7 @@ module.exports = {
   switch: function(db, players, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // loop through players.
+    // loop in players.
     players.forEach(function(player) {
       // change active player.
       player.active = !player.active ? true : false;
@@ -219,35 +219,50 @@ module.exports = {
    * update player score.
    *
    * @param {Object} db
-   * @param {String} id
+   * @param {Object} room
+   * @param {Object|String} player
    * @param {Function} callback
    * @return {Function} callback
    */
-  updateScore: function(db, id, callback) {
+  updateScore: function(db, room, player, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // do not update score if the id
-    // is null pass database object
-    // to the callback and return. 
-    if (!id) {
-      return callback(null, db);
+    // player object is empty ?
+    if (!player) {
+      // get players by room.
+      this.getPlayersByRoom(db, room, function(error, db, players) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // return callback - passing database object, players object.
+        return callback(null, db, players);
+      });
     }
-    // find player by id and increment score by 1.
-    collection.findAndModify({
-      _id: new objectID(id)
-    }, [], {
-      $inc: {
-        score: 1
-      }
-    }, {}, function(err) {
-      // if error happens pass it to
-      // the callback and return.
-      if (err) {
-        return callback(err);
-      }
-      // pass database object to the callback
-      // and return.
-      return callback(null, db);
-    });
-  },
+    else {
+      // increment player score by 1.
+      collection.findAndModify({
+        _id: new objectID(player._id)
+      }, [], {
+        $inc: {
+          score: 1
+        }
+      }, {
+        new: true
+      }, function(error, players, done) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // debug message.
+        var message = done
+          ? '#%d room - %s\'s score has been updated.'
+            : '#%d room - %s\'s score couldn\'t be updated.';
+        // debug player.
+        debug(message, player.room, player.name);
+        // return callback - passing database object, players object.
+        return callback(null, db, players);
+      });
+    }
+  }
 };

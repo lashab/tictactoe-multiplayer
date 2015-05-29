@@ -48,7 +48,6 @@ module.exports = {
       debug('- %d', id);
       //increment id by 1.
       id++;
-      console.log(id);
       // function for creating or updating room.
       var add = function(db, _room, callback) {
         // prepare room object.
