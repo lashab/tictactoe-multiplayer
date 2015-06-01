@@ -291,68 +291,48 @@
   /**
    * set active player.
    *
-   * @param {Object} players
    * @return {Object} this
    */
   Game.prototype.setActivePlayer = function () {
-    // get this player position.
-    var _position = this.getPlayerPosition();
-    // check for position.
-    if (_position !== -1) {
-      // get players.
-      var players = this.get('players');
-      // get player by position.
-      var player = players[_position];
-      // get player position.
-      var position = player.position;
-      // get active player position.
-      position = player.active ? position : ~~!position;
-      // get waiting state.
-      var isWaiting = this.get('waiting');
-      // prepare fade-in class.
-      var fadeIn = 'whole-in';
-      // prepare fade-out class.
-      var fadeOut = 'half-in';
-      // get player element(s).
-      var _player = $('div[class*="id-player-"]');
-      // get progress element(es).
-      var _progress = $('div[class*="id-progress-"]');
-      // if player is active activate game
-      // otherwise deactivate game.
-      player.active && !isWaiting ? this.activate() : this.deActivate();
-      // filter player element by positon 
-      // add whole-in class and remove
-      // half-in class.
-      _player.filter(function(_position) {
+    // get player object by position.
+    var player = this.getPlayerByPosition();
+    // get active player position.
+    var position = player.active ? player.position : ~~!player.position;
+    // get waiting value.
+    var isWaiting = this.get('waiting');
+    // prepare fade-in class.
+    var fadeIn = 'whole-in';
+    // prepare fade-out class.
+    var fadeOut = 'half-in';
+    // get player element(s).
+    var _player = $('div[class*="id-player-"]');
+    // get progress element(s).
+    var _progress = $('div[class*="id-progress-"]');
+    // player is active ? activate game : deactivate game.
+    player.active && !isWaiting ? this.activate() : this.deActivate();
+    // player active - add fade-in && remove fade-out class.
+    _player.filter(function(_position) {
+      return _position === position;
+    })
+    .toggleClass(fadeIn, true)
+    .toggleClass(fadeOut, false)
+    .addBack()
+    // player non-active - remove fade-in && add fade-out class.
+    .filter(function(_position) {
+      return _position !== position;
+    })
+    .toggleClass(fadeIn, false)
+    .toggleClass(fadeOut, true);
+    // player is not waiting ?
+    if (!isWaiting) {
+      // progress active - add fade-in class.
+      _progress.filter(function(_position) {
         return _position === position;
-      })
-      .toggleClass(fadeIn, true)
-      .toggleClass(fadeOut, false)
-      .addBack()
-      // filter player element by positon 
-      // remove whole-in class and add
-      // half-in class.
-      .filter(function(_position) {
+      }).addClass(fadeIn);
+      // progress non-active - remove fade-in class.
+      _progress.filter(function(_position) {
         return _position !== position;
-      })
-      .toggleClass(fadeIn, false)
-      .toggleClass(fadeOut, true);
-
-      if (!isWaiting) {
-        // start after 1s.
-        setTimeout(function() {
-          // filter progress bar element by positon 
-          // and add whole-in class.
-          _progress.filter(function(_position) {
-            return _position === position;
-          }).addClass(fadeIn);
-        }, 1000);
-        // filter progress bar element by positon 
-        // and remove whole-in class.
-        _progress.filter(function(_position) {
-          return _position !== position;
-        }).removeClass(fadeIn);
-      }
+      }).removeClass(fadeIn);
     }
 
     return this;
@@ -365,7 +345,7 @@
   Game.prototype.getActivePlayer = function() {
     // get players object.
     var players = this.get('players');
-    // filter players, get active player object.
+    // filter players object && get active player object.
     var player = players.filter(function(player) {
       return player.active;
     })[0];
@@ -1214,6 +1194,7 @@
       })
       // restart event.
       .on('game:restart', function(data) {
+        console.log(data);
         _this
           // set game object.
           .set('game', data.game)

@@ -198,6 +198,7 @@ module.exports = {
     players.forEach(function(player) {
       // change active player.
       player.active = !player.active ? true : false;
+      player._id = new objectID(player._id);
       // update player.
       collection.save(player, function(error, done) {
         // return callback - passing error object.
@@ -239,7 +240,9 @@ module.exports = {
         return callback(null, db, players);
       });
     }
+    // : update score && get players.
     else {
+      var _this = this;
       // increment player score by 1.
       collection.findAndModify({
         _id: new objectID(player._id)
@@ -249,7 +252,7 @@ module.exports = {
         }
       }, {
         new: true
-      }, function(error, players, done) {
+      }, function(error, player, done) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
@@ -260,8 +263,15 @@ module.exports = {
             : '#%d room - %s\'s score couldn\'t be updated.';
         // debug player.
         debug(message, player.room, player.name);
-        // return callback - passing database object, players object.
-        return callback(null, db, players);
+        // get players by room.
+        _this.getPlayersByRoom(db, room, function(error, db, players) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // return callback - passing database object, players object.
+          return callback(null, db, players);
+        });
       });
     }
   }

@@ -493,7 +493,7 @@ module.exports = {
           // get room object.
           var room = data.room;
           // update player score.
-          player.updateScore(db, room, data.player, function(error, db, players) {
+          player.updateScore(db, room, data.wins, function(error, db, players) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
