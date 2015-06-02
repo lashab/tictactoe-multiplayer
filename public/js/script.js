@@ -299,7 +299,7 @@
     // get active player position.
     var position = player.active ? player.position : ~~!player.position;
     // get waiting value.
-    var isWaiting = this.get('waiting');
+    var isWaiting = this.isWaiting();
     // prepare fade-in class.
     var fadeIn = 'whole-in';
     // prepare fade-out class.
@@ -325,14 +325,8 @@
     .toggleClass(fadeOut, true);
     // player is not waiting ?
     if (!isWaiting) {
-      // progress active - add fade-in class.
-      _progress.filter(function(_position) {
-        return _position === position;
-      }).addClass(fadeIn);
-      // progress non-active - remove fade-in class.
-      _progress.filter(function(_position) {
-        return _position !== position;
-      }).removeClass(fadeIn);
+      // progress bar - add fade-in class.
+      _progress.addClass(fadeIn);
     }
 
     return this;
@@ -700,7 +694,7 @@
     return this;
   }
   /**
-   * start play on target click.
+   * play on target click.
    *
    * @param {Object} socket
    * @return {Object} this
@@ -1005,13 +999,13 @@
   Game.prototype.drawGameState = function() {
     var _this = this;
     // get room object.
-    var game = this.get('game');
+    var game = this.getGame();
     // loop in figures.
     game.targets.forEach(function(target) {
       // get target key.
-      var key = target.key;
+      var key = Object.keys(target);
       // get target figure.
-      var figure = target.figure;
+      var figure = target[key];
       // get target.
       var _target = _this.__canvas.item(key);
       _this
