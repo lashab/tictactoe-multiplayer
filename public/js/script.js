@@ -306,8 +306,6 @@
     var fadeOut = 'half-in';
     // get player element(s).
     var _player = $('div[class*="id-player-"]');
-    // get progress element(s).
-    var _progress = $('div[class*="id-progress-"]');
     // player is active ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
     // player active - add fade-in && remove fade-out class.
@@ -317,17 +315,12 @@
     .toggleClass(fadeIn, true)
     .toggleClass(fadeOut, false)
     .addBack()
-    // player non-active - remove fade-in && add fade-out class.
+    // player inactive - remove fade-in && add fade-out class.
     .filter(function(_position) {
       return _position !== position;
     })
     .toggleClass(fadeIn, false)
     .toggleClass(fadeOut, true);
-    // player is not waiting ?
-    if (!isWaiting) {
-      // progress bar - add fade-in class.
-      _progress.addClass(fadeIn);
-    }
 
     return this;
   }
@@ -395,141 +388,6 @@
       // set score.
       badge.text(player.score);
     });
-
-    return this;
-  }
-  /**
-   * auto play.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.autoPlay = function () {
-    var _this = this;
-    // start after 1s.
-    setTimeout(function() {
-      // get players object.
-      var players = _this.get('players');
-      // get waiting value.
-      var isWaiting = _this.get('waiting');
-      // check for players length if both players
-      // are in then start count down.
-      if (!isWaiting) {
-        // set autoplay value defaults to true.
-        _this.set('autoplay', true);
-        // get player position.
-        var _position = _this.getPlayerPosition();
-        // check for position.
-        if (_position !== -1) {
-          // get player by position.
-          var player = players[_position];
-          // get player position.
-          var position = player.position;
-          // get active player postion.
-          position = player.active ? position : ~~!position;
-          // get progress bar by active player position.
-          var progress = $('.id-progress-' + position).children('.progress-bar');
-          // get width in percentage.
-          var width = (100 * parseFloat(progress.width()) / parseFloat(progress.parent().width()));
-          // repeat after 1/10 second.
-          var time = setInterval(function() {
-            // get available targets.
-            var targets = _this.getAvaiableTargets();
-            // get autoplay value.
-            var autoplay = _this.get('autoplay');
-
-            isWaiting = _this.get('waiting');
-
-            if (!isWaiting) {
-            // check for autoplay value if its true
-            // substract width 1, get random
-            // avaiable target and trigger
-            // it to draw figure.
-            if (autoplay) {
-              // substract 1 and update width for progress bar.
-              progress.width(width-- + '%');
-              // check whether the width is less then zero
-              // or not.
-              if (width < 0) {
-                // get random index from targets array.
-                var random = targets[Math.floor(Math.random() * targets.length)];
-                // get random target.
-                var target = _this.__canvas.item(random);
-                // check whether the target has no figure 
-                // and position is active player postion.
-                if (isNaN(target.figure) && position === _position) {
-                  // trigger to mouse down on specific 
-                  // target.
-                  _this.__canvas.trigger('mouse:down', {
-                    target: target
-                  });
-                }
-              }
-            }
-            // progress bar success.
-            var success = 'progress-bar-success';
-            // progress bar warning.
-            var warning = 'progress-bar-warning';
-            // progress bar danger.
-            var danger = 'progress-bar-danger';
-            // check for autoplay value and width if autoplay 
-            // is false or width is zero this means that the
-            // event is fired! set progress bar to init 
-            // state and recursively call autoplay.
-            if (!autoplay || width < 0) {
-              // start after 1s.
-              setTimeout(function() {
-                // set width to 100%.
-                progress.width(100 + '%');
-                // check for danger progress bar class.
-                if(progress.hasClass(danger) || progress.hasClass(warning)) {
-                  progress
-                    // remove danger progress bar.
-                    .removeClass(danger)
-                    // remove warning progress bar.
-                    .removeClass(warning)
-                    // add success progress bar.
-                    .addClass(success)
-                }
-                // recursively call autoplay method.
-                _this.autoPlay();
-              }, 1000);
-              // check for time interval id.
-              if (time) {
-                // clear time interval by id.
-                clearInterval(time);
-              }
-            }
-            // width case 50%.
-            else if (width === 50) {
-              // check for success progress bar class.
-              if (progress.hasClass(success)) {
-                progress
-                  // remove success progress bar.
-                  .removeClass(success)
-                  // add warning progress bar.
-                  .addClass(warning);
-              }
-            }
-            // width case 20%.
-            else if (width === 20) {
-              // check for warning progress bar class.
-              if (progress.hasClass(warning)) {
-                progress
-                  // remove warning progress bar.
-                  .removeClass(warning)
-                  // add danger progress bar.
-                  .addClass(danger);
-              }
-            }
-          }
-          }, 100);
-        }
-      }
-      else {
-        // debug.
-        console.debug('timer could\'t be attached.');
-      }
-    }, 1000);
 
     return this;
   }
@@ -1156,8 +1014,6 @@
           .setActivePlayer()
           // set player scores.
           .setPlayersScore()
-          // auto play.
-          // .autoPlay();
       })
       // socket event - player:waiting.
       .on('player:waiting', function(player) {
@@ -1210,6 +1066,9 @@
 
   // make sure page is loaded.
   $(function() {
+    var z = 100;
+
+    // k();
     // instantiate game object.
     var game = new Game({
       id: 'tictactoe',
