@@ -242,6 +242,9 @@
       this.set('waiting', false);
       // remove waiting class.
       $('.players.waiting').removeClass('waiting');
+      setTimeout(function() {
+        $('.modal').modal('hide');
+      }, 1000);
     }
     // loop in players add image, player name.
     players.forEach(function(player, position) {
@@ -268,6 +271,15 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (player) {
+    $('.tic-m').on('show.bs.modal', function (e) {
+      var players = $('.players:not(.is-m)');
+      players.removeClass('show');
+
+      console.log(players);
+    }).modal({
+      keyboard: false,
+      backdrop: 'static'
+    });
     // add loader according to player position.
     $('.id-player-' + player.position)
       .children(':first-child')
@@ -301,12 +313,12 @@
     // prepare fade-out class.
     var fadeOut = 'half-in';
     // get player element(s).
-    var _player = $('div[class*="id-player-"]');
+    var _player = $('div[class*="id-player-"]:not(.is-m)');
     // player is active ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
     // player active - add fade-in && remove fade-out class.
     _player.filter(function(_position) {
-      return _position === position;
+      return _position === position || _position == 3;
     })
     .toggleClass(fadeIn, true)
     .toggleClass(fadeOut, false)
@@ -1013,7 +1025,6 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(player) {
-        console.log(player);
         _this
           // set waiting.
           .set('waiting', true)

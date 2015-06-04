@@ -221,7 +221,22 @@ module.exports = {
    *
    * @param {Object} db
    * @param {Object} room
-   * @param {Object|String} player
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  resetPlayerPosition: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    collection.update({
+      room: room._id
+    })
+  },
+  /**
+   * update player score.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Object} player
    * @param {Function} callback
    * @return {Function} callback
    */

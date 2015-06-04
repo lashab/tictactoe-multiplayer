@@ -17,6 +17,7 @@ html, body {
   cursor: pointer;
   margin: 5px 5px;
   color: #5CB85C;
+  z-index: 5000;
 }
 .players {display: none;}
 .players > .caption p:first-child {
