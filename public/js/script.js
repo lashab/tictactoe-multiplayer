@@ -238,15 +238,16 @@
     var players = this.get('players');
     // check for players length.
     if (players.length > 1) {
-      // set waiting property to false.
+      // set waiting value.
       this.set('waiting', false);
       // remove waiting class.
-      $('.players.waiting').removeClass('waiting');
+      $('.players.player-waiting').removeClass('player-waiting');
+      $('.players.player-hidden').removeClass('player-hidden');
       setTimeout(function() {
-        $('.modal').modal('hide');
+        $('.tic-tac-toe-m').modal('hide');
       }, 1000);
     }
-    // loop in players add image, player name.
+    // loop in players add image && player name.
     players.forEach(function(player, position) {
       $('.id-player-' + position)
         .children(':first-child')
@@ -259,7 +260,7 @@
             .addClass('whole-in')
             .end()
           .end()
-        .addClass('show');
+          .addClass('show');
     });
     
     return this;
@@ -271,15 +272,11 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (player) {
-    $('.tic-m').on('show.bs.modal', function (e) {
-      var players = $('.players:not(.is-m)');
-      players.removeClass('show');
-
-      console.log(players);
-    }).modal({
+    $('.tic-tac-toe-m').modal({
       keyboard: false,
       backdrop: 'static'
     });
+    $('.players:not(.is-tic-tac-toe-m)').addClass('player-hidden');
     // add loader according to player position.
     $('.id-player-' + player.position)
       .children(':first-child')
@@ -291,7 +288,7 @@
       .children(':last-child')
         .removeClass('whole-in')
         .end()
-      .addClass('waiting')
+      .addClass('player-waiting')
       .addClass('show');
 
     return this;
@@ -313,7 +310,7 @@
     // prepare fade-out class.
     var fadeOut = 'half-in';
     // get player element(s).
-    var _player = $('div[class*="id-player-"]:not(.is-m)');
+    var _player = $('div[class*="id-player-"]:not(.is-tic-tac-toe-m)');
     // player is active ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
     // player active - add fade-in && remove fade-out class.
