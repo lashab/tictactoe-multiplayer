@@ -205,7 +205,7 @@
     return this;
   }
   /**
-   * leaves the game.
+   * leave game.
    *
    * @param {Object} socket
    * @return {Object} this
@@ -219,14 +219,10 @@
       var room = _this.getRoom();
       // get player object.
       var player = _this.getPlayerByPosition();
-      // get waiting state.
-      var isWaiting = _this.isWaiting();
-      // emit to leave passing room id, player id 
-      // and waiting state.
+      // socket emit - player:leave - passing object.
       _this.socket.emit('player:leave', {
         room: room,
-        player: player,
-        isWaiting: isWaiting
+        player: player
       });
     });
 
@@ -1017,11 +1013,10 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(player) {
+        console.log(player);
         _this
           // set waiting.
           .set('waiting', true)
-          // set autoplay.
-          .set('autoplay', false)
           // wait for player.
           .waitForPlayer(player);
       })
@@ -1044,7 +1039,6 @@
       })
       // restart event.
       .on('game:restart', function(data) {
-        console.log(data);
         _this
           // set game object.
           .set('game', data.game)

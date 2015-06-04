@@ -390,7 +390,7 @@ module.exports = {
         // socket join by room id.
         socket.join(id);
         // socket emit - room:init - passing room object.
-        socket.emit('room:init', room);
+        io.in(id).emit('room:init', room);
         // get game by room.
         _this.getGameByRoom(db, room, function(error, db, game) {
           // return callback - passing error object.
@@ -510,49 +510,25 @@ module.exports = {
     })
     // player:leave event.
     .on('player:leave', function(data) {
-      // check for data object.
-      if (!c.isEmptyObject(data)) {
-        // get room object.
-        var room = data.room;
-        // get player object.
-        var player = data.player;
-        // get waiting.
-        var isWaiting = data.isWaiting;
-        // get room id.
-        var id = room._id;
-        // if the room is in waiting state
-        // remove room.
-        if (isWaiting) {
-          // remove room.
-          Room.remove(db, id, function(err, db) {
-            // if error happens pass it to
-            // the callback and return.
-            if (err) {
-              return callback(err);
-            }
-          });
+      // get room object.
+      var room = data.room;
+      // get player object.
+      var _player = data.player;
+      // leave game.
+      _this.leave(db, _player, room, function(error, db, done) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
         }
-        else {
-          // Room.setAvaiable
-        }
-        // remove player.
-        Player.remove(db, player._id, function(err, db) {
+        if (!room.available) {
           // get waiting object.
-          var waiting = Player.waiting(player.position);
-          // if error happens pass it to
-          // the callback and return.
-          if (err) {
-            return callback(err);
-          }
-
-          socket.broadcast.in(id).emit('player:waiting', waiting);
-
-          socket.disconnect();
-
-          return callback(null, db);
-
-        });
-      }
+          var waiting = player.waiting(_player.position);
+          // socket emit - player:waiting - passing waiting object.
+          socket.broadcast.in(room._id).emit('player:waiting', waiting);
+        }
+        // socket dissconect.
+        socket.disconnect();
+      });
     })
   }
 };
