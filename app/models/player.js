@@ -230,22 +230,20 @@ module.exports = {
     // get room id && casting id.
     var id = room._id >> 0;
     // update player.
-    collection.findAndModify({
+    collection.update({
       room: room._id
-    }, [], {
+    }, {
       $set: {
         position: 0,
         active: true
       }
-    }, {
-      new: true
-    }, function(error, players) {
+    }, function(error, count, done) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
       // return callback - passing database object players object.
-      return callback(null, db, players);
+      return callback(null, db, done);
     });
   },
   /**

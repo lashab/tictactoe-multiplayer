@@ -271,26 +271,46 @@
    * @param {Object} player
    * @return {Object} this
    */
-  Game.prototype.waitForPlayer = function (player) {
-    var position = player.position;
+  Game.prototype.waitForPlayer = function (data) {
+    console.log(data);
+    // get waiting object.
+    var waiting = data.waiting;
+    // get waiting position.
+    var position = waiting.position;
+    // get reset value.
+    var reset = data.reset;
+    // position > 0 ?
+    // if (position && reset) {
+    //   docCookies.removeItem('position');
+    //   docCookies.setItem('position', 0);
+    //   $('.id-player-0').toggleClass('id-player-1', true);
+    //   $('.id-player-0').toggleClass('id-player-0', false);
+    //   $('.id-player-1').toggleClass('id-player-0', true);
+    //   $('.id-player-1').toggleClass('id-player-1', false);
+    // }
+    // open modal.
     $('.tic-tac-toe-m').modal({
       keyboard: false,
       backdrop: 'static'
     });
+    // add player-hide class for outer players.
     $('.players:not(.is-tic-tac-toe-m)').addClass('player-hidden');
-    // add loader according to player position.
-    $('.id-player-' + player.position)
+    // set waiting by position.
+    $('.id-player-' + position)
       .children(':first-child')
-        .prop('src', player.image)
+        .prop('src', waiting.image)
         .next()
           .removeClass('whole-in')
+          .children()
+            .empty()
+            .end()
           .end()
         .end()
-      .children(':last-child')
+        .children(':last-child')
         .removeClass('whole-in')
         .end()
-      .addClass('player-waiting')
-      .addClass('show');
+        .addClass('player-waiting')
+        .addClass('show');
 
     return this;
   }
@@ -1023,16 +1043,18 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        if ('players' in data) {
-          docCookies.removeItem('position');
-          docCookies.setItem('position', 0);
-        }
+        // get waiting object.
         var waiting = data.waiting;
+        // get reset value.
+        var reset = data.reset;
         _this
           // set waiting.
           .set('waiting', true)
           // wait for player.
-          .waitForPlayer(waiting);
+          .waitForPlayer({
+            waiting: waiting,
+            reset: reset
+          });
       })
       // socket event - game:play.
       .on('game:play', function(target) {

@@ -271,9 +271,9 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            player.reset(db, _room, function(error, db, players) {
+            player.reset(db, _room, function(error, db, done) {
               // return callback - passing database object, done boolean.
-              return callback(null, db, players);
+              return callback(null, db, done);
             });
           });
         }
@@ -519,7 +519,7 @@ module.exports = {
       // get player object.
       var _player = data.player;
       // leave game.
-      _this.leave(db, _player, room, function(error, db, players) {
+      _this.leave(db, _player, room, function(error, db, done) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
@@ -530,7 +530,7 @@ module.exports = {
           // socket emit - player:waiting - passing waiting object.
           socket.broadcast.in(room._id).emit('player:waiting', {
             waiting: waiting,
-            players: players
+            reset: done
           });
         }
         // socket dissconect.
