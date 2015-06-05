@@ -272,6 +272,7 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (player) {
+    var position = player.position;
     $('.tic-tac-toe-m').modal({
       keyboard: false,
       backdrop: 'static'
@@ -1021,12 +1022,17 @@
           .setPlayersScore()
       })
       // socket event - player:waiting.
-      .on('player:waiting', function(player) {
+      .on('player:waiting', function(data) {
+        if ('players' in data) {
+          docCookies.removeItem('position');
+          docCookies.setItem('position', 0);
+        }
+        var waiting = data.waiting;
         _this
           // set waiting.
           .set('waiting', true)
           // wait for player.
-          .waitForPlayer(player);
+          .waitForPlayer(waiting);
       })
       // socket event - game:play.
       .on('game:play', function(target) {
@@ -1086,18 +1092,15 @@
       // leave game.
       .playerLeave();
 
+    $(window).on("navigate", function (event, data) {
+        var direction = data.state.direction;
+        if ( !! direction) {
+            alert(direction);
+        }
+    });
     // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
 
-  // perfomance debug.
-  function performance_debug() {
-    var a = performance.now();
-    var k = Game.prototype.getPlayerByPosition();
-
-    var b = performance.now();
-    console.debug('Executed in ' + (b - a) + ' ms.');
-  }
-  performance_debug();
   });
 
 })(jQuery);

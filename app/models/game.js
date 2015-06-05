@@ -271,8 +271,10 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            // return callback - passing database object, done boolean.
-            return callback(null, db, done);
+            player.reset(db, _room, function(error, db, players) {
+              // return callback - passing database object, done boolean.
+              return callback(null, db, players);
+            });
           });
         }
       }
@@ -414,7 +416,9 @@ module.exports = {
               // get waiting object.
               var waiting = player.waiting(1);
               // socket emit - player:waiting - passing waiting object.
-              socket.emit('player:waiting', waiting);
+              socket.emit('player:waiting', {
+                waiting: waiting
+              });
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);
             }
@@ -515,7 +519,7 @@ module.exports = {
       // get player object.
       var _player = data.player;
       // leave game.
-      _this.leave(db, _player, room, function(error, db, done) {
+      _this.leave(db, _player, room, function(error, db, players) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
@@ -524,7 +528,10 @@ module.exports = {
           // get waiting object.
           var waiting = player.waiting(_player.position);
           // socket emit - player:waiting - passing waiting object.
-          socket.broadcast.in(room._id).emit('player:waiting', waiting);
+          socket.broadcast.in(room._id).emit('player:waiting', {
+            waiting: waiting,
+            players: players
+          });
         }
         // socket dissconect.
         socket.disconnect();

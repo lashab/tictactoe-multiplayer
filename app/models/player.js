@@ -217,19 +217,36 @@ module.exports = {
     return callback(null, db, players);
   },
   /**
-   * update player score.
+   * reset player.
    *
    * @param {Object} db
    * @param {Object} room
    * @param {Function} callback
    * @return {Function} callback
    */
-  resetPlayerPosition: function(db, room, callback) {
+  reset: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    collection.update({
+    // get room id && casting id.
+    var id = room._id >> 0;
+    // update player.
+    collection.findAndModify({
       room: room._id
-    })
+    }, [], {
+      $set: {
+        position: 0,
+        active: true
+      }
+    }, {
+      new: true
+    }, function(error, players) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // return callback - passing database object players object.
+      return callback(null, db, players);
+    });
   },
   /**
    * update player score.
