@@ -248,8 +248,8 @@
       }, 1000);
     }
     // loop in players add image && player name.
-    players.forEach(function(player, position) {
-      $('.id-player-' + position)
+    players.forEach(function(player) {
+      $('.id-player-' + player.position)
         .children(':first-child')
           // TODO: remove image path from client.
           .prop('src', '../images/default.png')
@@ -272,45 +272,41 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (data) {
-    console.log(data);
     // get waiting object.
     var waiting = data.waiting;
     // get waiting position.
     var position = waiting.position;
     // get reset value.
     var reset = data.reset;
-    // position > 0 ?
-    // if (position && reset) {
-    //   docCookies.removeItem('position');
-    //   docCookies.setItem('position', 0);
-    //   $('.id-player-0').toggleClass('id-player-1', true);
-    //   $('.id-player-0').toggleClass('id-player-0', false);
-    //   $('.id-player-1').toggleClass('id-player-0', true);
-    //   $('.id-player-1').toggleClass('id-player-1', false);
-    // }
+    // get player element.
+    var player = $('.id-player-' + position);
     // open modal.
     $('.tic-tac-toe-m').modal({
       keyboard: false,
       backdrop: 'static'
     });
+
+    if (reset && !position) {
+      this.set('players', data.players);
+      var html = $('.id-player-1.is-tic-tac-toe-m').html();
+      $('.id-player-0').html(html);
+      docCookies.removeItem('position', '/');
+      docCookies.setItem('position', 0);
+    }
     // add player-hide class for outer players.
     $('.players:not(.is-tic-tac-toe-m)').addClass('player-hidden');
     // set waiting by position.
-    $('.id-player-' + position)
-      .children(':first-child')
-        .prop('src', waiting.image)
-        .next()
-          .removeClass('whole-in')
-          .children()
-            .empty()
-            .end()
-          .end()
-        .end()
-        .children(':last-child')
+    $('.id-player-1').children(':first-child')
+      .prop('src', waiting.image)
+      .next()
         .removeClass('whole-in')
         .end()
-        .addClass('player-waiting')
-        .addClass('show');
+      .end()
+      .children(':last-child')
+        .removeClass('whole-in')
+        .end()
+      .addClass('player-waiting')
+      .addClass('show');
 
     return this;
   }
@@ -1043,17 +1039,16 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        // get waiting object.
-        var waiting = data.waiting;
-        // get reset value.
-        var reset = data.reset;
+        if ('players' in data) {
+          _this.set('players', data.players);
+        }
         _this
-          // set waiting.
+          // set waiting property.
           .set('waiting', true)
           // wait for player.
           .waitForPlayer({
-            waiting: waiting,
-            reset: reset
+            waiting: data.waiting,
+            reset: data.reset
           });
       })
       // socket event - game:play.
@@ -1066,9 +1061,9 @@
       // socket event - players:switch.
       .on('players:switch', function(data) {
         _this
-          // set game object.
+          // set game property.
           .set('game', data.game)
-          // set players object.
+          // set players property.
           .set('players', data.players)
           // set active player.
           .setActivePlayer();
@@ -1096,10 +1091,6 @@
 
   // make sure page is loaded.
   $(function() {
-    var z = 100;
-
-    // k();
-    // instantiate game object.
     var game = new Game({
       id: 'tictactoe',
       width: window.innerWidth - (window.innerWidth - window.innerHeight),
@@ -1113,13 +1104,6 @@
       .run()
       // leave game.
       .playerLeave();
-
-    $(window).on("navigate", function (event, data) {
-        var direction = data.state.direction;
-        if ( !! direction) {
-            alert(direction);
-        }
-    });
     // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
 
