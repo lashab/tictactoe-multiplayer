@@ -53,7 +53,8 @@ module.exports = {
         // prepare room object.
         var room = {
           _id: _room.id,
-          available: _room.available || false
+          available: _room.available || false,
+          left: _room.left
         };
         // id is an existent room ? update
         // room make the room unavailable
@@ -88,7 +89,8 @@ module.exports = {
           if (room) {
             // update room.
             add(db, {
-              id: room
+              id: room._id,
+              left: room.left
             }, function(error, db, _room) {
               // return callback - passing error object.
               if (error) {
@@ -105,7 +107,8 @@ module.exports = {
             // create room.
             add(db, {
               id: id,
-              available: true
+              available: true,
+              left: NaN
             }, function(error, db, room) {
               // return callback - passing error object.
               if (error) {
@@ -167,11 +170,12 @@ module.exports = {
    * open room.
    *
    * @param {Object} db
+   * @param {Object} player
    * @param {Object} room
    * @param {Function} callback
    * @return {Function} callback
    */
-  open: function(db, room, callback) {
+  open: function(db, player, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // get room
@@ -183,7 +187,8 @@ module.exports = {
       _id: id
     }, {
       $set: {
-        available: true
+        available: true,
+        left: player.position
       }
     }, function(error, done) {
       // return callback - passing error object.
@@ -248,16 +253,9 @@ module.exports = {
       if (error) {
         return callback(error);
       }
-      // object ids.
-      var ids = [];
-      // available room(s) found ?
       if (_rooms) {
-        rooms.forEach(function(room) {
-          // push ids.
-          ids.push(room._id);
-        });
         // return callback - passing database object, random objectID.
-        return callback(null, db, ids[Math.floor(Math.random() * ids.length)]);
+        return callback(null, db, rooms[Math.floor(Math.random() * _rooms)]);
       }
       // return callback - passing database object.
       return callback(null, db, null);

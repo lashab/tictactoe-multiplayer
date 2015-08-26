@@ -120,6 +120,37 @@ module.exports = {
     });
   },
   /**
+   * reset game.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  reset: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // get room id && casting id.
+    var id = room._id >> 0;
+    // update game.
+    collection.findAndModify({
+      room: id
+    }, [], {
+      $set: {
+        targets: []
+      }
+    }, {
+      new: true
+    } ,function(error, game) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // return callback - passing database object, game object.
+      return callback(null, db, game);
+    });
+  },
+  /**
    * get game by room.
    *
    * @param {Object} db
@@ -266,14 +297,29 @@ module.exports = {
         // :
         else {
           // open room (make room avaialable).
-          room.open(db, _room, function(error, db, done) {
+          room.open(db, _player, _room, function(error, db, done) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
             player.reset(db, _room, function(error, db, data) {
-              // return callback - passing database object, data object.
-              return callback(null, db, data);
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
+              _this.reset(db, _room, function(error, db, game) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                var _data = {
+                  players: data.players,
+                  reset: data.reset,
+                  game: game
+                };
+                // return callback - passing database object, data object.
+                return callback(null, db, _data);
+              });
             });
           });
         }
@@ -526,15 +572,12 @@ module.exports = {
           return callback(error);
         }
         if (!room.available && typeof data === 'object') {
-          console.log(data);
           // get waiting object.
           var waiting = player.waiting(_player.position);
+          // add waiting object.
+          data.waiting = waiting;
           // socket emit - player:waiting - passing waiting object.
-          socket.broadcast.in(room._id).emit('player:waiting', {
-            players: data.players,
-            waiting: waiting,
-            reset: data.reset
-          });
+          socket.broadcast.in(room._id).emit('player:waiting', data);
         }
         // socket dissconect.
         socket.disconnect();

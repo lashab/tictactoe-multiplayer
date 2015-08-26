@@ -48,7 +48,7 @@ io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(error, db) {
     // if error happens debug it.
     if (error) {
-      debug(err);
+      debug(error);
     }
     // run game.
     game.run(db, io, socket, function(error) {

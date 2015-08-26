@@ -180,7 +180,7 @@
       // get players.
       var players = this.getPlayers();
       // get player object by position.
-      player = players[position];
+      player = players.length === 1 ? players[0] : players[position];
     }
 
     return player;
@@ -242,7 +242,6 @@
       this.set('waiting', false);
       // remove waiting class.
       $('.players.player-waiting').removeClass('player-waiting');
-      $('.players.player-hidden').removeClass('player-hidden');
       setTimeout(function() {
         $('.tic-tac-toe-m').modal('hide');
       }, 1000);
@@ -272,6 +271,7 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (data) {
+    console.log(data);
     // get waiting object.
     var waiting = data.waiting;
     // get waiting position.
@@ -285,18 +285,8 @@
       keyboard: false,
       backdrop: 'static'
     });
-
-    if (reset && !position) {
-      this.set('players', data.players);
-      var html = $('.id-player-1.is-tic-tac-toe-m').html();
-      $('.id-player-0').html(html);
-      docCookies.removeItem('position', '/');
-      docCookies.setItem('position', 0);
-    }
-    // add player-hide class for outer players.
-    $('.players:not(.is-tic-tac-toe-m)').addClass('player-hidden');
     // set waiting by position.
-    $('.id-player-1').children(':first-child')
+    $('.id-player-' + waiting.position).children(':first-child')
       .prop('src', waiting.image)
       .next()
         .removeClass('whole-in')
@@ -327,12 +317,12 @@
     // prepare fade-out class.
     var fadeOut = 'half-in';
     // get player element(s).
-    var _player = $('div[class*="id-player-"]:not(.is-tic-tac-toe-m)');
-    // player is active ? activate game : deactivate game.
+    var _player = $('div[class*="id-player-"]');
+    // player is active && not waiting state ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
     // player active - add fade-in && remove fade-out class.
     _player.filter(function(_position) {
-      return _position === position || _position == 3;
+      return _position === position;
     })
     .toggleClass(fadeIn, true)
     .toggleClass(fadeOut, false)
@@ -368,11 +358,11 @@
    */
   Game.prototype.setPlayersScore = function() {
     // get players.
-    var players = this.get('players');
+    var players = this.getPlayers();
+    // get badges.
+    var badges = $('.players').find('.badge');
     // check for players.
     if (players.length > 1) {
-      // get badges.
-      var badges = $('.players').find('.badge');
       // get first player object.
       var _player = players[0];
       // get second player object.
@@ -402,6 +392,12 @@
         // remove badge-loosing class for second player.
         __badge.toggleClass('badge-loosing', false);
       }
+    }
+    else {
+      // get badge by position.
+      var badge = badges.eq(players[0].position);
+      // remove badge-loosing class.
+      badge.toggleClass('badge-loosing', false);
     }
     // loop in players, get badge by positon and set score.
     players.forEach(function(player) {
@@ -637,7 +633,7 @@
    *
    * @return {Object} this
    */
-  Game.prototype.restart = function(data) {
+  Game.prototype.restart = function() {
     var _this = this;
     // execute after 1s.
     setTimeout(function() {
@@ -1039,16 +1035,30 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        if ('players' in data) {
-          _this.set('players', data.players);
+        // get player object.
+        var players = data.players || {};
+        // get game object.
+        var game = data.game || {};
+        // 
+        if (players.length) {
+          _this
+          // set game.
+          .set('game', game)
+          // set players.
+          .set('players', players)
+          // set active player.
+          .setActivePlayer()
+          // set players score.
+          .setPlayersScore()
+          // restart game.
+          .restart();
         }
         _this
           // set waiting property.
           .set('waiting', true)
           // wait for player.
           .waitForPlayer({
-            waiting: data.waiting,
-            reset: data.reset
+            waiting: data.waiting
           });
       })
       // socket event - game:play.
@@ -1077,6 +1087,8 @@
           .set('players', data.players)
           // draw cross out.
           .drawCrossOut(data.combination)
+          // set active player.
+          .setActivePlayer()
           // set players score.
           .setPlayersScore()
           // restart game.

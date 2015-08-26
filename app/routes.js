@@ -16,6 +16,8 @@ module.exports = function(app, db) {
       title: app.get('title'),
       body: template.render('home')
     });
+    // remove cookie.
+    res.clearCookie('position');
   });
   // GET - room page where :id is room id.
   app.get('/room/:id', function(req, res) {

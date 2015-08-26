@@ -36,12 +36,14 @@ module.exports = {
     var id = room._id;
     // casting id.
     id = id >> 0;
+    // get position.
+    var position = isNaN(room.left) ? room.available ? 0 : 1 : room.left;
     // prepare player object.
     var _player = {
       room: id,
       name: player,
       active: room.available ? true : false,
-      position: room.available ? 0 : 1,
+      position: position,
       score: 0
     };
     // add new player.
@@ -231,11 +233,11 @@ module.exports = {
     var id = room._id >> 0;
     // update player.
     collection.findAndModify({
-      room: room._id
+      room: id
     }, [], {
       $set: {
-        position: 0,
-        active: true
+        active: true,
+        score: 0
       }
     }, {
       new: true
@@ -244,12 +246,12 @@ module.exports = {
       if (error) {
         return callback(error);
       }
-      var data = {
+      var player = {
         players: [players],
         reset: done.ok
       };
       // return callback - passing database object, data object.
-      return callback(null, db, data);
+      return callback(null, db, player);
     });
   },
   /**
