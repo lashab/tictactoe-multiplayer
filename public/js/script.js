@@ -271,20 +271,14 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (data) {
-    console.log(data);
     // get waiting object.
     var waiting = data.waiting;
     // get waiting position.
     var position = waiting.position;
-    // get reset value.
-    var reset = data.reset;
     // get player element.
     var player = $('.id-player-' + position);
     // open modal.
-    $('.tic-tac-toe-m').modal({
-      keyboard: false,
-      backdrop: 'static'
-    });
+    $('.tic-tac-toe-m').modal();
     // set waiting by position.
     $('.id-player-' + waiting.position).children(':first-child')
       .prop('src', waiting.image)
@@ -1035,17 +1029,13 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        // get player object.
-        var players = data.players || {};
-        // get game object.
-        var game = data.game || {};
-        // 
-        if (players.length) {
+        // check for players property.
+        if (data.hasOwnProperty('players')) {
           _this
           // set game.
-          .set('game', game)
+          .set('game', data.game)
           // set players.
-          .set('players', players)
+          .set('players', data.players)
           // set active player.
           .setActivePlayer()
           // set players score.

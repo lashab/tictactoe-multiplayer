@@ -137,6 +137,7 @@ module.exports = {
       room: id
     }, [], {
       $set: {
+        figure: 1,
         targets: []
       }
     }, {
@@ -302,7 +303,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            player.reset(db, _room, function(error, db, data) {
+            player.reset(db, _room, function(error, db, players) {
               // return callback - passing error object.
               if (error) {
                 return callback(error);
@@ -313,8 +314,7 @@ module.exports = {
                   return callback(error);
                 }
                 var _data = {
-                  players: data.players,
-                  reset: data.reset,
+                  players: players,
                   game: game
                 };
                 // return callback - passing database object, data object.
@@ -460,11 +460,10 @@ module.exports = {
             // players === 1 ? 
             if (players.length === 1) {
               // get waiting object.
-              var waiting = player.waiting(1);
+              var waiting = player.waiting(~~!players[0].position);
               // socket emit - player:waiting - passing waiting object.
               socket.emit('player:waiting', {
-                waiting: waiting,
-                reset: false
+                waiting: waiting
               });
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);

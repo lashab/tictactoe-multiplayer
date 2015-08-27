@@ -241,17 +241,13 @@ module.exports = {
       }
     }, {
       new: true
-    } ,function(error, players, done) {
+    }, function(error, players, done) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      var player = {
-        players: [players],
-        reset: done.ok
-      };
       // return callback - passing database object, data object.
-      return callback(null, db, player);
+      return callback(null, db, [players]);
     });
   },
   /**
