@@ -29,49 +29,50 @@ module.exports = function(app, db) {
     });
   });
   // POST - join player.
-  app.post('/join', function(req, res) {
-    // player name ?
+  app.post('/join', function(req, res, next) {
+    // name has been chosen ?
     if (req.body.name) {
-      // open database connection.
-      db.connect(app.get('mongodb'), function(error, db) {
-        // debug route - error.
+      // continue from next callback.
+      next()
+    }
+    // :
+    else {
+      // back to homepage.
+      res.redirect('/');
+    }
+  }, function(req, res) {
+    // open database connection.
+    db.connect(app.get('mongodb'), function(error, db) {
+      // debug route - error.
+      if (error) {
+        debug(error);
+      }
+      // debug route - open database connection.
+      debug('open connection');
+      // join player to the game.
+      game.join(db, req.body.name, function(error, db, player) {
+        // debug error.
         if (error) {
           debug(error);
         }
-        // debug route - open database connection.
-        debug('open connection');
-        // join player to the game.
-        game.join(db, req.body.name, function(error, db, player) {
-          // debug error.
-          if (error) {
-            debug(error);
-          }
-          // player has been joined ?
-          if (player) {
-            // set cookie.
-            res.cookie('position', player.position);
-            // redirect.
-            res.redirect(player.redirect);
-          }
-          // :
-          else {
-            // debug route.
-            debug('response end');
-            debug('close connection');
-            // end response.
-            res.end();
-            // close database connection.
-            db.close();
-          }
-        });
+        // player has been joined ?
+        if (player) {
+          // set cookie.
+          res.cookie('position', player.position);
+          // redirect.
+          res.redirect(player.redirect);
+        }
+        // :
+        else {
+          // debug route.
+          debug('response end');
+          debug('close connection');
+          // end response.
+          res.end();
+          // close database connection.
+          db.close();
+        }
       });
-    }
-    //: 
-    else {
-      // debug route.
-      debug('response end');
-      // end response.
-      res.end();
-    }
+    });
   });
 }

@@ -213,7 +213,7 @@
   Game.prototype.playerLeave = function() {
     var _this = this;
     // add click event.
-    $('.room .glyphicon-log-out').click(function(e) {
+    $('.room .glyphicon-menu-left').click(function(e) {
       e.preventDefault();
       // get room object.
       var room = _this.getRoom();
@@ -278,7 +278,7 @@
     // get player element.
     var player = $('.id-player-' + position);
     // open modal.
-    $('.tic-tac-toe-m').modal();
+    // $('.tic-tac-toe-m').modal();
     // set waiting by position.
     $('.id-player-' + waiting.position).children(':first-child')
       .prop('src', waiting.image)
