@@ -213,7 +213,7 @@
   Game.prototype.playerLeave = function() {
     var _this = this;
     // add click event.
-    $('.room .glyphicon-menu-left').click(function(e) {
+    $('.glyphicon-menu-left').click(function(e) {
       e.preventDefault();
       // get room object.
       var room = _this.getRoom();

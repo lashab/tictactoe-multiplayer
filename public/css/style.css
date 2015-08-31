@@ -7,7 +7,7 @@ body > .container-fluid > .row,
   height: 100%;
   margin: 0;
 }
-/* Body fade in  effects */
+/* body fade in  effects */
 body {
   -webkit-animation: fadein 1.5s;
      -moz-animation: fadein 1.5s;
@@ -35,7 +35,7 @@ body {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
-/* Animated figures */
+/* animated figures */
 .figures {
   width: 30%;
   margin: 15px auto;
@@ -80,7 +80,7 @@ body {
   50%  { opacity: 0; }
   100% { opacity: 0.5; }
 }
-/* Fade in/out effects */
+/* fade in/out effects */
 .whole-in {
   filter: alpha(opacity=100) !important;
   opacity: 1 !important;
@@ -95,7 +95,7 @@ body {
   -o-transition: opacity .4s ease-in;
   transition: opacity .4s ease-in;
 }
-/* Join form */
+/* join form */
 .id-join {
   margin: 50px 0 0 0;
 }
@@ -124,11 +124,11 @@ body {
   background-color: #5CB85C;
   outline: none !important;
 }
-/* Canvas element */
+/* canvas element */
 .canvas-container {
   margin: 0 auto;
 }
-/* Leave icon */
+/* leave icon */
 .glyphicon-menu-left {
   position: absolute !important;
   top: 50% !important;
@@ -137,7 +137,7 @@ body {
   cursor: pointer;
   z-index: 5000;
 }
-/* Player elements */
+/* player elements */
 .players {
   display: none;
   margin-top: 15px;
