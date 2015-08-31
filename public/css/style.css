@@ -99,12 +99,14 @@ body {
 .id-join {
   margin: 50px 0 0 0;
 }
-.id-join .form-group,
-.id-join .form-group input {
-  display: block !important;
+@media (min-width: 992px) {
+  .id-join .form-group > div {
+    width: 20%;
+  }
 }
-.id-join input {
+.id-join .form-group > div {
   margin: 0 auto;
+  float: none;
 }
 .id-join button {
   display: block;
@@ -123,6 +125,12 @@ body {
   color: #fff;
   background-color: #5CB85C;
   outline: none !important;
+}
+.id-join .alert {
+  display: none;
+  margin: 5px 0 0 0;
+  padding: 5px;
+  text-align: center;
 }
 /* canvas element */
 .canvas-container {

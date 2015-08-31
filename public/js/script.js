@@ -192,6 +192,24 @@
    * @return {Object} this
    */
   Game.prototype.playerJoin = function() {
+    $('.id-join').submit(function(e) {
+      e.preventDefault();
+      var input = $(this).find('input[type=text]');
+      var name = input.val();
+      if (name.length) {
+        if (!/^[a-z]{1,8}$/.test(name)) {
+          input.next().fadeIn();
+          input.parent().addClass('has-error');
+          input.focus();
+        }
+        else {
+          input.parent().addClass('has-success');
+        }
+      }
+      else {
+        input.focus();
+      }
+    });
     // get room id.
     var room = this.getRoomIdByPathName();
     // room id ?
