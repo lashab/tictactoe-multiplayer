@@ -1,8 +1,7 @@
 html, 
 body,
 body > .container-fluid, 
-body > .container-fluid > .row, 
-.players {
+body > .container-fluid > .row {
   width: 100%;
   height: 100%;
   margin: 0;

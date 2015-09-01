@@ -192,21 +192,36 @@
    * @return {Object} this
    */
   Game.prototype.playerJoin = function() {
+    // join submit event.
     $('.id-join').submit(function(e) {
-      e.preventDefault();
+      // get input.
       var input = $(this).find('input[type=text]');
+      // get input value.
       var name = input.val();
+      // name length > 0 ?
       if (name.length) {
+        // get form group.
+        var formGroup = input.parent();
+        // name doesn't match regex ?
         if (!/^[a-z]{1,8}$/.test(name)) {
+          e.preventDefault();
+          // display alert text.
           input.next().fadeIn();
-          input.parent().addClass('has-error');
+          // add error class to form-group.
+          formGroup.addClass('has-error');
+          // focus on input.
           input.focus();
         }
+        // :
         else {
-          input.parent().addClass('has-success');
+          // add success class to form-group.
+          formGroup.addClass('has-success');
         }
       }
+      // :
       else {
+        e.preventDefault();
+        // focus on input.
         input.focus();
       }
     });
