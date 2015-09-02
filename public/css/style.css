@@ -114,7 +114,7 @@ body {
   border: none;
   border-radius: 35px;
   color: #fff;
-  background-color: rgb(247, 0, 71);
+  background-color: #F70047;
   webkit-transition: background 0.5s;
   transition: background 0.5s;
 }
@@ -134,15 +134,6 @@ body {
 /* canvas element */
 .canvas-container {
   margin: 0 auto;
-}
-/* leave icon */
-.glyphicon-menu-left {
-  position: absolute !important;
-  top: 50% !important;
-  font-size: 5em;
-  color: #04ABDC;
-  cursor: pointer;
-  z-index: 5000;
 }
 /* player elements */
 .players {
@@ -165,4 +156,17 @@ body {
 }
 .players .badge-winning {
   background-color: #5CB85C !important;
+}
+/* leave icon */
+.leave {
+  position: absolute;
+  top: 50%;
+  height: 15%;
+  font-size: 6em;
+  color: #04ABDC;
+  cursor: pointer;
+  z-index: 5000;
+}
+.leave .glyphicon-menu-left:hover {
+  color: #F70047;
 }

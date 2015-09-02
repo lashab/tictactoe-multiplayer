@@ -66,11 +66,8 @@ module.exports = function(app, db) {
         else {
           // debug route.
           debug('response end');
-          debug('close connection');
           // end response.
           res.end();
-          // close database connection.
-          db.close();
         }
       });
     });

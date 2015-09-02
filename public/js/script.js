@@ -610,6 +610,8 @@
       'mouse:down': function(e) {
         // target is clickable ?
         if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
+          var audio = new Audio('/sounds/figure-click.mp3');
+          audio.play();
           // get target.
           var target = e.target;
           // start playing.
@@ -1118,7 +1120,7 @@
           .restart();
       });
    }).on('disconnect', function() {
-      window.location.replace('/');
+      // window.location.replace('/');
    });
   
    return this; 
