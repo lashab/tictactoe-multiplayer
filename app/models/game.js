@@ -578,6 +578,8 @@ module.exports = {
           // socket emit - player:waiting - passing waiting object.
           socket.broadcast.in(room._id).emit('player:waiting', data);
         }
+        // socket emit - game:leave.
+        socket.emit('player:leave');
         // socket dissconect.
         socket.disconnect();
       });

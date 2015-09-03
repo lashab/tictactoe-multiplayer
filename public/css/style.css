@@ -79,7 +79,7 @@ body {
   50%  { opacity: 0; }
   100% { opacity: 0.5; }
 }
-/* fade in/out effects */
+/* fade in / out effects */
 .whole-in {
   filter: alpha(opacity=100) !important;
   opacity: 1 !important;
@@ -158,15 +158,33 @@ body {
   background-color: #5CB85C !important;
 }
 /* leave icon */
-.leave {
-  position: absolute;
-  top: 50%;
+.glyphicon-menu-left {
+  position: absolute !important;
+  top: 50% !important;
+  left: 0;
   height: 15%;
   font-size: 6em;
   color: #04ABDC;
   cursor: pointer;
   z-index: 5000;
 }
-.leave .glyphicon-menu-left:hover {
+.glyphicon-menu-left:hover {
   color: #F70047;
+}
+/* volume icon */
+[class*=glyphicon-volume] {
+  position: absolute !important;
+  top: initial !important; 
+  right: 5px !important;
+  bottom: 5px !important;
+  font-size: 3em;
+  cursor: pointer;
+}
+.glyphicon-volume-off,
+.glyphicon-volume-up:hover {
+  color: #F70047;
+}
+.glyphicon-volume-up,
+.glyphicon-volume-off:hover {
+  color: #04ABDC;
 }

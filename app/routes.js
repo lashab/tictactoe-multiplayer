@@ -7,9 +7,8 @@ var debug = require('debug')('routes');
 var template = require('./helpers/template');
 var game = require('./models/game');
 
-
 module.exports = function(app, db) {
-  // GET - homepage
+  // GET - / (homepage).
   app.get('/', function(req, res) {
     // render homepage.
     res.render('index', {
@@ -19,7 +18,7 @@ module.exports = function(app, db) {
     // remove cookie.
     res.clearCookie('position');
   });
-  // GET - room page where :id is room id.
+  // GET - /room/:id where :id is room id.
   app.get('/room/:id', function(req, res) {
     // render room page.
     res.render('index', { 
@@ -28,12 +27,14 @@ module.exports = function(app, db) {
       $class: 'room'
     });
   });
-  // POST - join player.
+  // POST - /join.
   app.post('/join', function(req, res, next) {
-    // name has been chosen ?
-    if (req.body.name) {
-      // continue from next callback.
-      next()
+    // get name.
+    var name = req.body.name;
+    // name field isn't empty && matches regex ?
+    if (name && /^[A-Za-z]{1,8}$/.test(name)) {
+      // continue.
+      next();
     }
     // :
     else {

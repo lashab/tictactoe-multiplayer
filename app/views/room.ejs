@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <div class="row">
-    <div class="col-sm-6 col-md-1 players id-player-0 fade-effect">
+    <div class="col-xs-1 col-sm-1 col-md-1 players id-player-0 fade-effect">
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption fade-effect">
         <p class="text-center id-name-0"></p>
@@ -9,11 +9,9 @@
         </p>
       </div>
     </div>
-    <div class="leave">
-      <span data-toggle="tooltip" data-placement="right" title="Leave" class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>
-    </div>
-    <div class="col-md-10"><canvas id="tictactoe"></canvas></div>
-    <div class="col-sm-6 col-md-1 players id-player-1 fade-effect">
+    <span data-toggle="tooltip" data-placement="right" title="Leave" class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>
+    <div class="col-xs-8 col-sm-9 col-md-10"><canvas id="tictactoe"></canvas></div>
+    <div class="col-xs-1 col-sm-1 col-md-1 players id-player-1 fade-effect">
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption fade-effect">
         <p class="text-center id-name-0"></p>
@@ -22,6 +20,10 @@
         </p>
       </div>
     </div>
+    <span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span>
+    <audio class="id-audio">
+      <source src="/sounds/figure-click.mp3" type="audio/mp3">
+    </audio>
     <!-- Modal -->
     <div class="modal fade bs-example-modal-sm tic-tac-toe-m" id="" tabindex="-1" role="dialog" aria-labelledby="Tictactoe" data-backdrop="static" data-keyboard="false">
       <div class="modal-dialog">

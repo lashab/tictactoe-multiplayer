@@ -203,7 +203,7 @@
         // get form group.
         var formGroup = input.parent();
         // name doesn't match regex ?
-        if (!/^[a-z]{1,8}$/.test(name)) {
+        if (!/^[A-Za-z]{1,8}$/.test(name)) {
           e.preventDefault();
           // display alert text.
           input.next().fadeIn();
@@ -268,16 +268,15 @@
    */
   Game.prototype.addPlayers = function () {
     // get players.
-    var players = this.get('players');
+    var players = this.getPlayers();
     // check for players length.
     if (players.length > 1) {
       // set waiting value.
       this.set('waiting', false);
       // remove waiting class.
       $('.players.player-waiting').removeClass('player-waiting');
-      setTimeout(function() {
-        $('.tic-tac-toe-m').modal('hide');
-      }, 1000);
+      // hide modal.
+      $('.tic-tac-toe-m').modal('hide');
     }
     // loop in players add image && player name.
     players.forEach(function(player) {
@@ -311,7 +310,7 @@
     // get player element.
     var player = $('.id-player-' + position);
     // open modal.
-    // $('.tic-tac-toe-m').modal();
+    $('.tic-tac-toe-m').modal();
     // set waiting by position.
     $('.id-player-' + waiting.position).children(':first-child')
       .prop('src', waiting.image)
@@ -610,8 +609,8 @@
       'mouse:down': function(e) {
         // target is clickable ?
         if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
-          var audio = new Audio('/sounds/figure-click.mp3');
-          audio.play();
+          // play audio.
+          _this.audioPlay();
           // get target.
           var target = e.target;
           // start playing.
@@ -668,14 +667,11 @@
     setTimeout(function() {
       // get count.
       var count = _this.getCanvasCountObjects();
-      // loop until current count doesn't
-      // equals to the initial count.
+      // while []
       while (count !== _this.count) {
-        // game is over remove all figures
-        // from canvas.
+        // remove all figures.
         _this.__canvas.fxRemove(_this.__canvas.item(count), {
-          // on complete reset squares
-          // and set active player.
+          // onComplete event - reset figures, set active player.
           onComplete: function() {
             _this
               // initialize squares.
@@ -1019,6 +1015,89 @@
     return this;
   }
   /**
+   * get audio object.
+   *
+   * @return {Object} audio
+   */
+  Game.prototype.getAudioObject = function() {
+    // get audio object.
+    var audio = $('.id-audio')[0];
+
+    return audio;
+  }
+  /**
+   * play audio.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.audioPlay = function() {
+    // get audio object.
+    var audio = this.getAudioObject()
+    // play audio.
+    audio.play();
+
+    return this;
+  }
+  /**
+   * turn on audio.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.audioOn = function() {
+    // get audio object.
+    var audio = this.getAudioObject();
+    // unmute audio.
+    audio.muted = false;
+
+    return this;
+  }
+  /**
+   * turn off audio.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.audioOff = function() {
+    // get audio object.
+    var audio = this.getAudioObject();
+    // unmute audio.
+    audio.muted = true;
+
+    return this;
+  }
+  /**
+   * audio switch.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.audioSwitch = function() {
+    var _this = this;
+    // get volume icon.
+    var volume = $('[class*=glyphicon-volume]');
+    // volume click event.
+    volume.click(function(e) {
+      // volume has glyphicon-volume-up volume-up class ? 
+      if ($(this).hasClass('glyphicon-volume-up')) {
+        // remove glyphicon-volume-up class.
+        $(this).toggleClass('glyphicon-volume-up', false);
+        // add glyphicon-volume-off class.
+        $(this).toggleClass('glyphicon-volume-off', true);
+        // turn the audio off.
+        _this.audioOff();
+      }
+      // :
+      else {
+        // remove glyphicon-volume-off class.
+        $(this).toggleClass('glyphicon-volume-off', false);
+        // add glyphicon-volume-up class.
+        $(this).toggleClass('glyphicon-volume-up', true);
+        // turn the audio on.
+        _this.audioOn();
+      }
+    });
+
+    return this;
+  }
+  /**
    * run game.
    *
    * @param {Object} socket
@@ -1118,10 +1197,12 @@
           .setPlayersScore()
           // restart game.
           .restart();
+      })
+      .on('player:leave', function() {
+        // back to homepage.
+        window.location.replace('/');
       });
-   }).on('disconnect', function() {
-      // window.location.replace('/');
-   });
+   })
   
    return this; 
   }
@@ -1139,6 +1220,8 @@
       .playerJoin()
       // run game.
       .run()
+      // switch audio.
+      .audioSwitch()
       // leave game.
       .playerLeave();
     // activate tooltips.
