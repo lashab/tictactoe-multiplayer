@@ -1,6 +1,24 @@
 <div class="container-fluid">
   <div class="row">
-    <div class="col-xs-1 col-sm-1 col-md-1 players id-player-0 fade-effect">
+    <div class="col-md-12 hidden-lg hidden-md visible-xs">
+      <div class="row">
+        <div class="col-xs-6 players id-player-0 fade-effect is-mobile">
+          <img src="../images/default.png" class="img-responsive img-circle hidden-xs">
+          <div class="caption fade-effect">
+            <span class="text-center id-name-0"></span>
+            <span class="badge"></span>
+          </div>
+        </div>
+        <div class="col-xs-6 players id-player-1 fade-effect is-mobile">
+          <img src="../images/default.png" class="img-responsive img-circle hidden-xs">
+          <div class="caption fade-effect pull-right">
+            <span class="text-center id-name-0"></span>
+            <span class="badge"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-2 col-md-1 players id-player-0 fade-effect hidden-xs">
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption fade-effect">
         <p class="text-center id-name-0"></p>
@@ -9,9 +27,9 @@
         </p>
       </div>
     </div>
-    <span data-toggle="tooltip" data-placement="right" title="Leave" class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>
-    <div class="col-xs-8 col-sm-9 col-md-10"><canvas id="tictactoe"></canvas></div>
-    <div class="col-xs-1 col-sm-1 col-md-1 players id-player-1 fade-effect">
+    <span data-toggle="tooltip" data-placement="right" title="Leave" class="glyphicon glyphicon-menu-left hidden-sm hidden-xs" aria-hidden="true"></span>
+    <div class="col-xs-8 col-sm-8 col-md-10 x-o-canvas"><canvas id="tictactoe"></canvas></div>
+    <div class="col-sm-2 col-md-1 players id-player-1 fade-effect hidden-xs">
       <img src="../images/default.png" class="img-responsive img-circle">
       <div class="caption fade-effect">
         <p class="text-center id-name-0"></p>
@@ -20,7 +38,7 @@
         </p>
       </div>
     </div>
-    <span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span>
+    <span class="glyphicon glyphicon-volume-up hidden-sm hidden-xs" aria-hidden="true"></span>
     <audio class="id-audio">
       <source src="/sounds/figure-click.mp3" type="audio/mp3">
     </audio>

@@ -1,10 +1,11 @@
 html, 
 body,
-body > .container-fluid, 
+body > .container-fluid,
 body > .container-fluid > .row {
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: 0;
 }
 /* body fade in  effects */
 body {
@@ -119,7 +120,7 @@ body {
   transition: background 0.5s;
 }
 .id-join button:hover,
-.id-join button:active, 
+.id-join button:active,
 .id-join button:focus {
   color: #fff;
   background-color: #5CB85C;
@@ -133,29 +134,46 @@ body {
 }
 /* canvas element */
 .canvas-container {
-  margin: 0 auto;
+  margin: 0 auto !important;
+}
+.x-o-canvas {
+  padding: 0 !important;
 }
 /* player elements */
 .players {
   display: none;
   margin-top: 15px;
 }
-.players > .caption p:first-child {
-  font-weight: 500;
-  margin-top: 10px;
-  font-size: 18px;
+.players .caption {
+  margin: 0 10px;
 }
-.players > .caption p:last-child span {
+.players .caption .badge {
   background-color: #5CB85C;
-  border-radius: 5px;
+}
+.players:not(.is-mobile) .caption p:first-child {
+  font-size: 1.2em;
+}
+.players:not(.is-mobile) .caption p:last-child span {
   padding: 5px 10px;
-  font-size: 15px;
+  border-radius: 5px;
+  font-size: 1em;
 }
 .players .badge-loosing {
-  background-color: #BF1E2D !important;
+  background-color: #F70047 !important;
 }
 .players .badge-winning {
   background-color: #5CB85C !important;
+}
+.players.is-mobile {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+}
+.players.is-mobile .caption p {
+  margin: 0;
+}
+.players.is-mobile.id-player-1 {
+  right: 0;
 }
 /* leave icon */
 .glyphicon-menu-left {
