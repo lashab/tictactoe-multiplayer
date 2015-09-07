@@ -425,6 +425,7 @@ module.exports = {
     var _this = this;
     // socket event - player:join.
     socket.on('player:join', function(_room) {
+      console.log(_room);
       // get room id.
       var id = _room.id;
       // get room by id.

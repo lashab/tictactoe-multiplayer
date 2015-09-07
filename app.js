@@ -27,6 +27,7 @@ app.set('view engine', 'ejs');
 app.use(express.favicon());
 app.use(express.logger('dev'));
 app.use(cookieParser());
+app.use(express.session({ secret: 'tictactoeqwerty' }))
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(app.router);

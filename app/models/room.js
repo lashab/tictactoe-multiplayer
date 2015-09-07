@@ -48,48 +48,22 @@ module.exports = {
       debug('- %d', id);
       //increment id by 1.
       id++;
-      // function for creating or updating room.
-      var add = function(db, _room, callback) {
-        // prepare room object.
-        var room = {
-          _id: _room.id,
-          available: _room.available || false,
-          left: _room.left
-        };
-        // id is an existent room ? update
-        // room make the room unavailable
-        // : create new room.
-        collection.save(room, function(error, done) {
-          // return callback - passing error object.
-          if (error) {
-            return callback(error);
-          }
-          // new room has been created || updated ?
-          if (done) {
-            // return callback - passing database object, room object.
-            return callback(null, db, room);
-          }
-          // :
-          // debug room.
-          debug('room hasn\'t been created || updated.');
-          // return callback - passing database object.
-          return callback(null, db, null);
-        });
-      }
       // id is more then zero ? create || update room
       if (id) {
         // available room found ? make this room 
         // unavailable : create new room.
-        _this.getRandomAvailableRoom(db, function(error, db, room) {
+        _this.getRandomRoom(db, function(error, db, room) {
           // return callback - passing error object.
           if (error) {
             return callback(error);
           }
           // room is avaiable ? close room.
           if (room) {
+            // get room id.
+            var _id = room._id;
             // update room.
-            add(db, {
-              id: room._id,
+            _this.modify(db, {
+              id: _id,
               left: room.left
             }, function(error, db, _room) {
               // return callback - passing error object.
@@ -97,7 +71,7 @@ module.exports = {
                 return callback(error);
               }
               // debug room.
-              debug('#%d has been closed.', room);
+              debug('#%d has been closed.', _id);
               // return callback - passing database object, room object.
               return callback(null, db, _room);
             });
@@ -105,7 +79,7 @@ module.exports = {
           // :
           else {
             // create room.
-            add(db, {
+            _this.modify(db, {
               id: id,
               available: true,
               left: NaN
@@ -164,6 +138,43 @@ module.exports = {
       debug(message, id);
       // return callback - passing database object done boolean.
       return callback(null, db, done);
+    });
+  },
+  /**
+   * create || update room.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  modify: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // prepare room object.
+    var _room = {
+      _id: room.id,
+      available: room.available || false,
+      left: room.left
+    };
+    // id is an existent room ? update
+    // room make the room unavailable
+    // : create new room.
+    collection.save(_room, function(error, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // new room has been created || updated ?
+      if (done) {
+        // return callback - passing database object, room object.
+        return callback(null, db, _room);
+      }
+      // :
+      // debug room.
+      debug('room hasn\'t been created || updated.');
+      // return callback - passing database object.
+      return callback(null, db, null);
     });
   },
   /**
@@ -231,13 +242,13 @@ module.exports = {
     });
   },
   /**
-   * get random avaiable room.
+   * get random available room.
    *
    * @param {Object} db
    * @param {Function} callback
    * @return {Function} callback
    */
-  getRandomAvailableRoom: function(db, callback) {
+  getRandomRoom: function(db, callback) {
     // get collection.
     var collection = this.getCollection(db);
     // prepare query object.
@@ -246,6 +257,7 @@ module.exports = {
     };
     // find available rooms.
     collection.find(query).toArray(function(error, rooms) {
+      // rooms size.
       var _rooms = rooms.length;
       // debug room.
       debug('available rooms - %d', _rooms);
@@ -254,7 +266,7 @@ module.exports = {
         return callback(error);
       }
       if (_rooms) {
-        // return callback - passing database object, random objectID.
+        // return callback - passing database object, random room object.
         return callback(null, db, rooms[Math.floor(Math.random() * _rooms)]);
       }
       // return callback - passing database object.
