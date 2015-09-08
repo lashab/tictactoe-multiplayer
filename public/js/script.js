@@ -1,6 +1,9 @@
 ;(function($) {
   'use strict';
-
+function myfunc() {
+  console.log(myfunc.name);
+}
+myfunc();
   /**
    * constructor.
    *

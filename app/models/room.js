@@ -22,88 +22,104 @@ module.exports = {
    * add || update room.
    *
    * @param {Object} db
+   * @param {Number} id 
    * @param {Function} callback
    * @return {Function} callback
    */
-  add: function(db, callback) {
+  add: function(db, id, callback) {
     var _this = this;
     // get collection.
     var collection = this.getCollection(db);
-    // find room.
-    collection.findOne({}, {
-      _id: 1,
-      sort: {
-        $natural: -1
-      }
-    }, function(error, room) {
-      // return callback - passing error object.
-      if (error) {
-        return callback(error);
-      }
-      // room id set.
-      var id = room ? room._id : 0;
-      // casting id.
-      id = id >> 0;
-      // debug room.
-      debug('- %d', id);
-      //increment id by 1.
-      id++;
-      // id is more then zero ? create || update room
-      if (id) {
-        // available room found ? make this room 
-        // unavailable : create new room.
-        _this.getRandomRoom(db, function(error, db, room) {
-          // return callback - passing error object.
-          if (error) {
-            return callback(error);
-          }
-          // room is avaiable ? close room.
-          if (room) {
-            // get room id.
-            var _id = room._id;
-            // update room.
-            _this.modify(db, {
-              id: _id,
-              left: room.left
-            }, function(error, db, _room) {
-              // return callback - passing error object.
-              if (error) {
-                return callback(error);
-              }
-              // debug room.
-              debug('#%d has been closed.', _id);
-              // return callback - passing database object, room object.
-              return callback(null, db, _room);
-            });
-          }
-          // :
-          else {
-            // create room.
-            _this.modify(db, {
-              id: id,
-              available: true,
-              left: NaN
-            }, function(error, db, room) {
-              // return callback - passing error object.
-              if (error) {
-                return callback(error);
-              }
-              // debug room.
-              debug('#%d has been added.', id);
-              // return callback - passing database object, room object.
-              return callback(null, db, room);
-            });
-          }
-        });
-      }
-      // :
-      else {
+    // id is more then 0 ? 
+    if (id) {
+      // get room by id.
+      this.getRoomById(db, id, function(error, db, room) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // return callback - passing database object, room object.
+        return callback(null, db, room);
+      });
+    }
+    // :
+    else {
+      // find room.
+      collection.findOne({}, {
+        _id: 1,
+        sort: {
+          $natural: -1
+        }
+      }, function(error, room) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        // room id set.
+        var id = room ? room._id : 0;
+        // casting id.
+        id = id >> 0;
         // debug room.
-        debug('id couldn\'t be found.');
-        // return callback - passing database object.
-        return callback(null, db, null); 
-      }
-    });
+        debug('- %d', id);
+        //increment id by 1.
+        id++;
+        // id is more then zero ? create || update room
+        if (id) {
+          // available room found ? make this room 
+          // unavailable : create new room.
+          _this.getRandomRoom(db, function(error, db, room) {
+            // return callback - passing error object.
+            if (error) {
+              return callback(error);
+            }
+            // room is avaiable ? close room.
+            if (room) {
+              // get room id.
+              var _id = room._id;
+              // update room.
+              _this.modify(db, {
+                id: _id,
+                left: room.left
+              }, function(error, db, _room) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // debug room.
+                debug('#%d has been closed.', _id);
+                // return callback - passing database object, room object.
+                return callback(null, db, _room);
+              });
+            }
+            // :
+            else {
+              // create room.
+              _this.modify(db, {
+                id: id,
+                available: true,
+                left: NaN
+              }, function(error, db, room) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // debug room.
+                debug('#%d has been added.', id);
+                // return callback - passing database object, room object.
+                return callback(null, db, room);
+              });
+            }
+          });
+        }
+        // :
+        else {
+          // debug room.
+          debug('id couldn\'t be found.');
+          // return callback - passing database object.
+          return callback(null, db, null); 
+        }
+      });
+    }
   },
   /**
    * remove room.

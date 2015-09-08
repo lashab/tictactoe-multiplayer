@@ -10,7 +10,9 @@ module.exports = {
   prepare: function(template) {
     if (template) {
       var file = fs.readFileSync(join(__dirname, '../views', template + '.ejs'), 'utf-8');
-      return ejs.compile(file);
+      return ejs.compile(file, {
+      	filename: 'app/views/.',
+      });
     }
   }
 , render: function(template, data) {

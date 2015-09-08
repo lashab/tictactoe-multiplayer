@@ -181,13 +181,15 @@ module.exports = {
    *
    * @param {Object} db
    * @param {String} _player
+   * @param {Integer} _id
    * @param {Function} callback
    * @return {Function} callback
    */
-  join: function(db, _player, callback) {
+  join: function(db, _player, _id, callback) {
     var _this = this;
     // create || update room.
-    room.add(db, function(error, db, room) {
+    room.add(db, _id, function(error, db, room) {
+      console.log(room);
       // return callback - passing error object.
       if (error) {
         return callback(error);
