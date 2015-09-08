@@ -38,8 +38,18 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-// Routes.
-routes(app, database);
+database.connect(app.get('mongodb'), function(error, db) {
+  // debug error.
+  if (error) {
+    debug(error);
+  }
+  // routes.
+  routes(db, app, function(error) {
+    if (error) {
+      debug(error);
+    }
+  });
+});
 
 // Server listens to port.
 server.listen(app.get('port'));
@@ -47,7 +57,7 @@ server.listen(app.get('port'));
 // SocketIO.
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(error, db) {
-    // if error happens debug it.
+    // debug error.
     if (error) {
       debug(error);
     }
