@@ -8,24 +8,25 @@ var template = require('./helpers/template');
 var game = require('./models/game');
 var room = require('./models/room');
 
-module.exports = function(app, db) {
+module.exports = function(db, app) {
   // GET - / (homepage).
-  app.get('/', function(req, res) {
+  app.get('/', function(request, response) {
     // render homepage.
-    res.render('index', {
+    response.render('index', {
       title: app.get('title'),
       body: template.render('home', {
         form: template.render('form')
       })
     });
     // remove cookie.
-    res.clearCookie('position');
+    response.clearCookie('position');
   });
   // GET - /room/:id where :id is room id.
-  app.get('/room/:id', function(req, res) {
-    var position = req.cookies.position;
-    if (!position) {
-      var id = req.params.id;
+  app.get('/room/:id', function(request, response, next) {
+    // cookies position couldn't be found ?
+    if (!request.cookies.position) {
+      // get room id.
+      var id = request.params.id;
       // update room.
       room.modify(db, {
         id: id,
@@ -33,24 +34,31 @@ module.exports = function(app, db) {
       }, function(error, db) {
         // return callback - passing error object.
         if (error) {
-          return debug(error);
+          return callback(error);
         }
         // debug route.
         debug('room #%d has been closed.', id);
+        // continue.
+        next();
       });
     }
+    else {
+      // continue.
+      next();
+    }
+  }, function(request, response) {
     // render room page.
-    res.render('index', { 
+    response.render('index', { 
       title: app.get('title'),
       body: template.render('room', {
-        form: !position ? template.render('form') : ''
+        form: !request.cookies.position ? template.render('form') : ''
       })
     });
   });
   // POST - /join.
-  app.post('/join', function(req, res, next) {
+  app.post('/join', function(request, response, next) {
     // get name.
-    var name = req.body.name;
+    var name = request.body.name;
     // name field isn't empty && matches regex ?
     if (name && /^[A-Za-z]{1,8}$/.test(name)) {
       // continue.
@@ -59,38 +67,29 @@ module.exports = function(app, db) {
     // :
     else {
       // back to homepage.
-      res.redirect('/');
+      response.redirect('/');
     }
-  }, function(req, res) {
-    // open database connection.
-    db.connect(app.get('mongodb'), function(error, db) {
-      // debug route - error.
+  }, function(request, response) {
+    // join player to the game.
+    game.join(db, request.body.name, function(error, db, player) {
+      // debug error.
       if (error) {
-        debug(error);
+        return callback(error);
       }
-      // debug route - open database connection.
-      debug('open connection');
-      // join player to the game.
-      game.join(db, req.body.name, function(error, db, player) {
-        // debug error.
-        if (error) {
-          debug(error);
-        }
-        // player has been joined ?
-        if (player) {
-          // set cookie.
-          res.cookie('position', player.position);
-          // redirect.
-          res.redirect(player.redirect);
-        }
-        // :
-        else {
-          // debug route.
-          debug('response end');
-          // end response.
-          res.end();
-        }
-      });
+      // player has been joined ?
+      if (player) {
+        // set cookie.
+        response.cookie('position', player.position);
+        // redirect.
+        response.redirect(player.redirect);
+      }
+      // :
+      else {
+        // debug route.
+        debug('response end');
+        // end response.
+        response.end();
+      }
     });
   });
 }
