@@ -5,10 +5,11 @@
 var join = require('path').join;
 var debug = require('debug')('routes');
 var template = require('./helpers/template');
-var game = require('./models/game');
+var player = require('./models/player');
 var room = require('./models/room');
+var game = require('./models/game');
 
-module.exports = function(db, app) {
+module.exports = function(db, app, callback) {
   // GET - / (homepage).
   app.get('/', function(request, response) {
     // render homepage.
@@ -29,31 +30,50 @@ module.exports = function(db, app) {
   });
   // GET - /room/:id where :id is room id.
   app.get('/room/:id', function(request, response, next) {
-    // cookies position couldn't be found ?
-    if (!request.cookies.position) {
-      // get room id && casting id.
-      var id = request.params.id >> 0;
-      // update room (close room).
-      room.modify(db, {
-        id: id,
-        left: NaN
-      }, function(error, db) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
+    // get room id.
+    var id = request.params.id;
+    // get players by room.
+    player.getPlayersByRoom(db, {
+      _id: id
+    }, function(error, db, players) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // player length > 0 
+      if (players.length) {
+        // cookie position couldn't be found ?
+        if (!request.cookies.position) {
+          // close room.
+          room.close(db, id, function(error, db, room) {
+            // return callback - passing error object.
+            if (error) {
+              return callback(error);
+            }
+            // set cookie - id.
+            response.cookie('id', id);
+            // debug route.
+            debug('cookie id has been setted.')
+            // continue.
+            next();
+          });
         }
+        // :
+        else {
+          // continue.
+          next();
+        }
+      }
+      // :
+      else {
         // debug route.
-        debug('room #%d has been closed.', id);
-        // set cookie - id.
-        response.cookie('id', id);
-        // continue.
-        next();
-      });
-    }
-    else {
-      // continue.
-      next();
-    }
+        debug('players couldn\'t found in #%d room.', id);
+        // debug route.
+        debug('back to homepage.');
+        // back to homepage.
+        response.redirect('..');
+      }
+    });
   }, function(request, response) {
     // render room page.
     response.render('index', { 
@@ -81,7 +101,7 @@ module.exports = function(db, app) {
       // debug route.
       debug('name middleware check failed, getting back to the home page.')
       // back to homepage.
-      response.redirect('/');
+      response.redirect('..');
     }
   }, function(request, response) {
     // get room id.
@@ -95,7 +115,7 @@ module.exports = function(db, app) {
       // player has been joined ?
       if (player) {
         // debug route.
-        debug('cookie position has been setted.');
+        debug('cookie position has been added.');
         // set cookie - position.
         response.cookie('position', player.position);
         // debug route.

@@ -38,13 +38,24 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
+var room = require('./app/models/room');
+
 database.connect(app.get('mongodb'), function(error, db) {
-  // debug error.
+  // debug app - passing error object.
   if (error) {
     debug(error);
   }
   // routes.
   routes(db, app, function(error) {
+    // debug app - passing error object.
+    if (error) {
+      debug(error);
+    }
+  });
+
+  room._add(db, {
+    _id: 12,
+  }, function(error, db, data) {
     if (error) {
       debug(error);
     }

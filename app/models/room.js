@@ -72,15 +72,14 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            // room is avaiable ? close room.
+            // room is avaiable ?
             if (room) {
               // get room id.
               var _id = room._id;
-              // update room.
-              _this.modify(db, {
-                id: _id,
-                left: room.left
-              }, function(error, db, _room) {
+              // close room.
+              _this.close(db, {
+                id: _id
+              }, function(error, db, room) {
                 // return callback - passing error object.
                 if (error) {
                   return callback(error);
@@ -88,23 +87,19 @@ module.exports = {
                 // debug room.
                 debug('#%d has been closed.', _id);
                 // return callback - passing database object, room object.
-                return callback(null, db, _room);
+                return callback(null, db, room);
               });
             }
             // :
             else {
               // create room.
-              _this.modify(db, {
-                id: id,
-                available: true,
-                left: NaN
+              _this._add(db, {
+                id: id
               }, function(error, db, room) {
                 // return callback - passing error object.
                 if (error) {
                   return callback(error);
                 }
-                // debug room.
-                debug('#%d has been added.', id);
                 // return callback - passing database object, room object.
                 return callback(null, db, room);
               });
@@ -122,6 +117,35 @@ module.exports = {
     }
   },
   /**
+   * add room.
+   *
+   * @param {Object} db
+   * @param {Object} room 
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  _add: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // get room id.
+    var id = room._id;
+    // add room.
+    collection.insert({
+      _id: id,
+      available: true,
+      left: -1
+    }, function(error, room) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // debug room.
+      debug('#%d has been added.', id);
+      // return callback - passing database object, room object.
+      return callback(null, db, room);
+    });
+  },
+  /**
    * remove room.
    *
    * @param {Object} db
@@ -132,10 +156,8 @@ module.exports = {
   remove: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id.
-    var id = room._id;
-    // casting id.
-    id = id >> 0;
+    // get room id && casting id.
+    var id = room._id >> 0;
     // remove room by id.
     collection.remove({
       _id: id
@@ -154,43 +176,6 @@ module.exports = {
       debug(message, id);
       // return callback - passing database object done boolean.
       return callback(null, db, done);
-    });
-  },
-  /**
-   * create || update room.
-   *
-   * @param {Object} db
-   * @param {Object} room
-   * @param {Function} callback
-   * @return {Function} callback
-   */
-  modify: function(db, room, callback) {
-    // get collection.
-    var collection = this.getCollection(db);
-    // prepare room object.
-    var _room = {
-      _id: room.id,
-      available: room.available || false,
-      left: room.left
-    };
-    // id is an existent room ? update
-    // room make the room unavailable
-    // : create new room.
-    collection.save(_room, function(error, done) {
-      // return callback - passing error object.
-      if (error) {
-        return callback(error);
-      }
-      // new room has been created || updated ?
-      if (done) {
-        // return callback - passing database object, room object.
-        return callback(null, db, _room);
-      }
-      // :
-      // debug room.
-      debug('room hasn\'t been created || updated.');
-      // return callback - passing database object.
-      return callback(null, db, null);
     });
   },
   /**
@@ -230,6 +215,45 @@ module.exports = {
       debug(message, id);
       // return callback - passing database object, done boolean.
       return callback(null, db, done);
+    });
+  },
+  /**
+   * close room.
+   *
+   * @param {Object} db
+   * @param {Object} room
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  close: function(db, room, callback) {
+    // get collection.
+    var collection = this.getCollection(db);
+    // get room
+    var id = room._id;
+    // casting id.
+    id = id >> 0;
+    // update room.
+    collection.findAndModify({
+      _id: id
+    }, {
+      $set: {
+        available: true
+      }
+    }, {
+      new: true
+    }, function(error, room, done) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // debug message.
+      var message = done
+        ? '#%d has been closed'
+         : '#%d hasn\'t been closed';
+      // debug room.
+      debug(message, id);
+      // return callback - passing database object, done boolean.
+      return callback(null, db, room);
     });
   },
   /**

@@ -47,7 +47,11 @@
       <div class="container-fluid">
         <div class="row">
           <div class="col-md-12">
-            <%- form %>
+            <% if (form) { %>
+              <%- include('form') %>
+            <% } else { %>
+              please wait...
+            <% } %>
           </div>
         </div>
       </div>
