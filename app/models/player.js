@@ -30,6 +30,7 @@ module.exports = {
    * @return {Function} callback
    */
   add: function(db, player, room, callback) {
+    console.log(room);
     // get collection.
     var collection = this.getCollection(db);
     // get room id.
@@ -37,7 +38,7 @@ module.exports = {
     // casting id.
     id = id >> 0;
     // get position.
-    var position = isNaN(room.left) ? room.available ? 0 : 1 : room.left;
+    var position = room.left > 0 ? room.available ? 0 : 1 : room.left;
     // prepare player object.
     var _player = {
       room: id,
@@ -274,7 +275,7 @@ module.exports = {
         return callback(null, db, players);
       });
     }
-    // : update score && get players.
+    // :
     else {
       var _this = this;
       // increment player score by 1.

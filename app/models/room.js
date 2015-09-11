@@ -65,8 +65,7 @@ module.exports = {
         id++;
         // id is more then zero ? create || update room
         if (id) {
-          // available room found ? make this room 
-          // unavailable : create new room.
+          // get random room.
           _this.getRandomRoom(db, function(error, db, room) {
             // return callback - passing error object.
             if (error) {
@@ -78,14 +77,12 @@ module.exports = {
               var _id = room._id;
               // close room.
               _this.close(db, {
-                id: _id
+                _id: _id
               }, function(error, db, room) {
                 // return callback - passing error object.
                 if (error) {
                   return callback(error);
                 }
-                // debug room.
-                debug('#%d has been closed.', _id);
                 // return callback - passing database object, room object.
                 return callback(null, db, room);
               });
@@ -94,7 +91,7 @@ module.exports = {
             else {
               // create room.
               _this._add(db, {
-                id: id
+                _id: id
               }, function(error, db, room) {
                 // return callback - passing error object.
                 if (error) {
@@ -134,6 +131,8 @@ module.exports = {
       _id: id,
       available: true,
       left: -1
+    }, {
+      fullResult: true
     }, function(error, room) {
       // return callback - passing error object.
       if (error) {
@@ -228,14 +227,14 @@ module.exports = {
   close: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room
+    // get room.
     var id = room._id;
     // casting id.
     id = id >> 0;
     // update room.
     collection.findAndModify({
       _id: id
-    }, {
+    }, [], {
       $set: {
         available: true
       }

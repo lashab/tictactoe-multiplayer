@@ -1,13 +1,21 @@
 {
   "name": "Tictactoe",
+  "description": "Tictactoe game.",
   "version": "0.0.1",
+  "author": {
+    "name": "Lasha Badashvili",
+    "email": "lashab@picktek.com"
+  },
   "private": true,
   "scripts": {
     "start": "nodemon app.js",
     "test": "DEBUG=app,room,game,player,route node app.js"
   },
   "dependencies": {
-    "express": "3.2.6",
-    "ejs": "*"
+    "express": "4.x",
+    "ejs": "*",
+    "mongodb": "*",
+    "socket.io": "*",
+    "connect": "*"
   }
 }

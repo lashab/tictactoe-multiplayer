@@ -7,7 +7,9 @@ var join = require('path').join;
 var url = require('url');
 
 var express = require('express');
+var connect = require('connect');
 var app = express();
+var _app = connect();
 var server = http.Server(app);
 var io = require('socket.io')(server);
 var config = require('config');
@@ -24,18 +26,17 @@ app.set('views', join(__dirname, config.get('tictactoe.views.path')));
 app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
-app.use(express.favicon());
-app.use(express.logger('dev'));
+// _app.use(express.favicon());
+// _app.use(express.logger('dev'));
 app.use(cookieParser());
-app.use(express.session({ secret: 'tictactoeqwerty' }))
-app.use(express.bodyParser());
-app.use(express.methodOverride());
+// _app.use(express.bodyParser());
+// _app.use(express.methodOverride());
 app.use(app.router);
 app.use(express.static(join(__dirname, 'public')));
 
 // development only
 if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
+  // _app.use(express.errorHandler());
 }
 
 var room = require('./app/models/room');
@@ -48,14 +49,6 @@ database.connect(app.get('mongodb'), function(error, db) {
   // routes.
   routes(db, app, function(error) {
     // debug app - passing error object.
-    if (error) {
-      debug(error);
-    }
-  });
-
-  room._add(db, {
-    _id: 12,
-  }, function(error, db, data) {
     if (error) {
       debug(error);
     }

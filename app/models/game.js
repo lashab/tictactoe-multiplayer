@@ -189,7 +189,6 @@ module.exports = {
     var _this = this;
     // create || update room.
     room.add(db, _id, function(error, db, room) {
-      console.log(room);
       // return callback - passing error object.
       if (error) {
         return callback(error);
