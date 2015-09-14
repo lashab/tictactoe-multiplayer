@@ -12,11 +12,6 @@ var game = require('./models/game');
 module.exports = function(db, app, callback) {
   // GET - / (homepage).
   app.get('/', function(request, response) {
-    // render homepage.
-    response.render('index', {
-      title: app.get('title'),
-      body: template.render('home')
-    });
     // debug route.
     debug('homepage has been rendered.');
     // remove cookie id.
@@ -27,6 +22,11 @@ module.exports = function(db, app, callback) {
     response.clearCookie('position');
     // debug route.
     debug('cookie position has been removed.');
+    // render homepage.
+    response.render('index', {
+      title: app.get('title'),
+      body: template.render('home')
+    });
   });
   // GET - /room/:id where :id is room id.
   app.get('/room/:id', function(request, response, next) {

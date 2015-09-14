@@ -16,6 +16,12 @@
     "ejs": "*",
     "mongodb": "*",
     "socket.io": "*",
-    "connect": "*"
+    "connect": "*",
+    "body-parser": "*",
+    "cookie-parser": "*",
+    "serve-favicon": "*",
+    "body-parser": "*",
+    "error-handler": "*",
+    "method-override": "*"
   }
 }

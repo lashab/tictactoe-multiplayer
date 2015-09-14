@@ -7,15 +7,19 @@ var join = require('path').join;
 var url = require('url');
 
 var express = require('express');
-var connect = require('connect');
 var app = express();
-var _app = connect();
+
 var server = http.Server(app);
 var io = require('socket.io')(server);
-var config = require('config');
+
+var favicon = require('serve-favicon');
+var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
-var database = require('mongodb').MongoClient;
+var methodOverride = require('method-override');
+
 var debug = require('debug')('app');
+var config = require('config');
+var database = require('mongodb').MongoClient;
 
 var routes = require('./app/routes');
 var game = require('./app/models/game');
@@ -26,20 +30,14 @@ app.set('views', join(__dirname, config.get('tictactoe.views.path')));
 app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
-// _app.use(express.favicon());
-// _app.use(express.logger('dev'));
+app.use(favicon(join('public', 'images', 'favicon.ico')));
 app.use(cookieParser());
-// _app.use(express.bodyParser());
-// _app.use(express.methodOverride());
-app.use(app.router);
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json());
+app.use(methodOverride());
 app.use(express.static(join(__dirname, 'public')));
-
-// development only
-if ('development' == app.get('env')) {
-  // _app.use(express.errorHandler());
-}
-
-var room = require('./app/models/room');
 
 database.connect(app.get('mongodb'), function(error, db) {
   // debug app - passing error object.
