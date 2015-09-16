@@ -148,7 +148,7 @@ module.exports = {
         return callback(error);
       }
       // return callback - passing database object, game object.
-      return callback(null, db, game);
+      return callback(null, db, game.value);
     });
   },
   /**
@@ -364,11 +364,11 @@ module.exports = {
       // debug message.
       var message = done
         ? 'room #%d - figure has been updated'
-          : 'room #%d - figure hasn\'t updated';
+          : 'room #%d - figure hasn\'t been updated';
       // debug game.
       debug(message, id);
       // return callback - passing database object, game object.
-      return callback(null, db, game);
+      return callback(null, db, game.value);
     });
   },
   /**
@@ -411,7 +411,7 @@ module.exports = {
       // debug game.
       debug(message, id);
       // return callback passing database object, game object. 
-      return callback(null, db, game);
+      return callback(null, db, game.value);
     });
   },
   /**

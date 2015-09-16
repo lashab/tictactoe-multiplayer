@@ -30,7 +30,6 @@ module.exports = {
    * @return {Function} callback
    */
   add: function(db, player, room, callback) {
-    console.log(room);
     // get collection.
     var collection = this.getCollection(db);
     // get room id.
@@ -38,7 +37,7 @@ module.exports = {
     // casting id.
     id = id >> 0;
     // get position.
-    var position = room.left > 0 ? room.available ? 0 : 1 : room.left;
+    var position = room.left < 0 ? room.available ? 0 : 1 : room.left;
     // prepare player object.
     var _player = {
       room: id,
@@ -210,8 +209,8 @@ module.exports = {
         }
         // debug message.
         var message = done
-          ? '#%d room - player %s has been switched.'
-            : '#%d room - player could\'t not be switched.';
+          ? '#%d room - players %s has been switched.'
+            : '#%d room - players could\'t not be switched.';
         // debug player.
         debug(message, player.room, player.name);
       });
@@ -248,7 +247,7 @@ module.exports = {
         return callback(error);
       }
       // return callback - passing database object, data object.
-      return callback(null, db, [players]);
+      return callback(null, db, [players.value]);
     });
   },
   /**
@@ -261,6 +260,7 @@ module.exports = {
    * @return {Function} callback
    */
   updateScore: function(db, room, player, callback) {
+    var _this = this;
     // get collection.
     var collection = this.getCollection(db);
     // player object is empty ?
@@ -277,7 +277,6 @@ module.exports = {
     }
     // :
     else {
-      var _this = this;
       // increment player score by 1.
       collection.findAndModify({
         _id: new objectID(player._id)
@@ -297,7 +296,7 @@ module.exports = {
           ? '#%d room - %s\'s score has been updated.'
             : '#%d room - %s\'s score couldn\'t be updated.';
         // debug player.
-        debug(message, player.room, player.name);
+        debug(message, player.value.room, player.value.name);
         // get players by room.
         _this.getPlayersByRoom(db, room, function(error, db, players) {
           // return callback - passing error object.

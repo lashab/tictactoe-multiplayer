@@ -3,7 +3,7 @@
  * Module dependencies.
  */
 var join = require('path').join;
-var debug = require('debug')('routes');
+var debug = require('debug')('route');
 var template = require('./helpers/template');
 var player = require('./models/player');
 var room = require('./models/room');
@@ -13,15 +13,15 @@ module.exports = function(db, app, callback) {
   // GET - / (homepage).
   app.get('/', function(request, response) {
     // debug route.
-    debug('homepage has been rendered.');
+    debug('clearing cookie id.');
     // remove cookie id.
     response.clearCookie('id');
     // debug route.
-    debug('cookie id has been removed.');
+    debug('clearing cookie position.');
     // remove cookie position.
     response.clearCookie('position');
     // debug route.
-    debug('cookie position has been removed.');
+    debug('rendering homepage.');
     // render homepage.
     response.render('index', {
       title: app.get('title'),
@@ -75,6 +75,8 @@ module.exports = function(db, app, callback) {
       }
     });
   }, function(request, response) {
+    // debug route.
+    debug('rendering room page.');
     // render room page.
     response.render('index', { 
       title: app.get('title'),
@@ -82,8 +84,6 @@ module.exports = function(db, app, callback) {
         form: !request.cookies.position ? true : false
       })
     });
-    // debug route.
-    debug('room page has been rendered.');
   });
   // POST - /join.
   app.post('/join', function(request, response, next) {
@@ -115,7 +115,7 @@ module.exports = function(db, app, callback) {
       // player has been joined ?
       if (player) {
         // debug route.
-        debug('cookie position has been added.');
+        debug('setting cookie position.');
         // set cookie - position.
         response.cookie('position', player.position);
         // debug route.

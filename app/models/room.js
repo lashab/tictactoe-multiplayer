@@ -59,11 +59,9 @@ module.exports = {
         var id = room ? room._id : 0;
         // casting id.
         id = id >> 0;
-        // debug room.
-        debug('- %d', id);
         //increment id by 1.
         id++;
-        // id is more then zero ? create || update room
+        // id is more then zero ?
         if (id) {
           // get random room.
           _this.getRandomRoom(db, function(error, db, room) {
@@ -131,8 +129,6 @@ module.exports = {
       _id: id,
       available: true,
       left: -1
-    }, {
-      fullResult: true
     }, function(error, room) {
       // return callback - passing error object.
       if (error) {
@@ -141,7 +137,7 @@ module.exports = {
       // debug room.
       debug('#%d has been added.', id);
       // return callback - passing database object, room object.
-      return callback(null, db, room);
+      return callback(null, db, room.ops[0]);
     });
   },
   /**
@@ -227,32 +223,26 @@ module.exports = {
   close: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room.
-    var id = room._id;
-    // casting id.
-    id = id >> 0;
+    // get room id && casting id.
+    var id = room._id >> 0;
     // update room.
     collection.findAndModify({
       _id: id
     }, [], {
       $set: {
-        available: true
+        available: false
       }
     }, {
       new: true
-    }, function(error, room, done) {
+    }, function(error, room) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      // debug message.
-      var message = done
-        ? '#%d has been closed'
-         : '#%d hasn\'t been closed';
       // debug room.
-      debug(message, id);
-      // return callback - passing database object, done boolean.
-      return callback(null, db, room);
+      debug('#%d has been closed', id);
+      // return callback - passing database object, room object.
+      return callback(null, db, room.value);
     });
   },
   /**

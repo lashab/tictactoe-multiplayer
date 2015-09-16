@@ -30,7 +30,7 @@ app.set('views', join(__dirname, config.get('tictactoe.views.path')));
 app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
-app.use(favicon(join('public', 'images', 'favicon.ico')));
+app.use(favicon(join(__dirname, 'public', 'images', 'favicon.ico')));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({
   extended: true
@@ -53,19 +53,19 @@ database.connect(app.get('mongodb'), function(error, db) {
   });
 });
 
-// Server listens to port.
+// server listens to port.
 server.listen(app.get('port'));
 
-// SocketIO.
+// socket.io
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(error, db) {
-    // debug error.
+    // debug error passing error object.
     if (error) {
       debug(error);
     }
     // run game.
     game.run(db, io, socket, function(error) {
-      // if error happens debug it.
+      // debug error passing error object.
       if (error) {
         debug(error);
       }
