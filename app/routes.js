@@ -40,24 +40,44 @@ module.exports = function(db, app, callback) {
       if (error) {
         return callback(error);
       }
-      // player length > 0 
+      // player length ?
       if (players.length) {
         // cookie position couldn't be found ?
         if (!request.cookies.position) {
-          // close room.
-          room.close(db, {
+          // get room.
+          room.getRoomById(db, {
             _id: id
           }, function(error, db, room) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
-            // set cookie - id.
-            response.cookie('id', id);
-            // debug route.
-            debug('cookie id has been setted.')
-            // continue.
-            next();
+            console.log(room);
+            if (room.available) {
+              // close room.
+              room.close(db, {
+                _id: id
+              }, function(error, db, room) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // debug route.
+                debug('setting cookie id.');
+                // set cookie - id.
+                response.cookie('id', id);
+                // continue.
+                next();
+              });
+            }
+            else {
+              // debug route.
+              debug('room #%d is full.', id);
+              // debug route.
+              debug('back to homepage.');
+              // back to homepage.
+              response.redirect('..');
+            }
           });
         }
         // :
@@ -114,14 +134,14 @@ module.exports = function(db, app, callback) {
       if (error) {
         return callback(error);
       }
-      // player has been joined ?
+      // player has joined ?
       if (player) {
         // debug route.
         debug('setting cookie position.');
         // set cookie - position.
         response.cookie('position', player.position);
         // debug route.
-        debug('redirecting to #%d room.', player.redirect);
+        debug('redirecting to #%d room.', player.room);
         // redirect.
         response.redirect(player.redirect);
       }

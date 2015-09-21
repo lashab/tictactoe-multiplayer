@@ -207,6 +207,7 @@ module.exports = {
             var id = room._id;
             // prepare redirect object.
             var redirect = {
+              room: id,
               redirect: join('room', '' + id),
               position: player.position
             };

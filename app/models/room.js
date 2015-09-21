@@ -69,7 +69,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            // room is avaiable ?
+            // room is available ?
             if (room) {
               // get room id.
               var _id = room._id;
