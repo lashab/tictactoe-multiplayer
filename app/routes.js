@@ -45,7 +45,9 @@ module.exports = function(db, app, callback) {
         // cookie position couldn't be found ?
         if (!request.cookies.position) {
           // close room.
-          room.close(db, id, function(error, db, room) {
+          room.close(db, {
+            _id: id
+          }, function(error, db, room) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
