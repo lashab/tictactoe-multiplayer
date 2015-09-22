@@ -243,7 +243,7 @@ module.exports = {
       }
     }, {
       new: true
-    }, function(error, players, done) {
+    }, function(error, players) {
       // return callback - passing error object.
       if (error) {
         return callback(error);

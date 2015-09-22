@@ -961,8 +961,9 @@
       var _c_groupOriginCenter = _c_square.getPointByOrigin('center', 'center');
       // coordinates object.
       var coordinates = {};
-      // set coordinates for c = 2 case.
+      // c = 2 ?
       if (c === 2) {
+        // set coordinates.
         coordinates = {
           x1: _a_groupOriginCenter.x - _a_squareWidth,
           y1: _a_groupOriginCenter.y,
@@ -970,8 +971,9 @@
           y2: _c_groupOriginCenter.y
         };
       }
-      // set coordinates for c = 4 case.
+      // c = 4 ?
       else if (c === 4) {
+        // set coordinates.
         coordinates = {
           x1: _a_groupOriginCenter.x + _a_squareWidth,
           y1: _a_groupOriginCenter.y - _a_squareHeight,
@@ -979,8 +981,9 @@
           y2: _c_groupOriginCenter.y + _c_squareHeight
         };
       }
-      // set coordinates for c = 6 case.
+      // c = 6 ?
       else if (c === 6) {
+        // set coordinates.
         coordinates = {
           x1: _a_groupOriginCenter.x,
           y1: _a_groupOriginCenter.y - _a_squareHeight,
@@ -988,8 +991,9 @@
           y2: _c_groupOriginCenter.y + _c_squareHeight
         };
       }
-      // set coordinates for c = 8 case.
+      // c = 8 ?
       else if (c === 8) {
+        // set coordinates.
         coordinates = {
           x1: _a_groupOriginCenter.x - _a_squareWidth,
           y1: _a_groupOriginCenter.y - _a_squareHeight,
@@ -1132,8 +1136,8 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        // check for players property.
-        if (data.hasOwnProperty('players')) {
+        // data has room property && left value => 0 ?
+        if (data.hasOwnProperty('room') && data.room.left >= 0) {
           _this
           // set room.
           .set('room', data.room)
@@ -1149,7 +1153,7 @@
           .restart();
         }
         _this
-          // set waiting property.
+          // set waiting.
           .set('waiting', true)
           // wait for player.
           .waitForPlayer({
@@ -1166,9 +1170,9 @@
       // socket event - players:switch.
       .on('players:switch', function(data) {
         _this
-          // set game property.
+          // set game.
           .set('game', data.game)
-          // set players property.
+          // set players.
           .set('players', data.players)
           // set active player.
           .setActivePlayer();
@@ -1176,9 +1180,9 @@
       // restart event.
       .on('game:restart', function(data) {
         _this
-          // set game object.
+          // set game.
           .set('game', data.game)
-          // set players object.
+          // set players.
           .set('players', data.players)
           // draw cross out.
           .drawCrossOut(data.combination)
