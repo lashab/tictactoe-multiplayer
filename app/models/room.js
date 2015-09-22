@@ -158,18 +158,20 @@ module.exports = {
       _id: id
     }, {
       single: true
-    }, function(error, done) {
+    }, function(error, document) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get ok value.
+      var done = document.result.ok;
       // debug message.
       var message = done 
         ? '#%d has been removed'
           : '#%d hasn\'t been removed';
       // debug player.
       debug(message, id);
-      // return callback - passing database object done boolean.
+      // return callback - passing database object, done boolean.
       return callback(null, db, done);
     });
   },
@@ -190,26 +192,30 @@ module.exports = {
     // casting id.
     id = id >> 0;
     // update room.
-    collection.update({
+    collection.findAndModify({
       _id: id
-    }, {
+    }, [], {
       $set: {
         available: true,
         left: player.position
       }
-    }, function(error, done) {
+    }, {
+      new: true
+    }, function(error, room) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get ok.
+      var done = room.ok;
       // debug message.
       var message = done
         ? '#%d has been opened'
          : '#%d hasn\'t been opened';
       // debug room.
       debug(message, id);
-      // return callback - passing database object, done boolean.
-      return callback(null, db, done);
+      // return callback - passing database object, room object.
+      return callback(null, db, room.value);
     });
   },
   /**

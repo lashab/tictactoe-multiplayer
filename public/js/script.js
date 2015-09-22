@@ -1135,6 +1135,8 @@
         // check for players property.
         if (data.hasOwnProperty('players')) {
           _this
+          // set room.
+          .set('room', data.room)
           // set game.
           .set('game', data.game)
           // set players.

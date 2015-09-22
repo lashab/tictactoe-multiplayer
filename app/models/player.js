@@ -103,11 +103,13 @@ module.exports = {
       _id: new objectID(player._id)
     }, {
       single: true
-    }, function(error, done) {
+    }, function(error, document) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get result.
+      var done = document.result.ok;
       // debug message.
       var message = done
         ? '%s has been removed'

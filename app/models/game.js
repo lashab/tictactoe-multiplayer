@@ -299,25 +299,28 @@ module.exports = {
         }
         // :
         else {
-          // open room (make room avaialable).
-          room.open(db, _player, _room, function(error, db, done) {
+          // open room.
+          room.open(db, _player, _room, function(error, db, room) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
+            // reset player.
             player.reset(db, _room, function(error, db, players) {
               // return callback - passing error object.
               if (error) {
                 return callback(error);
               }
+              // reset game.
               _this.reset(db, _room, function(error, db, game) {
                 // return callback - passing error object.
                 if (error) {
                   return callback(error);
                 }
                 var _data = {
-                  players: players,
-                  game: game
+                  room: room,
+                  game: game,
+                  players: players
                 };
                 // return callback - passing database object, data object.
                 return callback(null, db, _data);
@@ -585,6 +588,9 @@ module.exports = {
         // socket dissconect.
         socket.disconnect();
       });
+    })
+    .on('error', function(error) {
+      console.log(error);
     })
   }
 };

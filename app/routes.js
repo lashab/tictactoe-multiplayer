@@ -45,15 +45,13 @@ module.exports = function(db, app, callback) {
         // cookie position couldn't be found ?
         if (!request.cookies.position) {
           // get room.
-          room.getRoomById(db, {
-            _id: id
-          }, function(error, db, room) {
+          room.getRoomById(db, id, function(error, db, _room) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
-            console.log(room);
-            if (room.available) {
+            // room is available ?
+            if (_room.available) {
               // close room.
               room.close(db, {
                 _id: id
@@ -70,6 +68,7 @@ module.exports = function(db, app, callback) {
                 next();
               });
             }
+            // :
             else {
               // debug route.
               debug('room #%d is full.', id);
