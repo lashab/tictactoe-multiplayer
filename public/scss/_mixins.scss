@@ -4,10 +4,28 @@
   transition: $arguments;
 }
 
-@mixin animation($arguments...) {
-  -webkit-animation: $arguments;
-     -moz-animation: $arguments;
-      -ms-animation: $arguments;
-       -o-animation: $arguments;
-          animation: $arguments;
+@mixin animation($animation, $duration, $iteration-count: null) {
+  -webkit-animation: $animation $duration $iteration-count;
+     -moz-animation: $animation $duration $iteration-count;
+      -ms-animation: $animation $duration $iteration-count;
+       -o-animation: $animation $duration $iteration-count;
+          animation: $animation $duration $iteration-count;
+}
+
+@mixin keyframes($animation) {
+  @-webkit-keyframes #{$animation} {
+    @content; 
+  }
+  @-moz-keyframes #{$animation} {
+    @content;
+  }
+  @-ms-keyframes #{$animation} {
+    @content;
+  }
+  @-o-keyframes #{$animation} {
+    @content;
+  }
+  @keyframes #{$animation} {
+    @content;
+  } 
 }

@@ -1,9 +1,9 @@
 body {
-  -webkit-animation: fadein, 1.5s;
-  -moz-animation: fadein, 1.5s;
-  -ms-animation: fadein, 1.5s;
-  -o-animation: fadein, 1.5s;
-  animation: fadein, 1.5s; }
+  -webkit-animation: fadein 1.5s;
+  -moz-animation: fadein 1.5s;
+  -ms-animation: fadein 1.5s;
+  -o-animation: fadein 1.5s;
+  animation: fadein 1.5s; }
   html, body .container-fluid,
   body .container-fluid > .row, body {
     width: 100%;
@@ -11,14 +11,93 @@ body {
     margin: 0;
     padding: 0; }
 
+@-webkit-keyframes fadein {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@-moz-keyframes fadein {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@-ms-keyframes fadein {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@-o-keyframes fadein {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@keyframes fadein {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+.figures {
+  width: 30%;
+  margin: 15px auto; }
+  .figures > .figure {
+    width: 30%; }
+    .figures > .figure-x {
+      -webkit-animation: x-o 15s infinite;
+      -moz-animation: x-o 15s infinite;
+      -ms-animation: x-o 15s infinite;
+      -o-animation: x-o 15s infinite;
+      animation: x-o 15s infinite; }
+
+    .figures > .figure-o {
+      -webkit-animation: x-o 10s infinite;
+      -moz-animation: x-o 10s infinite;
+      -ms-animation: x-o 10s infinite;
+      -o-animation: x-o 10s infinite;
+      animation: x-o 10s infinite; }
+
+@-webkit-keyframes x-o {
+  0% {
+    opacity: 0.5; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 0.5; } }
+@-moz-keyframes x-o {
+  0% {
+    opacity: 0.5; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 0.5; } }
+@-ms-keyframes x-o {
+  0% {
+    opacity: 0.5; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 0.5; } }
+@-o-keyframes x-o {
+  0% {
+    opacity: 0.5; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 0.5; } }
+@keyframes x-o {
+  0% {
+    opacity: 0.5; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 0.5; } }
 .id-join {
   margin-top: 50px; }
   .id-join .form-group > div {
     margin: 0 auto;
     float: none; }
-  @media (min-width: 992px) {
-    .id-join div {
-      width: 20%; } }
+    @media (min-width: 992px) {
+      .id-join .form-group > div {
+        width: 20%; } }
   .id-join button {
     display: block;
     margin: 25px auto;
@@ -34,5 +113,10 @@ body {
       color: #fff;
       background-color: #5CB85C;
       outline: none !important; }
+  .id-join .alert {
+    display: none;
+    margin-top: 5px;
+    padding: 5px;
+    text-align: center; }
 
 /*# sourceMappingURL=style.css.map */
