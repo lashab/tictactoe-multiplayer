@@ -1,0 +1,13 @@
+@mixin transition($arguments...) {
+  -webkit-transition: $arguments;
+  -o-transition: $arguments;
+  transition: $arguments;
+}
+
+@mixin animation($arguments...) {
+  -webkit-animation: $arguments;
+     -moz-animation: $arguments;
+      -ms-animation: $arguments;
+       -o-animation: $arguments;
+          animation: $arguments;
+}
