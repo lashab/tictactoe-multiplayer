@@ -1,3 +1,7 @@
+/* transition mixin. */
+/* animation mixin. */
+/* keyframes mixin. */
+/* page body. */
 body {
   -webkit-animation: fadein 1.5s;
   -moz-animation: fadein 1.5s;
@@ -36,6 +40,7 @@ body {
     opacity: 0; }
   100% {
     opacity: 1; } }
+/* animated figures. */
 .figures {
   width: 30%;
   margin: 15px auto; }
@@ -59,37 +64,38 @@ body {
   0% {
     opacity: 0.5; }
   50% {
-    opacity: 0; }
+    opacity: 0.1; }
   100% {
     opacity: 0.5; } }
 @-moz-keyframes x-o {
   0% {
     opacity: 0.5; }
   50% {
-    opacity: 0; }
+    opacity: 0.1; }
   100% {
     opacity: 0.5; } }
 @-ms-keyframes x-o {
   0% {
     opacity: 0.5; }
   50% {
-    opacity: 0; }
+    opacity: 0.1; }
   100% {
     opacity: 0.5; } }
 @-o-keyframes x-o {
   0% {
     opacity: 0.5; }
   50% {
-    opacity: 0; }
+    opacity: 0.1; }
   100% {
     opacity: 0.5; } }
 @keyframes x-o {
   0% {
     opacity: 0.5; }
   50% {
-    opacity: 0; }
+    opacity: 0.1; }
   100% {
     opacity: 0.5; } }
+/* join form. */
 .id-join {
   margin-top: 50px; }
   .id-join .form-group > div {
@@ -118,5 +124,65 @@ body {
     margin-top: 5px;
     padding: 5px;
     text-align: center; }
+
+/* canvas. */
+.x-o-canvas {
+  padding: 0 !important; }
+  .x-o-canvas > div {
+    margin: 0 auto; }
+
+/* players. */
+.players {
+  margin-top: 15px; }
+  .players > .caption {
+    margin: 0 10px; }
+    .players > .caption .badge {
+      background-color: #5CB85C; }
+  .players:not(.is-mobile) > .caption > p {
+    margin: 5px; }
+    .players:not(.is-mobile) > .caption > p:first-child {
+      font-size: 1.2em; }
+    .players:not(.is-mobile) > .caption > p:last-child > span {
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 1em; }
+  .players.is-mobile {
+    position: absolute;
+    margin: 0;
+    padding: 0; }
+    .players.is-mobile > .caption > p {
+      margin: 0; }
+    .players.is-mobile.id-player-1 {
+      right: 0; }
+  .players .badge-loosing {
+    background-color: #F70047 !important; }
+  .players .badge-winning {
+    background-color: #5CB85C !important; }
+
+/* leave icon. */
+.glyphicon-menu-left {
+  position: absolute !important;
+  top: 50% !important;
+  left: .5%;
+  font-size: 6em;
+  color: #04ABDC;
+  cursor: pointer;
+  z-index: 5000; }
+  .glyphicon-menu-left:hover {
+    color: #F70047; }
+
+/* volume icon. */
+.glyphicon-volume {
+  position: absolute !important;
+  top: initial !important;
+  right: 5px !important;
+  bottom: 5px !important;
+  font-size: 3em;
+  cursor: pointer; }
+  .glyphicon-volume-off, .glyphicon-volume-up:hover {
+    color: #F70047; }
+
+  .glyphicon-volume-up, .glyphicon-volume-off:hover {
+    color: #04ABDC; }
 
 /*# sourceMappingURL=style.css.map */

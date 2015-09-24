@@ -1,3 +1,9 @@
+// --------------------------------------------------------
+// Project: Tictactoe
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// --------------------------------------------------------
+
 ;(function($) {
   'use strict';
   /**

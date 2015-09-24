@@ -1,3 +1,9 @@
+// --------------------------------------------------------
+// Project: Tictactoe
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// --------------------------------------------------------
+
 'use strict';
 /**
  * Module dependencies.
@@ -6,7 +12,6 @@ var join = require('path').join;
 var debug = require('debug')('game');
 var player = require('./player');
 var room = require('./room');
-var $ = require('./../helpers/common');
 
 module.exports = {
   collection: 'games',

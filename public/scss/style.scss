@@ -1,5 +1,12 @@
+// --------------------------------------------------------
+// Project: Tictactoe
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// --------------------------------------------------------
+
 @import '_mixins';
 
+/* page body. */
 body {
   @at-root {
     html, & {
@@ -21,7 +28,7 @@ body {
   0% { opacity: 0; }
   100% { opacity: 1; } 
 }
-
+/* animated figures. */
 .figures {
   $width: 30%;
   width: $width;
@@ -41,10 +48,10 @@ body {
 
 @include keyframes(x-o) {
   0%   { opacity: 0.5; }
-  50%  { opacity: 0; }
+  50%  { opacity: 0.1; }
   100% { opacity: 0.5; }
 }
-
+/* join form. */
 .id-join {
   margin-top: 50px;
   .form-group {
@@ -86,4 +93,94 @@ body {
     text-align: center;
   }
 }
-
+/* canvas. */
+.x-o-canvas {
+  $size: 0;
+  padding: $size !important;
+  > div {
+    margin: $size auto;
+  }
+}
+/* players. */
+.players {
+  $badge: 'badge';
+  $caption: 'caption';
+  margin-top: 15px;
+  > .#{$caption} {
+    margin: 0 10px;
+    .#{$badge} {
+      background-color: $color-green;
+    }
+  }
+  &:not(.is-mobile) {
+    > .#{$caption} {
+      > p {
+        margin: 5px;
+        &:first-child {
+          font-size: 1.2em;
+        }
+        &:last-child {
+          > span {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 1em;
+          }
+        }
+      }
+    }
+  }
+  &.is-mobile {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    > .#{$caption} {
+      > p {
+        margin: 0;
+      }
+    }
+    @at-root {
+      &.id-player-1 {
+        right: 0;
+      }
+    }
+  }
+  .#{$badge}-loosing {
+    background-color: $color-rose !important;
+  }
+  .#{$badge}-winning {
+    background-color: $color-green !important; 
+  }
+}
+/* leave icon. */
+.glyphicon-menu-left {
+  $color-blue: #04ABDC !global;
+  position: absolute !important;
+  top: 50% !important;
+  left: .5%;
+  font-size: 6em;
+  color: $color-blue;
+  cursor: pointer;
+  z-index: 5000;
+  &:hover {
+    color: $color-rose;
+  }
+}
+/* volume icon. */
+.glyphicon-volume {
+  position: absolute !important;
+  top: initial !important; 
+  right: 5px !important;
+  bottom: 5px !important;
+  font-size: 3em;
+  cursor: pointer;
+  @at-root {
+    &-off,
+    &-up:hover {
+      color: $color-rose;
+    }
+    &-up,
+    &-off:hover {
+      color: $color-blue;
+    }
+  }
+}
