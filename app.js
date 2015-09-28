@@ -57,6 +57,7 @@ database.connect(app.get('mongodb'), function(error, db) {
 server.listen(app.get('port'));
 
 // socket.io
+var clients = [];
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(error, db) {
     // debug error passing error object.

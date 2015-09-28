@@ -10,8 +10,10 @@
  */
 var join = require('path').join;
 var debug = require('debug')('game');
+var _ = require('underscore');
 var player = require('./player');
 var room = require('./room');
+var clients = [];
 
 module.exports = {
   collection: 'games',
@@ -478,6 +480,14 @@ module.exports = {
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);
             }
+            var _player = players[players.length - 1];
+
+            for (var i = 0; i < players.length; i++) {
+              if (!_.isEqual(clients[i], _player)) {
+                clients.push(_player);
+              }
+            }
+
             // socket emit - player:init - passing players object.
             io.in(id).emit('players:init', players);
           });
@@ -596,6 +606,13 @@ module.exports = {
     })
     .on('error', function(error) {
       console.log(error);
+    })
+    .on('disconnect', function() {
+      var client = _.filter(clients, function(client) {
+        return client.room === 2;
+      });
+
+      console.log(client);
     })
   }
 };

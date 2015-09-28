@@ -250,8 +250,9 @@
    */
   Game.prototype.playerLeave = function() {
     var _this = this;
+    var close = $('.glyphicon-menu-left');
     // add click event.
-    $('.glyphicon-menu-left').click(function(e) {
+    close.click(function(e) {
       // get room object.
       var room = _this.getRoom();
       // get player object.
@@ -1210,7 +1211,6 @@
 
   // make sure page is loaded.
   $(function() {
-
     var width = window.innerWidth - (window.innerWidth - window.innerHeight);
 
     var height = window.innerHeight;
@@ -1239,7 +1239,6 @@
       .playerLeave();
     // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
-
   });
 
 })(jQuery);

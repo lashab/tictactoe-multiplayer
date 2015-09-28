@@ -135,6 +135,9 @@ module.exports = function(db, app, callback) {
       }
       // player has joined ?
       if (player) {
+        if (!id) {
+          response.cookie('id', player.room);
+        }
         // debug route.
         debug('setting cookie position.');
         // set cookie - position.
