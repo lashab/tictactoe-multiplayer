@@ -13,7 +13,7 @@ var debug = require('debug')('game');
 var _ = require('underscore');
 var player = require('./player');
 var room = require('./room');
-var clients = [];
+var cookie = require('cookie');
 
 module.exports = {
   collection: 'games',
@@ -433,8 +433,10 @@ module.exports = {
    * @param {Object} socket
    * @return {Function} callback
    */
-  run: function(db, io, socket, callback) {
+  run: function(db, io, socket, cookies, callback) {
     var _this = this;
+    var __players = [];
+    var __room = {};
     // socket event - player:join.
     socket.on('player:join', function(_room) {
       // get room id.
@@ -449,6 +451,8 @@ module.exports = {
         debug('room initialize');
         // socket join by room id.
         socket.join(id);
+        // assign room.
+        __room = room;
         // socket emit - room:init - passing room object.
         io.in(id).emit('room:init', room);
         // get game by room.
@@ -480,14 +484,8 @@ module.exports = {
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);
             }
-            var _player = players[players.length - 1];
-
-            for (var i = 0; i < players.length; i++) {
-              if (!_.isEqual(clients[i], _player)) {
-                clients.push(_player);
-              }
-            }
-
+            // assign players.
+            __players = players;
             // socket emit - player:init - passing players object.
             io.in(id).emit('players:init', players);
           });
@@ -580,39 +578,33 @@ module.exports = {
     })
     // player:leave event.
     .on('player:leave', function(data) {
-      // get room object.
-      var room = data.room;
-      // get player object.
-      var _player = data.player;
-      // leave game.
-      _this.leave(db, _player, room, function(error, db, data) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
-        }
-        if (!room.available && typeof data === 'object') {
-          // get waiting object.
-          var waiting = player.waiting(_player.position);
-          // add waiting object.
-          data.waiting = waiting;
-          // socket emit - player:waiting - passing waiting object.
-          socket.broadcast.in(room._id).emit('player:waiting', data);
-        }
-        // socket emit - game:leave.
-        socket.emit('player:leave');
-        // socket dissconect.
-        socket.disconnect();
-      });
+
     })
     .on('error', function(error) {
       console.log(error);
     })
     .on('disconnect', function() {
-      var client = _.filter(clients, function(client) {
-        return client.room === 2;
+      var _player = _.filter(__players, function(player) {
+        var _cookie = cookie.parse(socket.handshake.headers.cookie);
+        return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
+      })[0];
+      if (_player) {
+      // leave game.
+      _this.leave(db, _player, __room, function(error, db, data) {
+        // return callback - passing error object.
+        if (error) {
+          return callback(error);
+        }
+        if (!__room.available && typeof data === 'object') {
+          // get waiting object.
+          var waiting = player.waiting(_player.position);
+          // add waiting object.
+          data.waiting = waiting;
+          // socket emit - player:waiting - passing waiting object.
+          socket.broadcast.in(__room._id).emit('player:waiting', data);
+        }
       });
-
-      console.log(client);
+    }
     })
   }
 };

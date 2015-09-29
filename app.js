@@ -13,9 +13,9 @@ var server = http.Server(app);
 var io = require('socket.io')(server);
 
 var favicon = require('serve-favicon');
-var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
-var methodOverride = require('method-override');
+var body = require('body-parser');
+var cookies = require('cookie-parser');
+var method = require('method-override');
 
 var debug = require('debug')('app');
 var config = require('config');
@@ -31,12 +31,12 @@ app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
 app.use(favicon(join(__dirname, 'public', 'images', 'favicon.ico')));
-app.use(cookieParser());
-app.use(bodyParser.urlencoded({
+app.use(cookies());
+app.use(body.urlencoded({
   extended: true
 }));
-app.use(bodyParser.json());
-app.use(methodOverride());
+app.use(body.json());
+app.use(method());
 app.use(express.static(join(__dirname, 'public')));
 
 database.connect(app.get('mongodb'), function(error, db) {
@@ -57,7 +57,6 @@ database.connect(app.get('mongodb'), function(error, db) {
 server.listen(app.get('port'));
 
 // socket.io
-var clients = [];
 io.on('connection', function (socket) {
   database.connect(app.get('mongodb'), function(error, db) {
     // debug error passing error object.

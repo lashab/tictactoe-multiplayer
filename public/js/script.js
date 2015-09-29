@@ -1200,10 +1200,20 @@
           // restart game.
           .restart();
       })
-      .on('player:leave', function() {
-        // back to homepage.
-        window.location.replace('/');
-      });
+      .on('player:leave', function(player) {
+        if (player) {
+          // get room object.
+          var room = _this.getRoom();
+          // socket emit - player:leave - passing object.
+          _this.socket.emit('player:leave', {
+            room: room,
+            player: player
+          });
+        }
+      })
+      .on('disconnect', function() {
+        // window.location.replace('/');
+      })
    })
   
    return this; 
