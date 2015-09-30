@@ -253,15 +253,8 @@
     var close = $('.glyphicon-menu-left');
     // add click event.
     close.click(function(e) {
-      // get room object.
-      var room = _this.getRoom();
-      // get player object.
-      var player = _this.getPlayerByPosition();
-      // socket emit - player:leave - passing object.
-      _this.socket.emit('player:leave', {
-        room: room,
-        player: player
-      });
+      _this.socket.disconnect();
+      window.location.replace('/');
     });
 
     return this;
@@ -1103,6 +1096,9 @@
           // set room.
           .set('room', room);
       })
+      .on('re', function() {
+        socket.emit('re');
+      })
       // socket event - game:init.
       .on('game:init', function(game) {
         _this
@@ -1131,7 +1127,6 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        console.log(data);
         // data has room property && left value => 0 ?
         if (data.hasOwnProperty('room') && data.room.left >= 0) {
           _this
@@ -1199,9 +1194,6 @@
             player: player
           });
         }
-      })
-      .on('disconnect', function() {
-        // window.location.replace('/');
       })
    })
   
