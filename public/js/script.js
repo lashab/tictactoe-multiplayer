@@ -292,8 +292,6 @@
           .next()
             .children(':first-child')
               .text(player.name)
-              .end()
-            .addClass('whole-in')
             .end()
           .end()
           .addClass('show');
@@ -308,26 +306,16 @@
    * @return {Object} this
    */
   Game.prototype.waitForPlayer = function (data) {
-    // get waiting object.
     var waiting = data.waiting;
-    // get waiting position.
-    var position = waiting.position;
     // get player element.
-    var player = $('.id-player-' + position);
+    var _player = $('.id-player-' + waiting.position);
     // open modal.
     $('.tic-tac-toe-m').modal();
-    // set waiting by position.
-    $('.id-player-' + waiting.position).children(':first-child')
-      .prop('src', waiting.image)
-      .next()
-        .removeClass('whole-in')
-        .end()
-      .end()
-      .children(':last-child')
-        .removeClass('whole-in')
-        .end()
-      .addClass('player-waiting')
-      .addClass('show');
+
+    _player.children(':first-child').prop('src', waiting.image);
+    _player.find('.id-name').empty();
+    _player.find('.id-badge').children().empty();
+    _player.addClass('player-waiting').addClass('show');
 
     return this;
   }
@@ -343,20 +331,20 @@
     var position = player.active ? player.position : ~~!player.position;
     // get waiting value.
     var isWaiting = this.isWaiting();
-    // prepare fade-in class.
-    var fadeIn = 'whole-in';
-    // prepare fade-out class.
-    var fadeOut = 'half-in';
+    // prepare fade-in (opacity - 1) class.
+    var fadeIn = 'fade-in-1-1';
+    // prepare fade-in (opacity - .5) class.
+    var _fadeIn = 'fade-in-5-10';
     // player is active && not waiting state ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
     // player active - add fade-in && remove fade-out class.
     $('div[class*=id-player-' + position + ']')
       .toggleClass(fadeIn, true)
-      .toggleClass(fadeOut, false);
+      .toggleClass(_fadeIn, false);
     // player inactive - remove fade-in && add fade-out class.
     $('div[class*=id-player-' + ~~!position + ']')
       .toggleClass(fadeIn, false)
-      .toggleClass(fadeOut, true);
+      .toggleClass(_fadeIn, true);
 
     return this;
   }
@@ -1143,6 +1131,7 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
+        console.log(data);
         // data has room property && left value => 0 ?
         if (data.hasOwnProperty('room') && data.room.left >= 0) {
           _this

@@ -28,6 +28,17 @@ body {
   0% { opacity: 0; }
   100% { opacity: 1; } 
 }
+/* fade in effects */
+.fade-in-1-1 {
+  @include fadein(100)
+}
+.fade-in-5-10:not(.player-waiting) {
+  @include fadein(50);
+}
+.fade-effect:not(.player-waiting) {
+  opacity: 0;
+  @include transition(opacity .4s ease-in);
+}
 /* animated figures. */
 .figures {
   $width: 30%;

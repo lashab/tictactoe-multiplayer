@@ -36,3 +36,8 @@
     @content;
   } 
 }
+/* fadein mixin. */
+@mixin fadein($opacity) {
+  filter: alpha(opacity=$opacity) !important;
+  opacity: $opacity / 100 !important;
+}

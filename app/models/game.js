@@ -584,8 +584,8 @@ module.exports = {
       console.log(error);
     })
     .on('disconnect', function() {
+      var _cookie = cookie.parse(socket.handshake.headers.cookie);
       var _player = _.filter(__players, function(player) {
-        var _cookie = cookie.parse(socket.handshake.headers.cookie);
         return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
       })[0];
       if (_player) {
