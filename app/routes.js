@@ -99,7 +99,7 @@ module.exports = function(db, app, callback) {
     // debug route.
     debug('rendering room page.');
     // render room page.
-    response.render('index', { 
+    response.render('index', {
       title: app.get('title'),
       body: template.render('room', {
         form: !request.cookies.position ? true : false

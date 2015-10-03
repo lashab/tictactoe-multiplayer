@@ -1,11 +1,14 @@
 {
   "tictactoe": {
-    "title": "Tic Tac Toe",
+    "title": "TicTacToe",
     "views": {
       "path": "app/views"
     },
     "mongodb": {
       "url": "mongodb://localhost/tictactoe"
+    },
+    "cookie": {
+      "key": "TIC09TAC06TOE92"
     },
     "port": 3000
   }

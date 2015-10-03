@@ -13,9 +13,9 @@ var server = http.Server(app);
 var io = require('socket.io')(server);
 
 var favicon = require('serve-favicon');
-var body = require('body-parser');
-var cookies = require('cookie-parser');
-var method = require('method-override');
+var bodyParse = require('body-parser');
+var cookieParse = require('cookie-parser');
+var methodOverride = require('method-override');
 
 var debug = require('debug')('app');
 var config = require('config');
@@ -29,14 +29,15 @@ app.set('port', process.env.PORT || config.get('tictactoe.port'));
 app.set('views', join(__dirname, config.get('tictactoe.views.path')));
 app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
+app.set('ckey', config.get('tictactoe.cookie.key'));
 app.set('view engine', 'ejs');
 app.use(favicon(join(__dirname, 'public', 'images', 'favicon.ico')));
-app.use(cookies());
-app.use(body.urlencoded({
+app.use(cookieParse(app.get('ckey')));
+app.use(bodyParse.urlencoded({
   extended: true
 }));
-app.use(body.json());
-app.use(method());
+app.use(bodyParse.json());
+app.use(methodOverride());
 app.use(express.static(join(__dirname, 'public')));
 
 database.connect(app.get('mongodb'), function(error, db) {
@@ -55,9 +56,20 @@ database.connect(app.get('mongodb'), function(error, db) {
 
 // server listens to port.
 server.listen(app.get('port'));
-
 // socket.io
+var _socket;
 io.on('connection', function (socket) {
+    _socket = socket.id;
+    socket.on('disconnect', function() {
+      setTimeout(function() {
+        if (_socket === socket.id) {
+          console.log('client disconnected!')
+        }
+        else {
+          console.log('client reconnected!');
+        }
+      }, 5000);
+    });
   database.connect(app.get('mongodb'), function(error, db) {
     // debug error passing error object.
     if (error) {
@@ -72,5 +84,3 @@ io.on('connection', function (socket) {
     });
   });
 });
-
-

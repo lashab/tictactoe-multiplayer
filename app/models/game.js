@@ -77,8 +77,8 @@ module.exports = {
           }
         });
         // debug message.
-        var message = done 
-          ? 'for #%d room has been added.' 
+        var message = done
+          ? 'for #%d room has been added.'
             : 'for #%d room hasn\'t been added.';
         // debug game.
         debug(message, id);
@@ -269,7 +269,7 @@ module.exports = {
       if (error) {
         return callback(error);
       }
-      // player has been removed ? 
+      // player has been removed ?
       if (done) {
         // room is avaialable ?
         if (_room.available) {
@@ -279,7 +279,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            // room has been removed ? 
+            // room has been removed ?
             if (done) {
               // remove game.
               _this.remove(db, _room, function(error, db, done) {
@@ -421,7 +421,7 @@ module.exports = {
          : 'room #%d - targets hasn\'t been updated';
       // debug game.
       debug(message, id);
-      // return callback passing database object, game object. 
+      // return callback passing database object, game object.
       return callback(null, db, game.value);
     });
   },
@@ -433,7 +433,7 @@ module.exports = {
    * @param {Object} socket
    * @return {Function} callback
    */
-  run: function(db, io, socket, cookies, callback) {
+  run: function(db, io, socket, session, callback) {
     var _this = this;
     var __players = [];
     // socket event - player:join.
@@ -470,7 +470,7 @@ module.exports = {
             }
             // debug game.
             debug('players initialize');
-            // players === 1 ? 
+            // players === 1 ?
             if (players.length === 1) {
               // get waiting object.
               var waiting = player.waiting(~~!players[0].position);
@@ -566,48 +566,51 @@ module.exports = {
             // socket emit - game:restart - passing object.
             io.in(game.room).emit('game:restart', {
               game: game,
-              players: players, 
+              players: players,
               combination: data.combination
             });
           });
         });
       });
     })
-    // player:leave event.
-    .on('player:leave', function(data) {
-      console.log(data);
-    })
+    //
     .on('error', function(error) {
       console.log(error);
     })
-    .on('disconnect', function() {
-      var _player = _.filter(__players, function(player) {
-        var _cookie = cookie.parse(socket.handshake.headers.cookie);
-        return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
-      })[0];
-      if (_player) {
-        room.getRoomById(db, _player.room, function(error, db, room) {
-          // return callback - passing error object.
-          if (error) {
-            return callback(error);
-          }
-          // leave game.
-          _this.leave(db, _player, room, function(error, db, data) {
-            // return callback - passing error object.
-            if (error) {
-              return callback(error);
-            }
-            if (!room.available && typeof data === 'object') {
-              // get waiting object.
-              var waiting = player.waiting(_player.position);
-              // add waiting object.
-              data.waiting = waiting;
-              // socket emit - player:waiting - passing waiting object.
-              socket.broadcast.in(room._id).emit('player:waiting', data);
-            }
-          });
-        })
-      }
-    })
+    // .on('disconnect', function() {
+    //   console.log('disconnected %s', socket.id);
+    //   console.log(socket.connected);
+    //
+    //   // setTimeout(function() {
+    //   //   console.log('disconnect %s', socket.id);
+    //   //   var _player = _.filter(__players, function(player) {
+    //   //     var _cookie = cookie.parse(socket.handshake.headers.cookie);
+    //   //     return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
+    //   //   })[0];
+    //   //   if (_player) {
+    //   //     room.getRoomById(db, _player.room, function(error, db, room) {
+    //   //       // return callback - passing error object.
+    //   //       if (error) {
+    //   //         return callback(error);
+    //   //       }
+    //   //       // leave game.
+    //   //       _this.leave(db, _player, room, function(error, db, data) {
+    //   //         // return callback - passing error object.
+    //   //         if (error) {
+    //   //           return callback(error);
+    //   //         }
+    //   //         if (!room.available && typeof data === 'object') {
+    //   //           // get waiting object.
+    //   //           var waiting = player.waiting(_player.position);
+    //   //           // add waiting object.
+    //   //           data.waiting = waiting;
+    //   //           // socket emit - player:waiting - passing waiting object.
+    //   //           socket.broadcast.in(room._id).emit('player:waiting', data);
+    //   //         }
+    //   //       });
+    //   //     })
+    //   //   }
+    //   // }, 5000)
+    // })
   }
 };
