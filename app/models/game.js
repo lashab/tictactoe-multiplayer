@@ -9,11 +9,13 @@
  * Module dependencies.
  */
 var join = require('path').join;
+var cookie = require('cookie');
 var debug = require('debug')('game');
 var _ = require('underscore');
 var player = require('./player');
 var room = require('./room');
-var cookie = require('cookie');
+
+var rooms = {};
 
 module.exports = {
   collection: 'games',
@@ -433,7 +435,7 @@ module.exports = {
    * @param {Object} socket
    * @return {Function} callback
    */
-  run: function(db, io, socket, session, callback) {
+  run: function(db, io, socket, callback) {
     var _this = this;
     var __players = [];
     // socket event - player:join.
@@ -450,6 +452,7 @@ module.exports = {
         debug('room initialize');
         // socket join by room id.
         socket.join(id);
+        rooms = io.sockets.adapter.rooms;
         // socket emit - room:init - passing room object.
         io.in(id).emit('room:init', room);
         // get game by room.
@@ -573,44 +576,46 @@ module.exports = {
         });
       });
     })
-    //
-    .on('error', function(error) {
-      console.log(error);
+    .on('disconnect', function() {
+      //
+      if (socket.handshake.headers.cookie) {
+        var _cookie = cookie.parse(socket.handshake.headers.cookie);
+        var _size = !_.isEmpty(rooms) ? _.size(rooms[_cookie.id]) : 0;
+        setTimeout(function() {
+          var size = _.size(rooms[_cookie.id]);
+          if (size === _size) {
+            var _player = _.filter(__players, function(player) {
+              return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
+            })[0];
+            if (_player) {
+              room.getRoomById(db, _player.room, function(error, db, room) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // leave game.
+                _this.leave(db, _player, room, function(error, db, data) {
+                  // return callback - passing error object.
+                  if (error) {
+                    return callback(error);
+                  }
+                  if (!room.available && typeof data === 'object') {
+                    // get waiting object.
+                    var waiting = player.waiting(_player.position);
+                    // add waiting object.
+                    data.waiting = waiting;
+                    // socket emit - player:waiting - passing waiting object.
+                    socket.broadcast.in(room._id).emit('player:waiting', data);
+                  }
+                });
+              })
+            }
+          }
+          else {
+            // console.log('user reconnected!');
+          }
+        }, 5000)
+      }
     })
-    // .on('disconnect', function() {
-    //   console.log('disconnected %s', socket.id);
-    //   console.log(socket.connected);
-    //
-    //   // setTimeout(function() {
-    //   //   console.log('disconnect %s', socket.id);
-    //   //   var _player = _.filter(__players, function(player) {
-    //   //     var _cookie = cookie.parse(socket.handshake.headers.cookie);
-    //   //     return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
-    //   //   })[0];
-    //   //   if (_player) {
-    //   //     room.getRoomById(db, _player.room, function(error, db, room) {
-    //   //       // return callback - passing error object.
-    //   //       if (error) {
-    //   //         return callback(error);
-    //   //       }
-    //   //       // leave game.
-    //   //       _this.leave(db, _player, room, function(error, db, data) {
-    //   //         // return callback - passing error object.
-    //   //         if (error) {
-    //   //           return callback(error);
-    //   //         }
-    //   //         if (!room.available && typeof data === 'object') {
-    //   //           // get waiting object.
-    //   //           var waiting = player.waiting(_player.position);
-    //   //           // add waiting object.
-    //   //           data.waiting = waiting;
-    //   //           // socket emit - player:waiting - passing waiting object.
-    //   //           socket.broadcast.in(room._id).emit('player:waiting', data);
-    //   //         }
-    //   //       });
-    //   //     })
-    //   //   }
-    //   // }, 5000)
-    // })
   }
 };

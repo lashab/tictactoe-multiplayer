@@ -56,25 +56,20 @@ database.connect(app.get('mongodb'), function(error, db) {
 
 // server listens to port.
 server.listen(app.get('port'));
-// socket.io
-var _socket;
-io.on('connection', function (socket) {
-    _socket = socket.id;
-    socket.on('disconnect', function() {
-      setTimeout(function() {
-        if (_socket === socket.id) {
-          console.log('client disconnected!')
-        }
-        else {
-          console.log('client reconnected!');
-        }
-      }, 5000);
-    });
+// socket.io;
+io.on('connection', function(socket) {
   database.connect(app.get('mongodb'), function(error, db) {
     // debug error passing error object.
     if (error) {
       debug(error);
     }
+    // routes.
+    routes(db, app, function(error) {
+      // debug app - passing error object.
+      if (error) {
+        debug(error);
+      }
+    });
     // run game.
     game.run(db, io, socket, function(error) {
       // debug error passing error object.
