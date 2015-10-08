@@ -6,20 +6,30 @@
 
 ;(function($) {
   'use strict';
+
+  var _canvas = debug('canvas');
+  var _socket = debug('socket');
+  var _debug = debug('x-o');
   /**
    * constructor.
    *
    * @param {Object} canvas
    */
   var Game = function(canvas, socket) {
-    // create new fabric object.
+    // set fabric canvas object.
     this.__canvas = new fabric.Canvas(canvas.id);
     // set canvas width.
     this.__canvas.setWidth(canvas.width);
     // set canvas height.
     this.__canvas.setHeight(canvas.height);
-    // set socket.
+    // set socket object.
     this.socket = socket;
+    // debug canvas width.
+    _canvas('width %d', this.__canvas.getWidth());
+    // debug canvas height.
+    _canvas('height %d', this.__canvas.getHeight());
+    // debug socket object.
+    _socket('object %o', this.socket);
   }
   /**
    * setter.
@@ -31,6 +41,8 @@
   Game.prototype.set = function(property, value) {
     // set value.
     this[property] = value;
+    // debug x-o.
+    _debug(property);
 
     return this;
   }
@@ -280,7 +292,6 @@
     players.forEach(function(player) {
       $('.id-player-' + player.position)
         .children(':first-child')
-          // TODO: remove image path from client.
           .prop('src', '../images/default.png')
           .next()
             .children(':first-child')
@@ -1096,9 +1107,6 @@
           // set room.
           .set('room', room);
       })
-      .on('re', function() {
-        socket.emit('re');
-      })
       // socket event - game:init.
       .on('game:init', function(game) {
         _this
@@ -1153,6 +1161,7 @@
       })
       // socket event - game:play.
       .on('game:play', function(target) {
+
         // get target.
         var _target = _this.__canvas.item(Object.keys(target));
         // play game.
@@ -1184,19 +1193,8 @@
           // restart game.
           .restart();
       })
-      .on('player:leave', function(player) {
-        if (player) {
-          // get room object.
-          var room = _this.getRoom();
-          // socket emit - player:leave - passing object.
-          _this.socket.emit('player:leave', {
-            room: room,
-            player: player
-          });
-        }
-      })
-      .on('reconnecting', function() {
-        console.log('reconnected!');
+      .on('disconnect', function() {
+        window.location.replace('/');
       })
    })
 

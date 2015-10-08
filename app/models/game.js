@@ -577,7 +577,7 @@ module.exports = {
       });
     })
     .on('disconnect', function() {
-      //
+      console.log('disconnected!');
       if (socket.handshake.headers.cookie) {
         var _cookie = cookie.parse(socket.handshake.headers.cookie);
         var _size = !_.isEmpty(rooms) ? _.size(rooms[_cookie.id]) : 0;

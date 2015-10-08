@@ -9,8 +9,8 @@ var url = require('url');
 var express = require('express');
 var app = express();
 
-var server = http.Server(app);
-var io = require('socket.io')(server);
+var Server = http.Server(app);
+var io = require('socket.io')(Server);
 
 var favicon = require('serve-favicon');
 var bodyParse = require('body-parser');
@@ -55,7 +55,7 @@ database.connect(app.get('mongodb'), function(error, db) {
 });
 
 // server listens to port.
-server.listen(app.get('port'));
+Server.listen(app.get('port'));
 // socket.io;
 io.on('connection', function(socket) {
   database.connect(app.get('mongodb'), function(error, db) {

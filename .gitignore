@@ -30,4 +30,4 @@ node_modules
 # Sass
 *.map
 .sass-cache
-
+sass_watch.sh

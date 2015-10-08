@@ -30,72 +30,74 @@ module.exports = function(db, app, callback) {
   });
   // GET - /room/:id where :id is room id.
   app.get('/room/:id', function(request, response, next) {
-    // get room id.
-    var id = request.params.id;
-    // get players by room.
-    player.getPlayersByRoom(db, {
-      _id: id
-    }, function(error, db, players) {
-      // return callback - passing error object.
-      if (error) {
-        return callback(error);
-      }
-      // player length ?
-      if (players.length) {
-        // cookie position couldn't be found ?
-        if (!request.cookies.position) {
-          // get room.
-          room.getRoomById(db, id, function(error, db, _room) {
-            // return callback - passing error object.
-            if (error) {
-              return callback(error);
-            }
-            // room is available ?
-            if (_room.available) {
-              // close room.
-              room.close(db, {
-                _id: id
-              }, function(error, db, room) {
-                // return callback - passing error object.
-                if (error) {
-                  return callback(error);
-                }
-                // debug route.
-                debug('setting cookie id.');
-                // set cookie - id.
-                response.cookie('id', id);
-                // continue.
-                next();
-              });
-            }
-            // :
-            else {
-              // debug route.
-              debug('room #%d is full.', id);
-              // debug route.
-              debug('back to homepage.');
-              // back to homepage.
-              response.redirect('..');
-            }
-          });
-        }
-        // :
-        else {
-          // continue.
-          next();
-        }
-      }
-      // :
-      else {
-        // debug route.
-        debug('players couldn\'t found in #%d room.', id);
-        // debug route.
-        debug('back to homepage.');
-        // back to homepage.
-        response.redirect('..');
-      }
-    });
+    // // get room id.
+    // var id = request.params.id;
+    // // get players by room.
+    // player.getPlayersByRoom(db, {
+    //   _id: id
+    // }, function(error, db, players) {
+    //   // return callback - passing error object.
+    //   if (error) {
+    //     return callback(error);
+    //   }
+    //   // player length ?
+    //   if (players.length) {
+    //     // cookie position couldn't be found ?
+    //     if (!request.cookies.position) {
+    //       // get room.
+    //       room.getRoomById(db, id, function(error, db, _room) {
+    //         // return callback - passing error object.
+    //         if (error) {
+    //           return callback(error);
+    //         }
+    //         // room is available ?
+    //         if (_room.available) {
+    //           // close room.
+    //           room.close(db, {
+    //             _id: id
+    //           }, function(error, db, room) {
+    //             // return callback - passing error object.
+    //             if (error) {
+    //               return callback(error);
+    //             }
+    //             // debug route.
+    //             debug('setting cookie id.');
+    //             // set cookie - id.
+    //             response.cookie('id', id);
+    //             // continue.
+    //             next();
+    //           });
+    //         }
+    //         // :
+    //         else {
+    //           // debug route.
+    //           debug('room #%d is full.', id);
+    //           // debug route.
+    //           debug('back to homepage.');
+    //           // back to homepage.
+    //           response.redirect('..');
+    //         }
+    //       });
+    //     }
+    //     // :
+    //     else {
+    //       // continue.
+    //       next();
+    //     }
+    //   }
+    //   // :
+    //   else {
+    //     // debug route.
+    //     debug('players couldn\'t found in #%d room.', id);
+    //     // debug route.
+    //     debug('back to homepage.');
+    //     // back to homepage.
+    //     response.redirect('..');
+    //   }
+    // });
+    next();
   }, function(request, response) {
+    console.log(request.cookies)
     // debug route.
     debug('rendering room page.');
     // render room page.
