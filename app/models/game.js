@@ -475,11 +475,9 @@ module.exports = {
             debug('players initialize');
             // players === 1 ?
             if (players.length === 1) {
-              // get waiting object.
-              var waiting = player.waiting(~~!players[0].position);
               // socket emit - player:waiting - passing waiting object.
               socket.emit('player:waiting', {
-                waiting: waiting
+                positon: ~~!players[0].position
               });
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);

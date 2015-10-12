@@ -1,15 +1,17 @@
-// --------------------------------------------------------
+// ------------------------------------------------
 // Project: Tictactoe
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
-// --------------------------------------------------------
+// ------------------------------------------------
 
 ;(function($) {
   'use strict';
 
   var _canvas = debug('canvas');
   var _socket = debug('socket');
-  var _debug = debug('x-o');
+  var _players = debug('players');
+  var _room = debug('room');
+  var _game = debug('game');
   /**
    * constructor.
    *
@@ -41,8 +43,6 @@
   Game.prototype.set = function(property, value) {
     // set value.
     this[property] = value;
-    // debug x-o.
-    _debug(property);
 
     return this;
   }
@@ -66,11 +66,12 @@
   Game.prototype.getRoom = function() {
     // get room object.
     var room = this.get('room') || {};
-    // room object is empty ?
-    if ($.isEmptyObject(room)) {
-      // debug game.
-      console.debug('room object could\'t be found.');
-    }
+    // get room object message.
+    var message = _.isEmpty(room)
+      ? 'room object could\'t be found - o%'
+        : '%o';
+    // debug room.
+    _room(message, room);
 
     return room;
   }
@@ -82,11 +83,12 @@
   Game.prototype.getGame = function() {
     // get game object.
     var game = this.get('game') || {};
-    // game object is empty ?
-    if ($.isEmptyObject(game)) {
-      // debug game.
-      console.debug('game object could\'t be found.');
-    }
+    // get game object message.
+    var message = _.isEmpty(game)
+      ? 'game object could\'t be found - %o'
+        : '%o';
+    // debug game.
+    _game(message, game);
 
     return game;
   }
@@ -98,24 +100,32 @@
   Game.prototype.getPlayers = function() {
     // get players object.
     var players = this.get('players') || [];
-    // players object is empty ?
-    if (!players.length) {
-      // debug game.
-      console.debug('players could\'t be found.');
-    }
+    // get players object message.
+    var message = !players.length
+      ? 'players object could\'t be found - %o'
+        : '%o';
+    // debug players.
+    _players(message, players);
 
     return players;
   }
   /**
-   * get waiting state.
+   * get waiting status.
    *
    * @return {Boolean} true|false
    */
   Game.prototype.isWaiting = function() {
-    // get waiting.
-    var waiting = this.get('waiting') || false;
+    // get waiting boolean value.
+    var isWaiting = this.get('waiting') || false;
+    // player is waiting ?
+    if (isWaiting) {
+      // get players object.
+      var players = this.getPlayers();
+      // debug players.
+      _players('%s is waiting', players[Object.keys(players)[0]].name);
+    }
 
-    return waiting;
+    return isWaiting;
   }
   /**
    * get room id by pathname.
@@ -124,33 +134,40 @@
    */
   Game.prototype.getRoomIdByPathName = function () {
     var pathname = '';
-    // regular expression that matches to the following
-    // paths example: room/1, room/2 room/3 etc.
+    // regex - e.g. room/1, room/2 etc.
     var regex = /^\/room\/(\d+)$/;
     try {
-      // check for pathname.
+      // pathname exists ?
       if (window.location.pathname) {
         // get pathname.
         pathname = window.location.pathname;
       }
+      // :
       else {
-        // throws error if the pathname couldn't be found.
+        // throw error.
         throw new Error('pathname couldn\'t be found.');
       }
     }
     catch (e) {
-      // debug.
-      console.error(e.message);
+      // debug room.
+      _room(e.message);
 
       return false;
     }
-    // if the pathname matches to the regex return room id.
+    // get matches.
     var matches = pathname.match(regex);
+    // pathname matches regex ?
     if (matches) {
-      // get room id and cast it to the number.
+      // get room id && casting id.
       var room = matches[1] >> 0;
+      // debug room.
+      _room('you\'re joined in room #%d', room);
 
       return room;
+    }
+    else {
+      // debug room.
+      _room('you\'re not joined yet.');
     }
 
     return false;
@@ -164,15 +181,15 @@
     // get player position from cookie.
     var position = docCookies.getItem('position');
     try {
-      // cast position to the number if the position
-      // is provided otherwise throw error.
+      // position ? get position && casting position.
       position = position ? position >> 0 : (function() {
+        // throw error.
         throw new Error('cookie position couldn\'t be found.')
       })();
     }
     catch(e) {
-      // debug.
-      console.error(e.message);
+      // debug players.
+      _players(e.message);
 
       return -1;
     }
@@ -187,12 +204,11 @@
    */
   Game.prototype.getPlayerByPosition = function(position) {
     var player = {};
-    // get player position from cookie if position
-    // is not provided.
+    // get positon.
     var position = position || this.getPlayerPosition();
-    // cast position to the number.
+    // casting position.
     position = position >> 0;
-    // check for position.
+    // positon > -1 ?
     if (position !== -1) {
       // get players.
       var players = this.getPlayers();
@@ -224,14 +240,16 @@
           e.preventDefault();
           // display alert text.
           input.next().fadeIn();
-          // add error class to form-group.
+          // add error class to the form-group class.
           formGroup.addClass('has-error');
           // focus on input.
           input.focus();
+          // debug players.
+          _players('%s isn\'t a valid name.', value);
         }
         // :
         else {
-          // add success class to form-group.
+          // add success class to the form-group class.
           formGroup.addClass('has-success');
         }
       }
@@ -240,17 +258,52 @@
         e.preventDefault();
         // focus on input.
         input.focus();
+        // debug players.
+        _players('field is empty.');
       }
     });
     // get room id.
-    var room = this.getRoomIdByPathName();
+    var id = this.getRoomIdByPathName();
     // room id ?
-    if (room) {
+    if (id) {
       // socket emit - player:join - passing room object.
       this.socket.emit('player:join', {
-        id: room
+        id: id
       });
     }
+
+    return this;
+  }
+  /**
+   * Load players.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.playersLoad = function () {
+    // get players.
+    var players = this.getPlayers();
+    // players size > 1 ?
+    if (players.length > 1) {
+      // set waiting value.
+      this.set('waiting', false);
+      // remove waiting class.
+      $('.players.player-waiting').removeClass('player-waiting');
+      // close modal.
+      $('.tic-tac-toe-m').modal('hide');
+    }
+    // render players.
+    players.forEach(function(player) {
+      // get player element by position.
+      var _player = $('.id-player-' + player.position);
+      // add player image.
+      _player.children(':first-child').prop('src', '../images/default.png');
+      // add player name.
+      _player.find('.id-name').text(player.name);
+      // add class show.
+      _player.addClass('show');
+      // debug players.
+      _players('%s has been rendered.', player.name);
+    });
 
     return this;
   }
@@ -262,63 +315,32 @@
    */
   Game.prototype.playerLeave = function() {
     var _this = this;
-    var close = $('.glyphicon-menu-left');
     // add click event.
-    close.click(function(e) {
+    $('.glyphicon-menu-left').click(function(e) {
+      // disconnect socket.
       _this.socket.disconnect();
-      window.location.replace('/');
     });
 
     return this;
   }
   /**
-   * adds player.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.addPlayers = function () {
-    // get players.
-    var players = this.getPlayers();
-    // check for players length.
-    if (players.length > 1) {
-      // set waiting value.
-      this.set('waiting', false);
-      // remove waiting class.
-      $('.players.player-waiting').removeClass('player-waiting');
-      // hide modal.
-      $('.tic-tac-toe-m').modal('hide');
-    }
-    // loop in players add image && player name.
-    players.forEach(function(player) {
-      $('.id-player-' + player.position)
-        .children(':first-child')
-          .prop('src', '../images/default.png')
-          .next()
-            .children(':first-child')
-              .text(player.name)
-            .end()
-          .end()
-          .addClass('show');
-    });
-
-    return this;
-  }
-  /**
-   * wait for next player.
+   * waiting for player.
    *
    * @param {Object} player
    * @return {Object} this
    */
-  Game.prototype.waitForPlayer = function (data) {
-    var waiting = data.waiting;
+  Game.prototype._waiting = function(player) {
     // get player element.
-    var _player = $('.id-player-' + waiting.position);
+    var _player = $('.id-player-' + player.position);
     // open modal.
     $('.tic-tac-toe-m').modal();
-
-    _player.children(':first-child').prop('src', waiting.image);
+    // add waiting image.
+    _player.children(':first-child').prop('src', '../images/loading.gif');
+    // remove name.
     _player.find('.id-name').empty();
+    // remove badge.
     _player.find('.id-badge').children().empty();
+    // add player-waiting && show classes.
     _player.addClass('player-waiting').addClass('show');
 
     return this;
@@ -349,6 +371,11 @@
     $('div[class*=id-player-' + ~~!position + ']')
       .toggleClass(fadeIn, false)
       .toggleClass(_fadeIn, true);
+    // player isn't waiting ?
+    if (!isWaiting) {
+      // debug players.
+      _players('%s\'s turn', this.getActivePlayer().name);
+    }
 
     return this;
   }
@@ -1127,7 +1154,7 @@
           // set players.
           .set('players', players)
           // add players.
-          .addPlayers()
+          .playersLoad()
           // set active player.
           .setActivePlayer()
           // set player scores.
@@ -1135,29 +1162,37 @@
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        // data has room property && left value => 0 ?
-        if (data.hasOwnProperty('room') && data.room.left >= 0) {
+        // data is object ?
+        if (_.isObject(data)) {
+          // data has room property && left value !== -1 ?
+          if (_.has(data, 'room') && data.room.left !== -1) {
+            _this
+            // set room object.
+            .set('room', data.room)
+            // set game object.
+            .set('game', data.game)
+            // set players object.
+            .set('players', data.players)
+            // set active player.
+            .setActivePlayer()
+            // set players score.
+            .setPlayersScore()
+            // restart game.
+            .restart();
+          }
           _this
-          // set room.
-          .set('room', data.room)
-          // set game.
-          .set('game', data.game)
-          // set players.
-          .set('players', data.players)
-          // set active player.
-          .setActivePlayer()
-          // set players score.
-          .setPlayersScore()
-          // restart game.
-          .restart();
+            // set waiting boolean value.
+            .set('waiting', true)
+            // waiting for player.
+            ._waiting({
+              position: data.positon
+            });
         }
-        _this
-          // set waiting.
-          .set('waiting', true)
-          // wait for player.
-          .waitForPlayer({
-            waiting: data.waiting
-          });
+        // :
+        else {
+          // debug players.
+          _players('event players:waiting - data is empty. %o', data);
+        }
       })
       // socket event - game:play.
       .on('game:play', function(target) {
