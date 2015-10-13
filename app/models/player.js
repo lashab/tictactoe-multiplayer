@@ -73,7 +73,7 @@ module.exports = {
           return callback(null, db, null);
         }
       });
-      // player has been added ? 
+      // player has been added ?
       if (done) {
         // debug player.
         debug('%s has been added.', player);
@@ -169,23 +169,6 @@ module.exports = {
       // return callback - passing database object, players object.
       return callback(null, db, players);
     });
-  },
-  /**
-   * get player waiting object.
-   *
-   * @param {Object} player
-   * @return {Object} waiting
-   */
-  waiting: function(position) {
-    // get waiting (loading) image.
-    var image = join('..', 'images', 'loading.gif');
-    // prepare waiting object.
-    var waiting = {
-      position: position,
-      image: image
-    };
-    // return waiting object.
-    return waiting;
   },
   /**
    * switch players.

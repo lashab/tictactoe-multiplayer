@@ -477,7 +477,7 @@ module.exports = {
             if (players.length === 1) {
               // socket emit - player:waiting - passing waiting object.
               socket.emit('player:waiting', {
-                positon: ~~!players[0].position
+                position: ~~!players[0].position
               });
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);
@@ -598,10 +598,8 @@ module.exports = {
                     return callback(error);
                   }
                   if (!room.available && typeof data === 'object') {
-                    // get waiting object.
-                    var waiting = player.waiting(_player.position);
                     // add waiting object.
-                    data.waiting = waiting;
+                    data.position = _player.position;
                     // socket emit - player:waiting - passing waiting object.
                     socket.broadcast.in(room._id).emit('player:waiting', data);
                   }

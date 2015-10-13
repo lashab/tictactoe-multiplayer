@@ -204,7 +204,7 @@
    */
   Game.prototype.getPlayerByPosition = function(position) {
     var player = {};
-    // get positon.
+    // get position.
     var position = position || this.getPlayerPosition();
     // casting position.
     position = position >> 0;
@@ -326,12 +326,12 @@
   /**
    * waiting for player.
    *
-   * @param {Object} player
+   * @param {Number} position
    * @return {Object} this
    */
-  Game.prototype._waiting = function(player) {
+  Game.prototype._waiting = function(position) {
     // get player element.
-    var _player = $('.id-player-' + player.position);
+    var _player = $('.id-player-' + position);
     // open modal.
     $('.tic-tac-toe-m').modal();
     // add waiting image.
@@ -440,7 +440,7 @@
       // remove badge-loosing class.
       badges.toggleClass('badge-loosing', false);
     }
-    // loop in players, get badge by positon and set score.
+    // loop in players, get badge by position and set score.
     players.forEach(function(player) {
       // get badge by position.
       var badge = $('.id-player-' + player.position).find('.badge');
@@ -622,6 +622,7 @@
     var socket = this.socket;
     this.__canvas.on({
       'mouse:down': function(e) {
+        console.log(e);
         // target is clickable ?
         if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
           // play audio.
@@ -916,6 +917,7 @@
     var _this = this;
     // get room object.
     var game = this.getGame();
+    console.log(game);
     // loop in figures.
     game.targets.forEach(function(target) {
       // get target key.
@@ -1116,6 +1118,26 @@
 
     return this;
   }
+  Game.prototype.drawOnResize = function() {
+    var _this = this;
+    $(window).resize(function() {
+      _this.__canvas.forEachObject(function(object) {
+        _this.__canvas.remove(object);
+      });
+      var width = window.innerWidth - (window.innerWidth - window.innerHeight);
+      var height = window.innerHeight;
+      _this.__canvas.setWidth(width);
+      _this.__canvas.setHeight(height);
+      _this.drawGame();
+      _this.initTargets();
+      // draw game state.
+      _this.drawGameState();
+      // set active player.
+      _this.setActivePlayer();
+    });
+
+    return this;
+  }
   /**
    * run game.
    *
@@ -1163,7 +1185,7 @@
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
         // data is object ?
-        if (_.isObject(data)) {
+        if (!_.isEmpty(data)) {
           // data has room property && left value !== -1 ?
           if (_.has(data, 'room') && data.room.left !== -1) {
             _this
@@ -1184,9 +1206,7 @@
             // set waiting boolean value.
             .set('waiting', true)
             // waiting for player.
-            ._waiting({
-              position: data.positon
-            });
+            ._waiting(data.position);
         }
         // :
         else {
@@ -1260,6 +1280,8 @@
       .playerJoin()
       // run game.
       .run()
+      // re-draw on window resize.
+      .drawOnResize()
       // switch audio.
       .audioSwitch()
       // leave game.
