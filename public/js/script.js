@@ -68,7 +68,7 @@
     var room = this.get('room') || {};
     // get room object message.
     var message = _.isEmpty(room)
-      ? 'room object could\'t be found - o%'
+      ? 'object could\'t be found - o%'
         : '%o';
     // debug room.
     _room(message, room);
@@ -85,7 +85,7 @@
     var game = this.get('game') || {};
     // get game object message.
     var message = _.isEmpty(game)
-      ? 'game object could\'t be found - %o'
+      ? 'object could\'t be found - %o'
         : '%o';
     // debug game.
     _game(message, game);
@@ -101,11 +101,10 @@
     // get players object.
     var players = this.get('players') || [];
     // get players object message.
-    var message = !players.length
-      ? 'players object could\'t be found - %o'
-        : '%o';
-    // debug players.
-    _players(message, players);
+    if (!players.length) {
+      // debug players.
+      _players('object could\'t be found - %o', players);
+    }
 
     return players;
   }
@@ -117,13 +116,6 @@
   Game.prototype.isWaiting = function() {
     // get waiting boolean value.
     var isWaiting = this.get('waiting') || false;
-    // player is waiting ?
-    if (isWaiting) {
-      // get players object.
-      var players = this.getPlayers();
-      // debug players.
-      _players('%s is waiting', players[Object.keys(players)[0]].name);
-    }
 
     return isWaiting;
   }
@@ -197,7 +189,7 @@
     return position;
   }
   /**
-   * get player by position.
+   * get player object by position.
    *
    * @param {Number|String} position
    * @return {Object} player
@@ -212,8 +204,11 @@
     if (position !== -1) {
       // get players.
       var players = this.getPlayers();
-      // get player object by position.
-      player = players.length === 1 ? players[0] : players[position];
+      // players length > 0 ?
+      if (players.length) {
+        // get player object by position.
+        player = players.length === 1 ? players[0] : players[position];
+      }
     }
 
     return player;
@@ -221,7 +216,6 @@
   /**
    * join game.
    *
-   * @param {Object} socket
    * @return {Object} this
    */
   Game.prototype.playerJoin = function() {
@@ -330,6 +324,8 @@
    * @return {Object} this
    */
   Game.prototype._waiting = function(position) {
+    // get player object.
+    var player = this.getPlayerByPosition();
     // get player element.
     var _player = $('.id-player-' + position);
     // open modal.
@@ -342,6 +338,11 @@
     _player.find('.id-badge').children().empty();
     // add player-waiting && show classes.
     _player.addClass('player-waiting').addClass('show');
+    // player object isn't empty ?
+    if (!_.isEmpty(player)) {
+      // debug players.
+      _players('%s is waiting', player.name);
+    }
 
     return this;
   }
@@ -380,14 +381,14 @@
     return this;
   }
   /**
-   * get active player.
+   * get active player object.
    *
    * @return {Object} player
    */
   Game.prototype.getActivePlayer = function() {
     // get players object.
-    var players = this.get('players');
-    // filter players object && get active player object.
+    var players = this.getPlayers();
+    // get active player.
     var player = players.filter(function(player) {
       return player.active;
     })[0];
@@ -404,15 +405,15 @@
     var players = this.getPlayers();
     // get badges.
     var badges = $('.players').find('.badge');
-    // check for players.
+    // players length > 1 ?
     if (players.length > 1) {
       // get first player object.
       var _player = players[0];
       // get second player object.
       var __player = players[1];
-      // get first badge.
+      // get first badge element.
       var _badge = badges.filter(':even');
-      // get second badge.
+      // get second badge element.
       var __badge = badges.filter(':odd');
       // case 1 - first player score is more then second.
       if (_player.score > __player.score) {
@@ -435,17 +436,20 @@
         // remove badge-loosing class for second player.
         __badge.toggleClass('badge-loosing', false);
       }
-    }
+    } // :
     else {
       // remove badge-loosing class.
       badges.toggleClass('badge-loosing', false);
     }
-    // loop in players, get badge by position and set score.
     players.forEach(function(player) {
+      // get player score.
+      var score = player.score;
       // get badge by position.
       var badge = $('.id-player-' + player.position).find('.badge');
       // set score.
-      badge.text(player.score);
+      badge.text(score);
+      // debug players.
+      _players('%s\'s score is %d', player.name, score);
     });
 
     return this;
@@ -458,9 +462,9 @@
    */
   Game.prototype.setActiveState = function(evented) {
     var evented = evented || false;
-    // loop through each avaiable object
-    // and set evented property.
-    this.getAvaiableTargets(function(object) {
+    // get available targets.
+    this.getAvailableTargets(function(object) {
+      // set evented property TRUE | FALSE.
       object.set('evented', evented);
     });
 
@@ -474,6 +478,8 @@
   Game.prototype.activate = function() {
     // activate game.
     this.setActiveState(true);
+    // debug game.
+    _game('is active you can play.');
 
     return this;
   }
@@ -485,6 +491,8 @@
   Game.prototype.deActivate = function() {
     // deactivate game.
     this.setActiveState();
+    // debug game.
+    _game('is inactive you can\'t play yet.');
 
     return this;
   }
@@ -494,7 +502,7 @@
    * @return {Object} this
    */
   Game.prototype.initTargets = function() {
-    // add key and figure value on targets.
+    // add initial key & figure values for each of the target.
     this.__canvas.forEachObject(function(object, key) {
       object.set({
         key: key,
@@ -502,7 +510,7 @@
       });
     });
     // set count.
-    this.set('count', this.getCanvasCountObjects());
+    this.set('size', this.getCanvasObjectSize());
 
     return this;
   }
@@ -530,8 +538,8 @@
   Game.prototype.play = function(target, callback) {
     // get game object.
     var game = this.getGame();
-    // get count objects.
-    var count = this.get('count');
+    // get size objects .
+    var size = this.get('size') - 1;
     // get active figure;
     var figure = game.figure;
     // prepare targets array.
@@ -563,14 +571,14 @@
       // update target.
       .updateTarget(target, key, figure);
     // loop while count doesn't equals to -1.
-    while (count !== -1) {
+    while (size !== -1) {
       // get figure.
-      var _figure = this.__canvas.item(count).get('figure');
+      var _figure = this.__canvas.item(size).get('figure');
       // pushing NaN figure into array.
       if (isNaN(_figure)) {
         targets.push(_figure);
       }
-      count--;
+      size--;
     }
     // if theres is no more NaN figures
     // this means that all the squares
@@ -605,9 +613,6 @@
       callback.call(this, _game);
     }
 
-    // set autoplay.
-    this.set('autoplay', false);
-
     return this;
   }
   /**
@@ -622,7 +627,6 @@
     var socket = this.socket;
     this.__canvas.on({
       'mouse:down': function(e) {
-        console.log(e);
         // target is clickable ?
         if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
           // play audio.
@@ -682,9 +686,8 @@
     // execute after 1s.
     setTimeout(function() {
       // get count.
-      var count = _this.getCanvasCountObjects();
-      // while []
-      while (count !== _this.count) {
+      var count = _this.getCanvasObjectSize() - 1;
+      while (count !== _this.size) {
         // remove all figures.
         _this.__canvas.fxRemove(_this.__canvas.item(count), {
           // onComplete event - reset figures, set active player.
@@ -703,50 +706,39 @@
     return this;
   }
   /**
-   * count canvas objects.
+   * get canvas object size.
    *
-   * @return {Number} count
+   * @return {Number} size
    */
-  Game.prototype.getCanvasCountObjects = function() {
-    // get count.
-    var count = this.__canvas.size() - 1;
+  Game.prototype.getCanvasObjectSize = function() {
+    // get size.
+    var size = this.__canvas.size();
+    // debug canvas.
+    _canvas('canvas objects size = %d', size);
 
-    return count;
+    return size;
   }
   /**
-   * get avaiable targets, passing each object to the
-   * callback function if its provided.
+   * get available targets.
    *
    * @param {Function} callback
-   * @return {Array} targets
    */
-  Game.prototype.getAvaiableTargets = function(callback) {
-    var targets = [];
-    // loop throuch each canvas object.
-    this.__canvas.forEachObject(function(object, index) {
-      // if object has figure and this object
-      // is NaN then push its key into
-      // targets array.
+  Game.prototype.getAvailableTargets = function(callback) {
+    this.__canvas.forEachObject(function(object) {
       if ('figure' in object && isNaN(object.figure)) {
-        targets.push(object.key);
-        // if callback is provided passing
-        // object in it.
-        if (callback && $.isFunction(callback)) {
+        if (callback && _.isFunction(callback)) {
           callback(object);
         }
       }
     });
-
-    return targets;
-
   }
   /**
    * draw line.
    *
-   * @param {Array} coords
+   * @param {Array} coordinates
    * @return {Object} line
    */
-  Game.prototype.drawLine = function(coords) {
+  Game.prototype.drawLine = function(coordinates) {
     // set options.
     var options = {
       stroke: 'black',
@@ -755,7 +747,7 @@
       evented: false
     };
     // create new line.
-    var line = new fabric.Line(coords, options);
+    var line = new fabric.Line(coordinates, options);
 
     return line;
   }
@@ -775,9 +767,9 @@
       radius: radius,
       fill: '#fff',
       stroke: 'black',
-      strokeWidth: 1,
       originX: 'center',
       originY: 'center',
+      strokeWidth: 1,
       selectable: false,
       evented: false
     };
@@ -917,21 +909,21 @@
     var _this = this;
     // get room object.
     var game = this.getGame();
-    console.log(game);
-    // loop in figures.
-    game.targets.forEach(function(target) {
-      // get target key.
-      var key = Object.keys(target);
-      // get target figure.
-      var figure = target[key];
-      // get target.
-      var _target = _this.__canvas.item(key);
-      _this
-        // draw figure.
-        .drawFigure(_target, figure)
-        // update target.
-        .updateTarget(_target, key, figure);
-    });
+    if (_.isEmpty(game)) {
+      game.targets.forEach(function(target) {
+        // get target key.
+        var key = Object.keys(target);
+        // get target figure.
+        var figure = target[key];
+        // get target.
+        var _target = _this.__canvas.item(key);
+        _this
+          // draw figure.
+          .drawFigure(_target, figure)
+          // update target.
+          .updateTarget(_target, key, figure);
+      });
+    }
 
     return this;
   }
