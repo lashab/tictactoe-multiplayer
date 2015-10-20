@@ -190,14 +190,14 @@ module.exports = {
    *
    * @param {Object} db
    * @param {String} _player
-   * @param {Integer} _id
+   * @param {Number} id
    * @param {Function} callback
    * @return {Function} callback
    */
-  join: function(db, _player, _id, callback) {
+  join: function(db, _player, id, callback) {
     var _this = this;
     // create || update room.
-    room.add(db, _id, function(error, db, room) {
+    room.add(db, id, function(error, db, room) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
@@ -437,7 +437,6 @@ module.exports = {
    */
   run: function(db, io, socket, callback) {
     var _this = this;
-    var __players = [];
     // socket event - player:join.
     socket.on('player:join', function(_room) {
       // get room id.
@@ -452,6 +451,7 @@ module.exports = {
         debug('room initialize');
         // socket join by room id.
         socket.join(id);
+        // pushing rooms.
         rooms = io.sockets.adapter.rooms;
         // socket emit - room:init - passing room object.
         io.in(id).emit('room:init', room);
@@ -482,8 +482,6 @@ module.exports = {
               // debug game.
               debug('player %s is waiting in #%d room', players[0].name, id);
             }
-            // assign players.
-            __players = players;
             // socket emit - player:init - passing players object.
             io.in(id).emit('players:init', players);
           });

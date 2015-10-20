@@ -23,13 +23,13 @@ var database = require('mongodb').MongoClient;
 
 var routes = require('./app/routes');
 var game = require('./app/models/game');
+var room = require('./app/models/room');
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
 app.set('views', join(__dirname, config.get('tictactoe.views.path')));
 app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
-app.set('ckey', config.get('tictactoe.cookie.key'));
 app.set('view engine', 'ejs');
 app.use(favicon(join(__dirname, 'public', 'images', 'favicon.ico')));
 app.use(cookieParse(app.get('ckey')));
@@ -40,18 +40,18 @@ app.use(bodyParse.json());
 app.use(methodOverride());
 app.use(express.static(join(__dirname, 'public')));
 
-database.connect(app.get('mongodb'), function(error, db) {
+database.connect(app.get('mongodb'), function(error, database) {
   // debug app - passing error object.
   if (error) {
     debug(error);
   }
-  // routes.
-  routes(db, app, function(error) {
-    // debug app - passing error object.
-    if (error) {
-      debug(error);
-    }
-  });
+  // // routes.
+  // routes(db, app, function(error) {
+  //   // debug app - passing error object.
+  //   if (error) {
+  //     debug(error);
+  //   }
+  // });
 });
 
 // server listens to port.

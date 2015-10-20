@@ -7,9 +7,6 @@
     "mongodb": {
       "url": "mongodb://localhost/tictactoe"
     },
-    "cookie": {
-      "key": "TIC09TAC06TOE92"
-    },
     "port": 3000
   }
 }

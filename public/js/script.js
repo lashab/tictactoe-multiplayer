@@ -260,7 +260,7 @@
     var id = this.getRoomIdByPathName();
     // room id ?
     if (id) {
-      // socket emit - player:join - passing room object.
+      // socket emit - player:join - passing object.
       this.socket.emit('player:join', {
         id: id
       });
@@ -509,7 +509,7 @@
         figure: NaN
       });
     });
-    // set count.
+    // set size.
     this.set('size', this.getCanvasObjectSize());
 
     return this;
@@ -538,8 +538,8 @@
   Game.prototype.play = function(target, callback) {
     // get game object.
     var game = this.getGame();
-    // get size objects .
-    var size = this.get('size') - 1;
+    // get size - 1.
+    var i = this.get('size') - 1;
     // get active figure;
     var figure = game.figure;
     // prepare targets array.
@@ -570,20 +570,17 @@
       .drawFigure(target, figure)
       // update target.
       .updateTarget(target, key, figure);
-    // loop while count doesn't equals to -1.
-    while (size !== -1) {
+    // while size !== -1 do:
+    while (i !== -1) {
       // get figure.
-      var _figure = this.__canvas.item(size).get('figure');
+      var _figure = this.__canvas.item(i).get('figure');
       // pushing NaN figure into array.
       if (isNaN(_figure)) {
         targets.push(_figure);
       }
-      size--;
+      i--;
     }
-    // if theres is no more NaN figures
-    // this means that all the squares
-    // have already filled game is
-    // over but without winner.
+    // game is over without winner.
     if (!targets.length) {
       // pushing values in game object.
       _game.over = true;
@@ -683,23 +680,21 @@
    */
   Game.prototype.restart = function() {
     var _this = this;
-    // execute after 1s.
     setTimeout(function() {
-      // get count.
-      var count = _this.getCanvasObjectSize() - 1;
-      while (count !== _this.size) {
-        // remove all figures.
-        _this.__canvas.fxRemove(_this.__canvas.item(count), {
-          // onComplete event - reset figures, set active player.
+      // get size - 1.
+      var i = _this.getCanvasObjectSize() - 1;
+      while (i !== _this.get('size')) {
+        // remove figures.
+        _this.__canvas.fxRemove(_this.__canvas.item(i), {
           onComplete: function() {
             _this
-              // initialize squares.
+              // re-initialize targets.
               .initTargets()
               // set active player.
               .setActivePlayer();
           }
         });
-        count--;
+        i--;
       }
     }, 1000);
 
@@ -1151,7 +1146,7 @@
       // socket event - game:init.
       .on('game:init', function(game) {
         _this
-          // set game.
+          // set game object.
           .set('game', game)
           // draw game.
           .drawGame()
@@ -1208,7 +1203,6 @@
       })
       // socket event - game:play.
       .on('game:play', function(target) {
-
         // get target.
         var _target = _this.__canvas.item(Object.keys(target));
         // play game.
@@ -1248,7 +1242,6 @@
    return this;
   }
 
-  // make sure page is loaded.
   $(function() {
     var width = window.innerWidth - (window.innerWidth - window.innerHeight);
 

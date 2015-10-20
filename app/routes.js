@@ -97,7 +97,6 @@ module.exports = function(db, app, callback) {
     // });
     next();
   }, function(request, response) {
-    console.log(request.cookies)
     // debug route.
     debug('rendering room page.');
     // render room page.
@@ -110,12 +109,12 @@ module.exports = function(db, app, callback) {
   });
   // POST - /join.
   app.post('/join', function(request, response, next) {
-    // get name.
+    // get player name.
     var name = request.body.name;
     // name field isn't empty && matches regex ?
     if (name && /^[A-Za-z]{1,8}$/.test(name)) {
       // debug route.
-      debug('name middleware check has been passed.')
+      debug('name middleware check has been passed.');
       // continue.
       next();
     }
@@ -137,7 +136,11 @@ module.exports = function(db, app, callback) {
       }
       // player has joined ?
       if (player) {
+        // id === 0 ?
         if (!id) {
+          // debug route.
+          debug('setting cookie id.');
+          // set cookie id.
           response.cookie('id', player.room);
         }
         // debug route.
