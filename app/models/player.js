@@ -1,3 +1,10 @@
+// ----------------------------------------------
+// Project: Tictactoe
+// File: player.js
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// ----------------------------------------------
+
 'use strict';
 /**
  * Module dependencies.
@@ -6,6 +13,7 @@ var path = require('path');
 var join = path.join;
 var objectID = require('mongodb').ObjectID;
 var debug = require('debug')('player');
+var _ = require('underscore');
 
 module.exports = {
   collection: 'players',
@@ -33,9 +41,7 @@ module.exports = {
     // get collection.
     var collection = this.getCollection(db);
     // get room id.
-    var id = room._id;
-    // casting id.
-    id = id >> 0;
+    var id = room._id >> 0;
     // get position.
     var position = room.left < 0 ? room.available ? 0 : 1 : room.left;
     // prepare player object.
@@ -76,13 +82,13 @@ module.exports = {
       // player has been added ?
       if (done) {
         // debug player.
-        debug('%s has been added.', player);
+        debug('%s has been added. - %o.', player, _player);
         // return callback - passing database object, player object.
         return callback(null, db, _player);
       }
       // :
       // debug player.
-      debug('player hasn\'t been added.');
+      debug('player couldn\'t be added.');
       // return callback - passing database object.
       return callback(null, db, null);
     });
@@ -103,21 +109,21 @@ module.exports = {
       _id: new objectID(player._id)
     }, {
       single: true
-    }, function(error, document) {
+    }, function(error, _player) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      // get result.
-      var done = document.result.ok;
+      // get ok value.
+      var ok = _player.result.ok;
       // debug message.
-      var message = done
-        ? '%s has been removed'
-          : '%s hasn\'t been removed';
+      var message = ok
+        ? '%s has been removed - %o'
+          : '%s couldn\'t be removed - %o';
       // debug player.
-      debug(message, player.name);
-      // return callback - passing database object done boolean.
-      return callback(null, db, done);
+      debug(message, player.name, player);
+      // return callback - passing database object, ok boolean.
+      return callback(null, db, ok);
     });
   },
   /**
@@ -139,6 +145,8 @@ module.exports = {
       if (error) {
         return callback(error);
       }
+      // debug player.
+      debug('get player object %o', player);
       // return callback - passing database object, player object.
       return callback(null, db, player);
     });
@@ -165,7 +173,7 @@ module.exports = {
         return callback(error);
       }
       // debug player.
-      debug('%d found in #%d room', players.length, id);
+      debug('get players object %o', players);
       // return callback - passing database object, players object.
       return callback(null, db, players);
     });
@@ -181,7 +189,6 @@ module.exports = {
   switch: function(db, players, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // loop in players.
     players.forEach(function(player) {
       // change active player.
       player.active = !player.active ? true : false;
@@ -194,10 +201,10 @@ module.exports = {
         }
         // debug message.
         var message = done
-          ? '#%d room - players %s has been switched.'
-            : '#%d room - players could\'t not be switched.';
+          ? '#%d room - players %s has been switched - %o'
+            : '#%d room - players couldn\'t be switched - %o';
         // debug player.
-        debug(message, player.room, player.name);
+        debug(message, player.room, player.name, player);
       });
     });
     // return callback - passing database object, players array.
@@ -231,37 +238,34 @@ module.exports = {
       if (error) {
         return callback(error);
       }
-      // return callback - passing database object, data object.
-      return callback(null, db, [players.value]);
+      // get ok value.
+      var ok = players.ok;
+      // get players object.
+      var _players = players.value;
+      // debug message.
+      var message = ok
+        ? '#%d room - players has been reseted - %o'
+          : '#%d room - players couldn\'t be reseted - %o';
+      // debug players.
+      debug(message, id, _players);
+      // return callback - passing database object, players object.
+      return callback(null, db, [_players]);
     });
   },
   /**
    * update player score.
    *
    * @param {Object} db
-   * @param {Object} room
    * @param {Object} player
    * @param {Function} callback
    * @return {Function} callback
    */
-  updateScore: function(db, room, player, callback) {
+  updateScore: function(db, player, callback) {
     var _this = this;
     // get collection.
     var collection = this.getCollection(db);
-    // player object is empty ?
-    if (!player) {
-      // get players by room.
-      this.getPlayersByRoom(db, room, function(error, db, players) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
-        }
-        // return callback - passing database object, players object.
-        return callback(null, db, players);
-      });
-    }
-    // :
-    else {
+    // player object isn't empty ?
+    if (!_.isEmpty(player)) {
       // increment player score by 1.
       collection.findAndModify({
         _id: new objectID(player._id)
@@ -271,27 +275,29 @@ module.exports = {
         }
       }, {
         new: true
-      }, function(error, player, done) {
+      }, function(error, player) {
         // return callback - passing error object.
         if (error) {
           return callback(error);
         }
+        // get ok value.
+        var ok = player.ok;
+        // get player object.
+        var _player = player.value;
         // debug message.
-        var message = done
-          ? '#%d room - %s\'s score has been updated.'
-            : '#%d room - %s\'s score couldn\'t be updated.';
+        var message = ok
+          ? '#%d room - %s\'s score has been updated - %o'
+            : '#%d room - %s\'s score couldn\'t be updated. - %o';
         // debug player.
-        debug(message, player.value.room, player.value.name);
-        // get players by room.
-        _this.getPlayersByRoom(db, room, function(error, db, players) {
-          // return callback - passing error object.
-          if (error) {
-            return callback(error);
-          }
-          // return callback - passing database object, players object.
-          return callback(null, db, players);
-        });
+        debug(message, _player.room, _player.name, _player);
+        // return callback - passing database object.
+        return callback(null, db, ok);
       });
+    }
+    // :
+    else {
+      // return callback - passing database object.
+      return callback(null, db, null);
     }
   }
 };

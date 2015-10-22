@@ -558,6 +558,15 @@ module.exports = {
           var room = data.room;
           // update player score.
           player.updateScore(db, room, data.wins, function(error, db, players) {
+            // get players by room.
+            _this.getPlayersByRoom(db, room, function(error, db, players) {
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
+              // return callback - passing database object, players object.
+              return callback(null, db, players);
+            });
             // return callback - passing error object.
             if (error) {
               return callback(error);
@@ -573,7 +582,6 @@ module.exports = {
       });
     })
     .on('disconnect', function() {
-      console.log('disconnected!');
       if (socket.handshake.headers.cookie) {
         var _cookie = cookie.parse(socket.handshake.headers.cookie);
         var _size = !_.isEmpty(rooms) ? _.size(rooms[_cookie.id]) : 0;

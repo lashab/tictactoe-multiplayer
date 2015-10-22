@@ -23,7 +23,7 @@ var database = require('mongodb').MongoClient;
 
 var routes = require('./app/routes');
 var game = require('./app/models/game');
-var room = require('./app/models/room');
+var player = require('./app/models/player');
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -40,18 +40,41 @@ app.use(bodyParse.json());
 app.use(methodOverride());
 app.use(express.static(join(__dirname, 'public')));
 
-database.connect(app.get('mongodb'), function(error, database) {
+database.connect(app.get('mongodb'), function(error, db) {
   // debug app - passing error object.
   if (error) {
     debug(error);
   }
-  // // routes.
-  // routes(db, app, function(error) {
-  //   // debug app - passing error object.
+  // player.add(db, 'lasha', { _id: 1, left: -1 }, function(error, db, player) {
   //   if (error) {
   //     debug(error);
   //   }
   // });
+  //
+  // setTimeout(function() {
+  //   player.add(db, 'nika', { _id: 1, left: -1 }, function(error, db, player) {
+  //     if (error) {
+  //       debug(error);
+  //     }
+  //   });
+  // }, 5000);
+
+  setTimeout(function() {
+    player.remove(db, {_id: '5629201939ab1f812377617c' }, function(error, db, player) {
+      if (error) {
+        debug(error);
+      }
+    })
+  }, 2000);
+
+  // setTimeout(function() {
+  //   player.updateScore(db, 1, function(error, db, player) {
+  //     if (error) {
+  //       debug(error);
+  //     }
+  //   });
+  // }, 4000);
+
 });
 
 // server listens to port.
