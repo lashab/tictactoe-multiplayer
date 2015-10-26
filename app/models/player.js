@@ -127,20 +127,18 @@ module.exports = {
     });
   },
   /**
-   * get player by id.
+   * get player by query object.
    *
    * @param {Object} db
-   * @param {String} id
+   * @param {String} query
    * @param {Function} callback
    * @return {Function} callback
    */
-  getPlayerById: function(db, id, callback) {
+  getPlayerByObject: function(db, query, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // find player by id.
-    collection.findOne({
-      _id: new objectID(id)
-    }, function(error, player) {
+    // find player by query.
+    collection.findOne(query, function(error, player) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
@@ -150,9 +148,30 @@ module.exports = {
       // return callback - passing database object, player object.
       return callback(null, db, player);
     });
+  }
+  /**
+   * get player object by id.
+   *
+   * @param {Object} db
+   * @param {String} id
+   * @param {Function} callback
+   * @return {Function} callback
+   */
+  getPlayerById: function(db, id, callback) {
+    // get player by id.
+    this.getPlayerByObject(db, {
+      _id: new objectID(id)
+    }, function(error, db, player) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // return callback - passing database object, player object.
+      return callback(null, db, player);
+    });
   },
   /**
-   * get players by room.
+   * get players by room object.
    *
    * @param {Object} db
    * @param {Object} room

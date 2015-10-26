@@ -1,5 +1,6 @@
 // --------------------------------------------------------
 // Project: Tictactoe
+// File: game.js
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
 // --------------------------------------------------------
@@ -43,10 +44,8 @@ module.exports = {
     var collection = this.getCollection(db);
     // get room id && casting id.
     var id = room._id >> 0;
-    // room is available.
-    var available = room.available;
     // room is avaiable ?
-    if (available) {
+    if (room.available) {
       // add game.
       collection.save({
         room: id,
@@ -73,7 +72,7 @@ module.exports = {
           // :
           else {
             // debug game.
-            debug('room field hasn\'t been indexed.');
+            debug('room field couldn\'t be indexed.');
             // return callback - passing database object.
             return callback(null, db, null);
           }
@@ -81,16 +80,17 @@ module.exports = {
         // debug message.
         var message = done
           ? 'for #%d room has been added.'
-            : 'for #%d room hasn\'t been added.';
+            : 'for #%d room couldn\'t be added.';
         // debug game.
         debug(message, id);
-        // return callback - passing database object.
+        // return callback - passing database object, done boolean.
         return callback(null, db, done);
       });
     }
     // :
     else {
-      debug('for #%d room has already been added.', id);
+      // debug game.
+      debug('for #%d room exists.');
       // return callback - passing database object, boolean true.
       return callback(null, db, true);
     }
@@ -113,19 +113,21 @@ module.exports = {
       room: id
     }, {
       single: true
-    }, function(error, done) {
+    }, function(error, game) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get ok value.
+      var ok = game.result.ok;
       // debug message.
-      var message = done
-        ? 'for #%d has been removed'
-          : 'for #%d hasn\'t been removed';
+      var message = ok
+        ? 'for #%d has been removed.'
+          : 'for #%d couldn\'t be removed.';
       // debug game.
       debug(message, id);
       // return callback - passing database object, done boolean.
-      return callback(null, db, done);
+      return callback(null, db, ok);
     });
   },
   /**
@@ -151,13 +153,23 @@ module.exports = {
       }
     }, {
       new: true
-    } ,function(error, game) {
+    }, function(error, game) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get ok value.
+      var ok = game.ok;
+      // get players object.
+      var _game = game.value;
+      // debug message.
+      var message = ok
+        ? 'has been reseted for #%d room - %o'
+          : 'couldn\'t be reseted for #%d room - %o';
+      // debug game.
+      debug(message, id, _game);
       // return callback - passing database object, game object.
-      return callback(null, db, game.value);
+      return callback(null, db, _game);
     });
   },
   /**
@@ -181,6 +193,8 @@ module.exports = {
       if (error) {
         return callback(error);
       }
+      // debug game.
+      debug('object for #%d room - %o', id, game);
       // return callback - passing database object, game object.
       return callback(null, db, game);
     });
@@ -233,7 +247,6 @@ module.exports = {
                 // return callback - passing database object, redirect object.
                 return callback(null, db, redirect);
               }
-              // :
               // debug game.
               debug('player couldn\'t be joined');
               // return callback - passing database object.
@@ -293,7 +306,7 @@ module.exports = {
                 var message = done
                   ? '%s has left #%d room'
                     : 'player is playing';
-                // debug player.
+                // debug game.
                 debug(message, player.name, room._id);
                 // return callback - passing database object, done boolean.
                 return callback(null, db, done);
@@ -374,14 +387,18 @@ module.exports = {
       if (error) {
         return callback(error);
       }
+      // get ok value.
+      var ok = game.ok;
+      // get game object.
+      var _game = game.value;
       // debug message.
-      var message = done
-        ? 'room #%d - figure has been updated'
-          : 'room #%d - figure hasn\'t been updated';
+      var message = ok
+        ? 'room #%d - figure has changed to #%d - %o'
+          : 'room #%d - figure couldn\'t be changed.';
       // debug game.
-      debug(message, id);
+      debug(message, id, figure, _game);
       // return callback - passing database object, game object.
-      return callback(null, db, game.value);
+      return callback(null, db, _game);
     });
   },
   /**
@@ -412,19 +429,23 @@ module.exports = {
       room: id
     }, [], update, {
       new: true
-    }, function(error, game, done) {
+    }, function(error, game) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
+      // get ok value.
+      var ok = game.ok;
+      // get game object.
+      var _game = game.value;
       // debug message.
       var message = done
-        ? 'room #%d - targets has been updated'
-         : 'room #%d - targets hasn\'t been updated';
+        ? 'targets has been updated in room #%d - %o'
+         : 'targets couldn\'t be updated in room #%d - %o';
       // debug game.
-      debug(message, id);
+      debug(message, id, _game);
       // return callback passing database object, game object.
-      return callback(null, db, game.value);
+      return callback(null, db, _game);
     });
   },
   /**
@@ -582,23 +603,39 @@ module.exports = {
       });
     })
     .on('disconnect', function() {
+      // cookies isn't empty ?
       if (socket.handshake.headers.cookie) {
+        // get cookie object.
         var _cookie = cookie.parse(socket.handshake.headers.cookie);
-        var _size = !_.isEmpty(rooms) ? _.size(rooms[_cookie.id]) : 0;
+        // get room id.
+        var id = _cookie.id;
+        // get position.
+        var position = _cookie.position;
+        // get rooms object size.
+        var _size = !_.isEmpty(rooms) ? _.size(rooms[id]) : 0;
+        // 5s.
         setTimeout(function() {
-          var size = _.size(rooms[_cookie.id]);
+          // get rooms object size.
+          var size = _.size(rooms[id]);
+          // size === _size ?
           if (size === _size) {
-            var _player = _.filter(__players, function(player) {
-              return player.room === _cookie.id >> 0 && player.position === _cookie.position >> 0;
-            })[0];
-            if (_player) {
-              room.getRoomById(db, _player.room, function(error, db, room) {
+            // get player object by query object.
+            player.getPlayersByObject(db, {
+              room: id,
+              position: position
+            }, function(error, db, player) {
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
+              // get room object by id.
+              room.getRoomById(db, id, function(error, db, room) {
                 // return callback - passing error object.
                 if (error) {
                   return callback(error);
                 }
                 // leave game.
-                _this.leave(db, _player, room, function(error, db, data) {
+                _this.leave(db, player, room, function(error, db, data) {
                   // return callback - passing error object.
                   if (error) {
                     return callback(error);
@@ -610,13 +647,20 @@ module.exports = {
                     socket.broadcast.in(room._id).emit('player:waiting', data);
                   }
                 });
-              })
-            }
+              });
+            });
           }
+          // :
           else {
-            // console.log('user reconnected!');
+            // debug game.
+            debug('is on.');
           }
-        }, 5000)
+        }, 5000);
+      }
+      // :
+      else {
+        // debug game.
+        debug('cookie is empty.');
       }
     })
   }
