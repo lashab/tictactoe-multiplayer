@@ -1,3 +1,10 @@
+// ----------------------------------------------
+// Project: Tictactoe
+// File: routes.js
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// ----------------------------------------------
+
 'use strict';
 /**
  * Module dependencies.
@@ -30,72 +37,71 @@ module.exports = function(db, app, callback) {
   });
   // GET - /room/:id where :id is room id.
   app.get('/room/:id', function(request, response, next) {
-    // // get room id.
-    // var id = request.params.id;
-    // // get players by room.
-    // player.getPlayersByRoom(db, {
-    //   _id: id
-    // }, function(error, db, players) {
-    //   // return callback - passing error object.
-    //   if (error) {
-    //     return callback(error);
-    //   }
-    //   // player length ?
-    //   if (players.length) {
-    //     // cookie position couldn't be found ?
-    //     if (!request.cookies.position) {
-    //       // get room.
-    //       room.getRoomById(db, id, function(error, db, _room) {
-    //         // return callback - passing error object.
-    //         if (error) {
-    //           return callback(error);
-    //         }
-    //         // room is available ?
-    //         if (_room.available) {
-    //           // close room.
-    //           room.close(db, {
-    //             _id: id
-    //           }, function(error, db, room) {
-    //             // return callback - passing error object.
-    //             if (error) {
-    //               return callback(error);
-    //             }
-    //             // debug route.
-    //             debug('setting cookie id.');
-    //             // set cookie - id.
-    //             response.cookie('id', id);
-    //             // continue.
-    //             next();
-    //           });
-    //         }
-    //         // :
-    //         else {
-    //           // debug route.
-    //           debug('room #%d is full.', id);
-    //           // debug route.
-    //           debug('back to homepage.');
-    //           // back to homepage.
-    //           response.redirect('..');
-    //         }
-    //       });
-    //     }
-    //     // :
-    //     else {
-    //       // continue.
-    //       next();
-    //     }
-    //   }
-    //   // :
-    //   else {
-    //     // debug route.
-    //     debug('players couldn\'t found in #%d room.', id);
-    //     // debug route.
-    //     debug('back to homepage.');
-    //     // back to homepage.
-    //     response.redirect('..');
-    //   }
-    // });
-    next();
+    // get room id.
+    var id = request.params.id;
+    // get players by room.
+    player.getPlayersByRoom(db, {
+      _id: id
+    }, function(error, db, players) {
+      // return callback - passing error object.
+      if (error) {
+        return callback(error);
+      }
+      // player length ?
+      if (players.length) {
+        // cookie position couldn't be found ?
+        if (!request.cookies.position) {
+          // get room.
+          room.getRoomById(db, id, function(error, db, _room) {
+            // return callback - passing error object.
+            if (error) {
+              return callback(error);
+            }
+            // room is available ?
+            if (_room.available) {
+              // close room.
+              room.close(db, {
+                _id: id
+              }, function(error, db, room) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // debug route.
+                debug('setting cookie id.');
+                // set cookie - id.
+                response.cookie('id', id);
+                // continue.
+                next();
+              });
+            }
+            // :
+            else {
+              // debug route.
+              debug('room #%d is full.', id);
+              // debug route.
+              debug('back to homepage.');
+              // back to homepage.
+              response.redirect('..');
+            }
+          });
+        }
+        // :
+        else {
+          // continue.
+          next();
+        }
+      }
+      // :
+      else {
+        // debug route.
+        debug('players couldn\'t found in #%d room.', id);
+        // debug route.
+        debug('back to homepage.');
+        // back to homepage.
+        response.redirect('..');
+      }
+    });
   }, function(request, response) {
     // debug route.
     debug('rendering room page.');
@@ -130,7 +136,7 @@ module.exports = function(db, app, callback) {
     var id = request.cookies.id ? request.cookies.id : 0;
     // join player to the game.
     game.join(db, request.body.name, id, function(error, db, player) {
-      // debug error.
+      // return callback - passing error object.
       if (error) {
         return callback(error);
       }
@@ -155,7 +161,7 @@ module.exports = function(db, app, callback) {
       // :
       else {
         // debug route.
-        debug('response end');
+        debug('response end.');
         // end response.
         response.end();
       }

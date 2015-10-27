@@ -44,7 +44,7 @@ module.exports = {
     var collection = this.getCollection(db);
     // get room id && casting id.
     var id = room._id >> 0;
-    // room is avaiable ?
+    // room is available ?
     if (room.available) {
       // add game.
       collection.save({
@@ -90,7 +90,7 @@ module.exports = {
     // :
     else {
       // debug game.
-      debug('for #%d room exists.');
+      debug('for #%d room exists.', id);
       // return callback - passing database object, boolean true.
       return callback(null, db, true);
     }
@@ -286,7 +286,7 @@ module.exports = {
       }
       // player has been removed ?
       if (done) {
-        // room is avaialable ?
+        // room is available ?
         if (_room.available) {
           // remove room.
           room.remove(db, _room, function(error, db, done) {
@@ -608,19 +608,21 @@ module.exports = {
         // get cookie object.
         var _cookie = cookie.parse(socket.handshake.headers.cookie);
         // get room id.
-        var id = _cookie.id;
+        var id = _cookie.id >> 0;
         // get position.
-        var position = _cookie.position;
-        // get rooms object size.
-        var _size = !_.isEmpty(rooms) ? _.size(rooms[id]) : 0;
-        // 5s.
-        setTimeout(function() {
+        var position = _cookie.position >> 0;
+        // id && position is defined ?
+        if (id && position) {
           // get rooms object size.
-          var size = _.size(rooms[id]);
-          // size === _size ?
-          if (size === _size) {
+          var _size = !_.isEmpty(rooms) ? _.size(rooms[id]) : 0;
+          // 5s.
+          setTimeout(function() {
+            // get rooms object size.
+            var size = _.size(rooms[id]);
+            // size === _size ?
+            if (size === _size) {
             // get player object by query object.
-            player.getPlayersByObject(db, {
+            player.getPlayerByObject(db, {
               room: id,
               position: position
             }, function(error, db, player) {
@@ -628,40 +630,45 @@ module.exports = {
               if (error) {
                 return callback(error);
               }
-              // get room object by id.
-              room.getRoomById(db, id, function(error, db, room) {
-                // return callback - passing error object.
-                if (error) {
-                  return callback(error);
-                }
-                // leave game.
-                _this.leave(db, player, room, function(error, db, data) {
+              // player object isn't empty ?
+              if (player) {
+                // get room object by id.
+                room.getRoomById(db, id, function(error, db, room) {
                   // return callback - passing error object.
                   if (error) {
                     return callback(error);
                   }
-                  if (!room.available && typeof data === 'object') {
-                    // add waiting object.
-                    data.position = _player.position;
-                    // socket emit - player:waiting - passing waiting object.
-                    socket.broadcast.in(room._id).emit('player:waiting', data);
-                  }
+                  // leave game.
+                  _this.leave(db, player, room, function(error, db, data) {
+                    // return callback - passing error object.
+                    if (error) {
+                      return callback(error);
+                    }
+                    // room is available && data type is object ?
+                    if (!room.available && typeof data === 'object') {
+                      // add position.
+                      data.position = player.position;
+                      // socket emit - player:waiting - passing data object.
+                      socket.broadcast.in(room._id).emit('player:waiting', data);
+                    }
+                  });
                 });
-              });
+              }
             });
-          }
-          // :
-          else {
-            // debug game.
-            debug('is on.');
-          }
-        }, 5000);
+            }
+            // :
+            else {
+              // debug game.
+              debug('is on.');
+            }
+          }, 5000);
+        }
       }
       // :
       else {
         // debug game.
         debug('cookie is empty.');
       }
-    })
+    });
   }
 };

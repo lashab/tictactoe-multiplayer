@@ -143,12 +143,16 @@ module.exports = {
       if (error) {
         return callback(error);
       }
+      // debug message.
+      var message = player
+        ? 'get player object - %o'
+          : 'object couldn\'t be found - %o';
       // debug player.
-      debug('get player object %o', player);
+      debug(message, player);
       // return callback - passing database object, player object.
       return callback(null, db, player);
     });
-  }
+  },
   /**
    * get player object by id.
    *

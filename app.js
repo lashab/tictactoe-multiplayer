@@ -23,7 +23,6 @@ var database = require('mongodb').MongoClient;
 
 var routes = require('./app/routes');
 var game = require('./app/models/game');
-var player = require('./app/models/player');
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));
@@ -32,7 +31,7 @@ app.set('title', config.get('tictactoe.title'));
 app.set('mongodb', config.get('tictactoe.mongodb.url'));
 app.set('view engine', 'ejs');
 app.use(favicon(join(__dirname, 'public', 'images', 'favicon.ico')));
-app.use(cookieParse(app.get('ckey')));
+app.use(cookieParse('hello'));
 app.use(bodyParse.urlencoded({
   extended: true
 }));
@@ -40,59 +39,23 @@ app.use(bodyParse.json());
 app.use(methodOverride());
 app.use(express.static(join(__dirname, 'public')));
 
-database.connect(app.get('mongodb'), function(error, db) {
-  // debug app - passing error object.
-  if (error) {
-    debug(error);
-  }
-  // player.add(db, 'lasha', { _id: 1, left: -1 }, function(error, db, player) {
-  //   if (error) {
-  //     debug(error);
-  //   }
-  // });
-  //
-  // setTimeout(function() {
-  //   player.add(db, 'nika', { _id: 1, left: -1 }, function(error, db, player) {
-  //     if (error) {
-  //       debug(error);
-  //     }
-  //   });
-  // }, 5000);
-
-  setTimeout(function() {
-    player.remove(db, {_id: '5629201939ab1f812377617c' }, function(error, db, player) {
-      if (error) {
-        debug(error);
-      }
-    })
-  }, 2000);
-
-  // setTimeout(function() {
-  //   player.updateScore(db, 1, function(error, db, player) {
-  //     if (error) {
-  //       debug(error);
-  //     }
-  //   });
-  // }, 4000);
-
-});
-
 // server listens to port.
 Server.listen(app.get('port'));
-// socket.io;
-io.on('connection', function(socket) {
-  database.connect(app.get('mongodb'), function(error, db) {
+
+database.connect(app.get('mongodb'), function(error, db) {
+  // routes.
+  routes(db, app, function(error) {
+    // debug app - passing error object.
+    if (error) {
+      debug(error);
+    }
+  });
+  // socket.io;
+  io.on('connection', function(socket) {
     // debug error passing error object.
     if (error) {
       debug(error);
     }
-    // routes.
-    routes(db, app, function(error) {
-      // debug app - passing error object.
-      if (error) {
-        debug(error);
-      }
-    });
     // run game.
     game.run(db, io, socket, function(error) {
       // debug error passing error object.
