@@ -497,20 +497,20 @@
     return this;
   }
   /**
-   * set initial targets.
+   * initialize targets.
    *
    * @return {Object} this
    */
   Game.prototype.initTargets = function() {
-    // add initial key & figure values for each of the target.
+    // initial key & figure values.
     this.__canvas.forEachObject(function(object, key) {
       object.set({
         key: key,
         figure: NaN
       });
     });
-    // set size.
-    this.set('size', this.getCanvasObjectSize());
+    // debug canvas.
+    _canvas('targets has been initialized.');
 
     return this;
   }
@@ -520,7 +520,7 @@
    * @return {Object} this
    */
   Game.prototype.updateTarget = function(target, key, figure) {
-    // update target key & figure values, prevent this target clickable.
+    // update target.
     target.set({
       key: key,
       figure: figure
@@ -795,7 +795,7 @@
     return group;
   }
   /**
-   * draw game.
+   * draw canvas game.
    *
    * @return {Object} this
    */
@@ -846,6 +846,8 @@
         this.drawLine([x * 2, y * 3, x * 3, y * 3])
       ])
     );
+    // debug canvas.
+    _canvas('game has been drawn.');
 
     return this;
   }
@@ -884,13 +886,17 @@
       ]);
       // add cross onto the canvas.
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
+      // debug canvas.
+      _canvas('drawing cross.');
     }
-    // : figure is 0
+    // :
     else {
       // prepare circle.
       var circle = this.drawCircle(centerY, centerX, radius);
       // add circle onto the canvas.
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
+      // debug canvas.
+      _canvas('drawing circle.');
     }
 
     return this;
@@ -904,21 +910,21 @@
     var _this = this;
     // get room object.
     var game = this.getGame();
-    if (_.isEmpty(game)) {
-      game.targets.forEach(function(target) {
-        // get target key.
-        var key = Object.keys(target);
-        // get target figure.
-        var figure = target[key];
-        // get target.
-        var _target = _this.__canvas.item(key);
-        _this
-          // draw figure.
-          .drawFigure(_target, figure)
-          // update target.
-          .updateTarget(_target, key, figure);
-      });
-    }
+    game.targets.forEach(function(target) {
+      // get target key.
+      var key = Object.keys(target);
+      // get target figure.
+      var figure = target[key];
+      // get target.
+      var _target = _this.__canvas.item(key);
+      _this
+        // draw figure.
+        .drawFigure(_target, figure)
+        // update target.
+        .updateTarget(_target, key, figure);
+    });
+    // debug canvas.
+    _canvas('drawing game figures (state).');
 
     return this;
   }
@@ -1150,6 +1156,8 @@
           .set('game', game)
           // draw game.
           .drawGame()
+          // set canvas object size.
+          .set('size', _this.getCanvasObjectSize());
           // initialize targets.
           .initTargets()
           // draw game state.

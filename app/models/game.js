@@ -1,9 +1,9 @@
-// --------------------------------------------------------
+// ----------------------------------------------
 // Project: Tictactoe
 // File: game.js
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
-// --------------------------------------------------------
+// ----------------------------------------------
 
 'use strict';
 /**
@@ -611,8 +611,8 @@ module.exports = {
         var id = _cookie.id >> 0;
         // get position.
         var position = _cookie.position >> 0;
-        // id && position is defined ?
-        if (id && position) {
+        // id > 0 ?
+        if (id) {
           // get rooms object size.
           var _size = !_.isEmpty(rooms) ? _.size(rooms[id]) : 0;
           // 5s.
