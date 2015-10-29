@@ -1,3 +1,10 @@
+// ----------------------------------------------
+// Project: Tictactoe
+// File: template.js
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// ----------------------------------------------
+
 'use strict';
 /**
  * Module dependencies.

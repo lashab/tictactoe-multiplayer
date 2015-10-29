@@ -1,3 +1,10 @@
+// ----------------------------------------------
+// Project: Tictactoe
+// File: app.js
+// Author: Lasha Badashvili (lashab@picktek.com)
+// URL: http://github.com/lashab
+// ----------------------------------------------
+
 'use strict';
 /**
  * Module dependencies.
@@ -52,13 +59,13 @@ database.connect(app.get('mongodb'), function(error, db) {
   });
   // socket.io;
   io.on('connection', function(socket) {
-    // debug error passing error object.
+    // debug app - passing error object.
     if (error) {
       debug(error);
     }
     // run game.
     game.run(db, io, socket, function(error) {
-      // debug error passing error object.
+      // debug app - passing error object.
       if (error) {
         debug(error);
       }

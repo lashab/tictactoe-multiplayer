@@ -1,8 +1,8 @@
-// --------------------------------------------------------
+// ----------------------------------------------
 // Project: Tictactoe
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
-// --------------------------------------------------------
+// ----------------------------------------------
 
 /* transition mixin. */
 @mixin transition($arguments...) {
@@ -21,7 +21,7 @@
 /* keyframes mixin. */
 @mixin keyframes($animation) {
   @-webkit-keyframes #{$animation} {
-    @content; 
+    @content;
   }
   @-moz-keyframes #{$animation} {
     @content;
@@ -34,7 +34,7 @@
   }
   @keyframes #{$animation} {
     @content;
-  } 
+  }
 }
 /* fadein mixin. */
 @mixin fadein($opacity) {

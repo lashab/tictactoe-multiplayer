@@ -1,17 +1,21 @@
-// ------------------------------------------------
+// ----------------------------------------------
 // Project: Tictactoe
+// File: script.js
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
-// ------------------------------------------------
+// ----------------------------------------------
 
 ;(function($) {
   'use strict';
 
-  var _canvas = debug('canvas');
-  var _socket = debug('socket');
-  var _players = debug('players');
-  var _room = debug('room');
-  var _game = debug('game');
+  /**
+   * debug.
+   *
+   * @param {String} string
+   */
+  var _debug = function(string) {
+    debug(string).apply(this, _.toArray(arguments).slice(1));
+  }
   /**
    * constructor.
    *
@@ -27,11 +31,11 @@
     // set socket object.
     this.socket = socket;
     // debug canvas width.
-    _canvas('width %d', this.__canvas.getWidth());
+    _debug('canvas', 'width %d', this.__canvas.getWidth());
     // debug canvas height.
-    _canvas('height %d', this.__canvas.getHeight());
+    _debug('canvas', 'height %d', this.__canvas.getHeight());
     // debug socket object.
-    _socket('object %o', this.socket);
+    _debug('socket', 'object %o', this.socket);
   }
   /**
    * setter.
@@ -71,7 +75,7 @@
       ? 'object could\'t be found - o%'
         : '%o';
     // debug room.
-    _room(message, room);
+    _debug('room', message, room);
 
     return room;
   }
@@ -88,7 +92,7 @@
       ? 'object could\'t be found - %o'
         : '%o';
     // debug game.
-    _game(message, game);
+    _debug('game', message, game);
 
     return game;
   }
@@ -103,7 +107,7 @@
     // get players object message.
     if (!players.length) {
       // debug players.
-      _players('object could\'t be found - %o', players);
+      _debug('players', 'object could\'t be found - %o', players);
     }
 
     return players;
@@ -142,7 +146,7 @@
     }
     catch (e) {
       // debug room.
-      _room(e.message);
+      _debug('room', e.message);
 
       return false;
     }
@@ -153,13 +157,13 @@
       // get room id && casting id.
       var room = matches[1] >> 0;
       // debug room.
-      _room('you\'re joined in room #%d', room);
+      _debug('room', 'you\'re joined in room #%d', room);
 
       return room;
     }
     else {
       // debug room.
-      _room('you\'re not joined yet.');
+      _debug('room', 'you\'re not joined yet.');
     }
 
     return false;
@@ -181,7 +185,7 @@
     }
     catch(e) {
       // debug players.
-      _players(e.message);
+      _debug('players', e.message);
 
       return -1;
     }
@@ -239,7 +243,7 @@
           // focus on input.
           input.focus();
           // debug players.
-          _players('%s isn\'t a valid name.', value);
+          _debug('players', '%s isn\'t a valid name.', value);
         }
         // :
         else {
@@ -253,7 +257,7 @@
         // focus on input.
         input.focus();
         // debug players.
-        _players('field is empty.');
+        _debug('players', 'field is empty.');
       }
     });
     // get room id.
@@ -296,7 +300,7 @@
       // add class show.
       _player.addClass('show');
       // debug players.
-      _players('%s has been rendered.', player.name);
+      _debug('players', 'rendering player - %s - %o', player.name, player);
     });
 
     return this;
@@ -341,7 +345,7 @@
     // player object isn't empty ?
     if (!_.isEmpty(player)) {
       // debug players.
-      _players('%s is waiting', player.name);
+      _players('%s is waiting - %o', player.name, player);
     }
 
     return this;
@@ -374,8 +378,10 @@
       .toggleClass(_fadeIn, true);
     // player isn't waiting ?
     if (!isWaiting) {
+      // get active player object.
+      var _player = this.getActivePlayer();
       // debug players.
-      _players('%s\'s turn', this.getActivePlayer().name);
+      _debug('players', '%s\'s turn - %o', _player.name, _player);
     }
 
     return this;
@@ -401,9 +407,9 @@
    * @return {Object} this
    */
   Game.prototype.setPlayersScore = function() {
-    // get players.
+    // get players object.
     var players = this.getPlayers();
-    // get badges.
+    // get badge elements.
     var badges = $('.players').find('.badge');
     // players length > 1 ?
     if (players.length > 1) {
@@ -449,7 +455,7 @@
       // set score.
       badge.text(score);
       // debug players.
-      _players('%s\'s score is %d', player.name, score);
+      _debug('players', '%s\'s score is %d - %o', player.name, score, player);
     });
 
     return this;
@@ -462,9 +468,9 @@
    */
   Game.prototype.setActiveState = function(evented) {
     var evented = evented || false;
-    // get available targets.
+    // get target objects.
     this.getAvailableTargets(function(object) {
-      // set evented property TRUE | FALSE.
+      // set evented TRUE | FALSE.
       object.set('evented', evented);
     });
 
@@ -479,7 +485,7 @@
     // activate game.
     this.setActiveState(true);
     // debug game.
-    _game('is active you can play.');
+    _debug('game', 'is active you can play.');
 
     return this;
   }
@@ -492,7 +498,7 @@
     // deactivate game.
     this.setActiveState();
     // debug game.
-    _game('is inactive you can\'t play yet.');
+    _debug('game', 'is inactive you can\'t play yet.');
 
     return this;
   }
@@ -509,8 +515,6 @@
         figure: NaN
       });
     });
-    // debug canvas.
-    _canvas('targets has been initialized.');
 
     return this;
   }
@@ -542,7 +546,7 @@
     var i = this.get('size') - 1;
     // get active figure;
     var figure = game.figure;
-    // prepare targets array.
+    // prepare target objects.
     var targets = [];
     // get target key.
     var key = target.get('key');
@@ -574,22 +578,21 @@
     while (i !== -1) {
       // get figure.
       var _figure = this.__canvas.item(i).get('figure');
-      // pushing NaN figure into array.
+      // pushing NaN figure.
       if (isNaN(_figure)) {
         targets.push(_figure);
       }
       i--;
     }
-    // game is over without winner.
+    // game is over, status - draw.
     if (!targets.length) {
       // pushing values in game object.
       _game.over = true;
-      _game.wins = '';
+      _game.wins = {};
+      // debug game.
+      _debug('game', 'game over status - draw');
     }
-    // if theres is a match in this
-    // combination this means that
-    // game is over and game has
-    // a winner.
+    // game is over, status - wins.
     for (var i in combinations) {
       var combination = combinations[i];
       var a = this.__canvas.item(combination[0]).get('figure');
@@ -602,71 +605,76 @@
         _game.over = true;
         _game.combination = combination;
         _game.wins = player;
+        // debug game.
+        _debug('game', 'game over status - wins - %s - %o', player.name, player);
       }
     }
-    // calling callback function
-    // if it is provided.
+    // callback is function ?
     if (callback && $.isFunction(callback)) {
-      callback.call(this, _game);
+      // callback - passing game object.
+      callback(_game);
     }
 
     return this;
   }
   /**
-   * play on target click.
+   * play game.
    *
-   * @param {Object} socket
    * @return {Object} this
    */
   Game.prototype._play = function() {
     var _this = this;
     // get socket object.
     var socket = this.socket;
+    // canvas event - mouse:down.
     this.__canvas.on({
       'mouse:down': function(e) {
-        // target is clickable ?
-        if ($.type(e.target) !== 'undefined' && $.type(e.target) == 'object') {
-          // play audio.
-          _this.audioPlay();
-          // get target.
+        // target object condition.
+        var condition = !_.isUndefined(e.target) && _.isObject(e.target);
+        if (condition) {
+          // get target object.
           var target = e.target;
           // start playing.
           _this.play(target, function(game) {
             // get game object.
             var _game = _this.getGame();
-            // socket emit - game:play - passing object.
-            socket.emit('game:play', {
-              game: _game,
-              target: game.target
-            });
-            // game isn't over ?
-            if (!game.over) {
-              // get players object.
-              var players = _this.getPlayers();
-              // socket emit - players:switch - passing object.
-              socket.emit('players:switch', {
+            // game object !empty ?
+            if (!_.isEmpty(_game)) {
+              // socket emit - game:play - passing object.
+              socket.emit('game:play', {
                 game: _game,
-                players: players
+                target: game.target
               });
+              if (!game.over) {
+                // get players object.
+                var players = _this.getPlayers();
+                // socket emit - players:switch - passing object.
+                socket.emit('players:switch', {
+                  game: _game,
+                  players: players
+                });
+              }
+              // :
+              else {
+                // get room object.
+                var room = _this.getRoom();
+                // socket emit - game:restart - passing object.
+                socket.emit('game:restart', {
+                  room: room,
+                  game: _game,
+                  wins: game.wins,
+                  combination: game.combination
+                });
+              }
             }
-            // : restart game.
-            else {
-              // get room object.
-              var room = _this.getRoom();
-              // socket emit - game:restart - passing object.
-              socket.emit('game:restart', {
-                room: room,
-                game: _game,
-                wins: game.wins,
-                combination: game.combination
-              });
-            }
-          });
+          })
+          // play audio.
+          .audioPlay();
         }
         // :
         else {
           // debug game.
-          console.debug('this target has already have figure or its not your turn!');
+          _debug('game', 'you can\'t play yet.');
         }
       }
     });
@@ -680,6 +688,7 @@
    */
   Game.prototype.restart = function() {
     var _this = this;
+    // 1s.
     setTimeout(function() {
       // get size - 1.
       var i = _this.getCanvasObjectSize() - 1;
@@ -696,6 +705,8 @@
         });
         i--;
       }
+      // debug game.
+      _debug('game', 'restarting.');
     }, 1000);
 
     return this;
@@ -714,7 +725,7 @@
     return size;
   }
   /**
-   * get available targets.
+   * get available target objects.
    *
    * @param {Function} callback
    */
@@ -847,7 +858,7 @@
       ])
     );
     // debug canvas.
-    _canvas('game has been drawn.');
+    _debug('canvas', 'drawing game.');
 
     return this;
   }
@@ -887,7 +898,7 @@
       // add cross onto the canvas.
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
       // debug canvas.
-      _canvas('drawing cross.');
+      _debug('canvas', 'drawing cross.');
     }
     // :
     else {
@@ -896,7 +907,7 @@
       // add circle onto the canvas.
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
       // debug canvas.
-      _canvas('drawing circle.');
+      _debug('canvas', 'drawing circle.');
     }
 
     return this;
@@ -924,7 +935,7 @@
         .updateTarget(_target, key, figure);
     });
     // debug canvas.
-    _canvas('drawing game figures (state).');
+    _debug('canvas', 'drawing game figures (state).');
 
     return this;
   }
@@ -938,10 +949,9 @@
    * @return {Object} this
    */
   Game.prototype.figureFadeIn = function(figure, from, to, duration) {
-    // set opacity (from where to start).
+    // opacity from.
     figure.set('opacity', from);
-    // add animation onto the figure increase
-    // opacity to the provided point.
+    // opacity animation.
     figure.animate('opacity', to, {
       duration: duration,
       onChange: this.__canvas.renderAll.bind(this.__canvas)
@@ -1024,6 +1034,8 @@
       }
       // add cross out onto the canvas.
       this.__canvas.add(this.drawGroup([this.drawLine([coordinates.x1, coordinates.y1, coordinates.x2, coordinates.y2])]));
+      // debug canvas.
+      _debug('canvas', 'drawing cross-out - %o', combination);
     }
 
     return this;
@@ -1057,11 +1069,13 @@
    *
    * @return {Object} this
    */
-  Game.prototype.audioOn = function() {
+  Game.prototype.soundOn = function() {
     // get audio object.
     var audio = this.getAudioObject();
     // unmute audio.
     audio.muted = false;
+    // debug audio.
+    _debug('audio', 'is on.');
 
     return this;
   }
@@ -1075,6 +1089,8 @@
     var audio = this.getAudioObject();
     // unmute audio.
     audio.muted = true;
+    // debug audio.
+    _debug('audio', 'is off.');
 
     return this;
   }
@@ -1157,7 +1173,7 @@
           // draw game.
           .drawGame()
           // set canvas object size.
-          .set('size', _this.getCanvasObjectSize());
+          .set('size', _this.getCanvasObjectSize())
           // initialize targets.
           .initTargets()
           // draw game state.

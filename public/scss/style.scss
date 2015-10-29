@@ -1,8 +1,8 @@
-// --------------------------------------------------------
+// ----------------------------------------------
 // Project: Tictactoe
 // Author: Lasha Badashvili (lashab@picktek.com)
 // URL: http://github.com/lashab
-// --------------------------------------------------------
+// ----------------------------------------------
 
 @import '_mixins';
 
@@ -26,7 +26,7 @@ body {
 
 @include keyframes(fadein) {
   0% { opacity: 0; }
-  100% { opacity: 1; } 
+  100% { opacity: 1; }
 }
 /* fade in effects */
 .fade-in-1-1 {
@@ -73,7 +73,7 @@ body {
         width: 20%;
       }
     }
-  } 
+  }
   button {
     $size: 25px;
     display: block;
@@ -159,7 +159,7 @@ body {
     background-color: $color-rose !important;
   }
   .#{$badge}-winning {
-    background-color: $color-green !important; 
+    background-color: $color-green !important;
   }
 }
 /* leave icon. */
@@ -179,7 +179,7 @@ body {
 /* volume icon. */
 .glyphicon-volume {
   position: absolute !important;
-  top: initial !important; 
+  top: initial !important;
   right: 5px !important;
   bottom: 5px !important;
   font-size: 3em;
