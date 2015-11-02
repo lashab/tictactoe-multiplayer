@@ -9,19 +9,11 @@
   'use strict';
 
   /**
-   * debug.
-   *
-   * @param {String} string
-   */
-  var _debug = function(string) {
-    debug(string).apply(this, _.toArray(arguments).slice(1));
-  }
-  /**
    * constructor.
    *
    * @param {Object} canvas
    */
-  var Game = function(canvas, socket) {
+  var Game = function(canvas, socket, debug) {
     // set fabric canvas object.
     this.__canvas = new fabric.Canvas(canvas.id);
     // set canvas width.
@@ -30,12 +22,14 @@
     this.__canvas.setHeight(canvas.height);
     // set socket object.
     this.socket = socket;
+    // set debug function.
+    this.debug = debug;
     // debug canvas width.
-    _debug('canvas', 'width %d', this.__canvas.getWidth());
+    this.debug('canvas', 'width %d', this.__canvas.getWidth());
     // debug canvas height.
-    _debug('canvas', 'height %d', this.__canvas.getHeight());
+    this.debug('canvas', 'height %d', this.__canvas.getHeight());
     // debug socket object.
-    _debug('socket', 'object %o', this.socket);
+    this.debug('socket', 'object %o', this.socket);
   }
   /**
    * setter.
@@ -70,12 +64,12 @@
   Game.prototype.getRoom = function() {
     // get room object.
     var room = this.get('room') || {};
-    // get room object message.
+    // debug message.
     var message = _.isEmpty(room)
       ? 'object could\'t be found - o%'
         : '%o';
     // debug room.
-    _debug('room', message, room);
+    this.debug('room', message, room);
 
     return room;
   }
@@ -87,12 +81,12 @@
   Game.prototype.getGame = function() {
     // get game object.
     var game = this.get('game') || {};
-    // get game object message.
+    // debug message.
     var message = _.isEmpty(game)
       ? 'object could\'t be found - %o'
         : '%o';
     // debug game.
-    _debug('game', message, game);
+    this.debug('game', message, game);
 
     return game;
   }
@@ -104,10 +98,10 @@
   Game.prototype.getPlayers = function() {
     // get players object.
     var players = this.get('players') || [];
-    // get players object message.
+    // debug message.
     if (!players.length) {
       // debug players.
-      _debug('players', 'object could\'t be found - %o', players);
+      this.debug('players', 'object could\'t be found - %o', players);
     }
 
     return players;
@@ -133,7 +127,6 @@
     // regex - e.g. room/1, room/2 etc.
     var regex = /^\/room\/(\d+)$/;
     try {
-      // pathname exists ?
       if (window.location.pathname) {
         // get pathname.
         pathname = window.location.pathname;
@@ -146,24 +139,24 @@
     }
     catch (e) {
       // debug room.
-      _debug('room', e.message);
+      this.debug('room', e.message);
 
       return false;
     }
     // get matches.
     var matches = pathname.match(regex);
-    // pathname matches regex ?
     if (matches) {
-      // get room id && casting id.
+      // get room id & casting id.
       var room = matches[1] >> 0;
       // debug room.
-      _debug('room', 'you\'re joined in room #%d', room);
+      this.debug('room', 'you\'re joined in room #%d', room);
 
       return room;
     }
+    // :
     else {
       // debug room.
-      _debug('room', 'you\'re not joined yet.');
+      this.debug('room', 'you\'re not joined yet.');
     }
 
     return false;
@@ -177,7 +170,7 @@
     // get player position from cookie.
     var position = docCookies.getItem('position');
     try {
-      // position ? get position && casting position.
+      // position ? get position & casting position.
       position = position ? position >> 0 : (function() {
         // throw error.
         throw new Error('cookie position couldn\'t be found.')
@@ -185,7 +178,7 @@
     }
     catch(e) {
       // debug players.
-      _debug('players', e.message);
+      this.debug('players', e.message);
 
       return -1;
     }
@@ -204,11 +197,9 @@
     var position = position || this.getPlayerPosition();
     // casting position.
     position = position >> 0;
-    // positon > -1 ?
     if (position !== -1) {
       // get players.
       var players = this.getPlayers();
-      // players length > 0 ?
       if (players.length) {
         // get player object by position.
         player = players.length === 1 ? players[0] : players[position];
@@ -229,11 +220,10 @@
       var input = $(this).find('input[type=text]');
       // get input value.
       var value = input.val();
-      // name length > 0 ?
       if (value.length) {
         // get form group.
         var formGroup = input.parent();
-        // name doesn't match regex ?
+        // name match regex ?
         if (!/^[A-Za-z]{1,8}$/.test(value)) {
           e.preventDefault();
           // display alert text.
@@ -243,7 +233,7 @@
           // focus on input.
           input.focus();
           // debug players.
-          _debug('players', '%s isn\'t a valid name.', value);
+          this.debug('players', '%s isn\'t a valid name.', value);
         }
         // :
         else {
@@ -257,12 +247,11 @@
         // focus on input.
         input.focus();
         // debug players.
-        _debug('players', 'field is empty.');
+        this.debug('players', 'field is empty.');
       }
     });
     // get room id.
     var id = this.getRoomIdByPathName();
-    // room id ?
     if (id) {
       // socket emit - player:join - passing object.
       this.socket.emit('player:join', {
@@ -278,9 +267,9 @@
    * @return {Object} this
    */
   Game.prototype.playersLoad = function () {
-    // get players.
+    var _this = this;
+    // get players object.
     var players = this.getPlayers();
-    // players size > 1 ?
     if (players.length > 1) {
       // set waiting value.
       this.set('waiting', false);
@@ -300,7 +289,7 @@
       // add class show.
       _player.addClass('show');
       // debug players.
-      _debug('players', 'rendering player - %s - %o', player.name, player);
+      _this.debug('players', 'rendering player - %s - %o', player.name, player);
     });
 
     return this;
@@ -340,12 +329,11 @@
     _player.find('.id-name').empty();
     // remove badge.
     _player.find('.id-badge').children().empty();
-    // add player-waiting && show classes.
+    // add player-waiting & show classes.
     _player.addClass('player-waiting').addClass('show');
-    // player object isn't empty ?
     if (!_.isEmpty(player)) {
       // debug players.
-      _players('%s is waiting - %o', player.name, player);
+      this.debug('players', '%s is waiting - %o', player.name, player);
     }
 
     return this;
@@ -366,22 +354,21 @@
     var fadeIn = 'fade-in-1-1';
     // prepare fade-in (opacity - .5) class.
     var _fadeIn = 'fade-in-5-10';
-    // player is active && not waiting state ? activate game : deactivate game.
+    // player is active & not waiting state ? activate game : deactivate game.
     player.active && !isWaiting ? this.activate() : this.deActivate();
-    // player active - add fade-in && remove fade-out class.
+    // player active - add fade-in & remove fade-out class.
     $('div[class*=id-player-' + position + ']')
       .toggleClass(fadeIn, true)
       .toggleClass(_fadeIn, false);
-    // player inactive - remove fade-in && add fade-out class.
+    // player inactive - remove fade-in & add fade-out class.
     $('div[class*=id-player-' + ~~!position + ']')
       .toggleClass(fadeIn, false)
       .toggleClass(_fadeIn, true);
-    // player isn't waiting ?
     if (!isWaiting) {
       // get active player object.
       var _player = this.getActivePlayer();
       // debug players.
-      _debug('players', '%s\'s turn - %o', _player.name, _player);
+      this.debug('players', '%s\'s turn - %o', _player.name, _player);
     }
 
     return this;
@@ -407,6 +394,7 @@
    * @return {Object} this
    */
   Game.prototype.setPlayersScore = function() {
+    var _this = this;
     // get players object.
     var players = this.getPlayers();
     // get badge elements.
@@ -442,7 +430,8 @@
         // remove badge-loosing class for second player.
         __badge.toggleClass('badge-loosing', false);
       }
-    } // :
+    }
+    // :
     else {
       // remove badge-loosing class.
       badges.toggleClass('badge-loosing', false);
@@ -455,7 +444,7 @@
       // set score.
       badge.text(score);
       // debug players.
-      _debug('players', '%s\'s score is %d - %o', player.name, score, player);
+      _this.debug('players', '%s\'s score is %d - %o', player.name, score, player);
     });
 
     return this;
@@ -485,7 +474,7 @@
     // activate game.
     this.setActiveState(true);
     // debug game.
-    _debug('game', 'is active you can play.');
+    this.debug('game', 'is active you can play.');
 
     return this;
   }
@@ -498,7 +487,7 @@
     // deactivate game.
     this.setActiveState();
     // debug game.
-    _debug('game', 'is inactive you can\'t play yet.');
+    this.debug('game', 'is inactive you can\'t play yet.');
 
     return this;
   }
@@ -521,6 +510,9 @@
   /**
    * update target.
    *
+   * @param {Object} target
+   * @param {Number} key
+   * @param {Number} figure
    * @return {Object} this
    */
   Game.prototype.updateTarget = function(target, key, figure) {
@@ -590,7 +582,7 @@
       _game.over = true;
       _game.wins = {};
       // debug game.
-      _debug('game', 'game over status - draw');
+      this.debug('game', 'game over status - draw');
     }
     // game is over, status - wins.
     for (var i in combinations) {
@@ -606,7 +598,7 @@
         _game.combination = combination;
         _game.wins = player;
         // debug game.
-        _debug('game', 'game over status - wins - %s - %o', player.name, player);
+        this.debug('game', 'game over status - wins - %s - %o', player.name, player);
       }
     }
     // callback is function ?
@@ -674,7 +666,7 @@
         // :
         else {
           // debug game.
-          _debug('game', 'you can\'t play yet.');
+        _this.debug('game', 'you can\'t play yet.');
         }
       }
     });
@@ -706,7 +698,7 @@
         i--;
       }
       // debug game.
-      _debug('game', 'restarting.');
+      this.debug('game', 'restarting.');
     }, 1000);
 
     return this;
@@ -720,7 +712,7 @@
     // get size.
     var size = this.__canvas.size();
     // debug canvas.
-    _canvas('canvas objects size = %d', size);
+    this.debug('canvas', 'objects size = %d', size);
 
     return size;
   }
@@ -858,7 +850,7 @@
       ])
     );
     // debug canvas.
-    _debug('canvas', 'drawing game.');
+    this.debug('canvas', 'drawing game.');
 
     return this;
   }
@@ -898,7 +890,7 @@
       // add cross onto the canvas.
       this.__canvas.add(this.figureFadeIn(cross, 0.5, 1, 200));
       // debug canvas.
-      _debug('canvas', 'drawing cross.');
+      this.debug('canvas', 'drawing cross.');
     }
     // :
     else {
@@ -907,7 +899,7 @@
       // add circle onto the canvas.
       this.__canvas.add(this.figureFadeIn(circle, 0.5, 1, 200));
       // debug canvas.
-      _debug('canvas', 'drawing circle.');
+      this.debug('canvas', 'drawing circle.');
     }
 
     return this;
@@ -935,7 +927,7 @@
         .updateTarget(_target, key, figure);
     });
     // debug canvas.
-    _debug('canvas', 'drawing game figures (state).');
+    this.debug('canvas', 'drawing game figures (state).');
 
     return this;
   }
@@ -1035,7 +1027,7 @@
       // add cross out onto the canvas.
       this.__canvas.add(this.drawGroup([this.drawLine([coordinates.x1, coordinates.y1, coordinates.x2, coordinates.y2])]));
       // debug canvas.
-      _debug('canvas', 'drawing cross-out - %o', combination);
+      this.debug('canvas', 'drawing cross-out - %o', combination);
     }
 
     return this;
@@ -1069,13 +1061,13 @@
    *
    * @return {Object} this
    */
-  Game.prototype.soundOn = function() {
+  Game.prototype.audioOn = function() {
     // get audio object.
     var audio = this.getAudioObject();
     // unmute audio.
     audio.muted = false;
     // debug audio.
-    _debug('audio', 'is on.');
+    this.debug('audio', 'is on.');
 
     return this;
   }
@@ -1090,7 +1082,7 @@
     // unmute audio.
     audio.muted = true;
     // debug audio.
-    _debug('audio', 'is off.');
+    this.debug('audio', 'is off.');
 
     return this;
   }
@@ -1127,6 +1119,11 @@
 
     return this;
   }
+  /**
+   * draw game on resize.
+   *
+   * @return {Object} this
+   */
   Game.prototype.drawOnResize = function() {
     var _this = this;
     $(window).resize(function() {
@@ -1137,12 +1134,15 @@
       var height = window.innerHeight;
       _this.__canvas.setWidth(width);
       _this.__canvas.setHeight(height);
-      _this.drawGame();
-      _this.initTargets();
-      // draw game state.
-      _this.drawGameState();
-      // set active player.
-      _this.setActivePlayer();
+      _this
+        // draw game.
+        .drawGame()
+        // init targets.
+        .initTargets();
+        // draw game state.
+        _this.drawGameState();
+        // set active player.
+        _this.setActivePlayer();
     });
 
     return this;
@@ -1161,28 +1161,43 @@
     socket.on('connect', function() {
       // socket event - room:init.
       socket.on('room:init', function(room) {
-        _this
-          // set room.
-          .set('room', room);
+        if (!_.isEmpty(room)) {
+          _this
+            // set room.
+            .set('room', room);
+        }
+        // :
+        else {
+          // debug socket
+          _this.debug('socket', 'event room:init - object is empty. - %o', room);
+        }
       })
       // socket event - game:init.
       .on('game:init', function(game) {
+        if (!_.isEmpty(game)) {
         _this
           // set game object.
           .set('game', game)
           // draw game.
           .drawGame()
           // set canvas object size.
-          .set('size', _this.getCanvasObjectSize())
+          .set('size', _this.getCanvasObjectSize() - 1)
           // initialize targets.
           .initTargets()
           // draw game state.
           .drawGameState()
           // play game.
           ._play();
+        }
+        // :
+        else {
+          // debug socket
+          _this.debug('socket', 'event game:init - object is empty. - %o', game);
+        }
       })
       // socket event - players:init.
       .on('players:init', function(players) {
+        if (players.length) {
         _this
           // set players.
           .set('players', players)
@@ -1192,10 +1207,15 @@
           .setActivePlayer()
           // set player scores.
           .setPlayersScore()
+        }
+        // :
+        else {
+          // debug socket.
+          _this.debug('socket', 'event players:init object is empty. - %o', players);
+        }
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        // data is object ?
         if (!_.isEmpty(data)) {
           // data has room property && left value !== -1 ?
           if (_.has(data, 'room') && data.room.left !== -1) {
@@ -1221,19 +1241,27 @@
         }
         // :
         else {
-          // debug players.
-          _players('event players:waiting - data is empty. %o', data);
+          // debug socket.
+          _this.debug('socket', 'event players:waiting - data is empty. - %o', data);
         }
       })
       // socket event - game:play.
       .on('game:play', function(target) {
-        // get target.
-        var _target = _this.__canvas.item(Object.keys(target));
-        // play game.
-        _this.play(_target);
+        if (!_.isEmpty(target)) {
+          // get target.
+          var _target = _this.__canvas.item(Object.keys(target));
+          // play game.
+          _this.play(_target);
+        }
+        // :
+        else {
+          // debug socket.
+          _this.debug('socket', 'event game:play object is empty. - %o', target);
+        }
       })
       // socket event - players:switch.
       .on('players:switch', function(data) {
+        if (!_.isEmpty(data)) {
         _this
           // set game.
           .set('game', data.game)
@@ -1241,24 +1269,38 @@
           .set('players', data.players)
           // set active player.
           .setActivePlayer();
+        }
+        // :
+        else {
+          // debug socket.
+          _this.debug('socket', 'event players:switch object is empty. - %o', data);
+        }
       })
-      // restart event.
+      // socket event - game:restart.
       .on('game:restart', function(data) {
-        _this
-          // set game.
-          .set('game', data.game)
-          // set players.
-          .set('players', data.players)
-          // draw cross out.
-          .drawCrossOut(data.combination)
-          // set active player.
-          .setActivePlayer()
-          // set players score.
-          .setPlayersScore()
-          // restart game.
-          .restart();
+        if (!_.isEmpty(data)) {
+          _this
+            // set game.
+            .set('game', data.game)
+            // set players.
+            .set('players', data.players)
+            // draw cross out.
+            .drawCrossOut(data.combination)
+            // set active player.
+            .setActivePlayer()
+            // set players score.
+            .setPlayersScore()
+            // restart game.
+            .restart();
+        }
+        // :
+        else {
+          _this.debug()
+        }
       })
+      // socket event - disconnect.
       .on('disconnect', function() {
+        // Move to homepage.
         window.location.replace('/');
       })
    })
@@ -1267,22 +1309,18 @@
   }
 
   $(function() {
+    // get window width.
     var width = window.innerWidth - (window.innerWidth - window.innerHeight);
-
+    // get window height.
     var height = window.innerHeight;
-
-    var _navigator = navigator.userAgent || navigator.vendor || window.opera;
-    if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(_navigator)
-        ||
-        /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(_navigator.substr(0, 4))) {
-      width = window.innerWidth;
-    }
-
+    // instantiate game object.
     var game = new Game({
       id: 'tictactoe',
       width: width,
       height: height
-    }, io());
+    }, io(), function(string) {
+      debug(string).apply(this, _.toArray(arguments).slice(1));
+    });
 
     game
       // join game.

@@ -424,7 +424,7 @@ module.exports = {
     update[action] = {
       targets: target
     };
-    // push target || remove target.
+    // push | remove target.
     collection.findAndModify({
       room: id
     }, [], update, {
@@ -439,7 +439,7 @@ module.exports = {
       // get game object.
       var _game = game.value;
       // debug message.
-      var message = done
+      var message = ok
         ? 'targets has been updated in room #%d - %o'
          : 'targets couldn\'t be updated in room #%d - %o';
       // debug game.
@@ -561,7 +561,7 @@ module.exports = {
     .on('game:restart', function(data) {
       // get game object.
       var game = data.game;
-      // modify state.
+      // modify game state.
       _this.modifyGameState(db, game, null, '$set', function(error, db, game) {
         // return callback - passing error object.
         if (error) {
@@ -578,25 +578,23 @@ module.exports = {
           // get room object.
           var room = data.room;
           // update player score.
-          player.updateScore(db, room, data.wins, function(error, db, players) {
-            // get players by room.
-            _this.getPlayersByRoom(db, room, function(error, db, players) {
-              // return callback - passing error object.
-              if (error) {
-                return callback(error);
-              }
-              // return callback - passing database object, players object.
-              return callback(null, db, players);
-            });
+          player.updateScore(db, data.wins, function(error, db, players) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
-            // socket emit - game:restart - passing object.
-            io.in(game.room).emit('game:restart', {
-              game: game,
-              players: players,
-              combination: data.combination
+            // get players object.
+            player.getPlayersByRoom(db, room, function(error, db, players) {
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
+              // socket emit - game:restart - passing object.
+              io.in(room._id).emit('game:restart', {
+                game: game,
+                players: players,
+                combination: data.combination
+              });
             });
           });
         });

@@ -314,7 +314,7 @@ module.exports = {
         // debug player.
         debug(message, _player.room, _player.name, _player);
         // return callback - passing database object.
-        return callback(null, db, ok);
+        return callback(null, db, _player);
       });
     }
     // :
