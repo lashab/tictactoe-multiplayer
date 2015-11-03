@@ -42,9 +42,8 @@ module.exports = {
   add: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id && casting id.
+    // get room id & casting id.
     var id = room._id >> 0;
-    // room is available ?
     if (room.available) {
       // add game.
       collection.save({
@@ -64,7 +63,6 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          // index has been added ?
           if (index) {
             // debug game.
             debug('room field has been indexed.');
@@ -106,7 +104,7 @@ module.exports = {
   remove: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id && casting id.
+    // get room id & casting id.
     var id = room._id >> 0;
     // remove player by id.
     collection.remove({
@@ -141,7 +139,7 @@ module.exports = {
   reset: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id && casting id.
+    // get room id & casting id.
     var id = room._id >> 0;
     // update game.
     collection.findAndModify({
@@ -183,7 +181,7 @@ module.exports = {
   getGameByRoom: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id && casting id.
+    // get room id & casting id.
     var id = room._id >> 0;
     // find game.
     collection.findOne({
@@ -210,13 +208,12 @@ module.exports = {
    */
   join: function(db, _player, id, callback) {
     var _this = this;
-    // create || update room.
+    // create | update room.
     room.add(db, id, function(error, db, room) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
       }
-      // room has been created || updated ?
       if (room) {
         // add player.
         player.add(db, _player, room, function(error, db, player) {
@@ -224,7 +221,6 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          // player has been added ?
           if (player) {
             // get room id.
             var id = room._id;
@@ -240,7 +236,6 @@ module.exports = {
               if (error) {
                 return callback(error);
               }
-              // game has been added ?
               if (done) {
                 // debug game.
                 debug('%s has joined to #%d room', player.name, id);
@@ -284,9 +279,7 @@ module.exports = {
       if (error) {
         return callback(error);
       }
-      // player has been removed ?
       if (done) {
-        // room is available ?
         if (_room.available) {
           // remove room.
           room.remove(db, _room, function(error, db, done) {
@@ -294,7 +287,6 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            // room has been removed ?
             if (done) {
               // remove game.
               _this.remove(db, _room, function(error, db, done) {
@@ -460,77 +452,92 @@ module.exports = {
     var _this = this;
     // socket event - player:join.
     socket.on('player:join', function(_room) {
-      // get room id.
-      var id = _room.id;
-      // get room by id.
-      room.getRoomById(db, id, function(error, db, room) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
-        }
-        // debug game.
-        debug('room initialize');
-        // socket join by room id.
-        socket.join(id);
-        // pushing rooms.
-        rooms = io.sockets.adapter.rooms;
-        // socket emit - room:init - passing room object.
-        io.in(id).emit('room:init', room);
-        // get game by room.
-        _this.getGameByRoom(db, room, function(error, db, game) {
+      if (!_.isEmpty(_room)) {
+        // get room id.
+        var id = _room.id;
+        // get room by id.
+        room.getRoomById(db, id, function(error, db, room) {
           // return callback - passing error object.
           if (error) {
             return callback(error);
           }
           // debug game.
-          debug('game initialize');
-          // socket emit - game:init - passing room object.
-          socket.emit('game:init', game);
-          // get players by room.
-          player.getPlayersByRoom(db, room, function(error, db, players) {
+          debug('room initialize');
+          // socket join by room id.
+          socket.join(id);
+          // pushing rooms.
+          rooms = io.sockets.adapter.rooms;
+          // socket emit - room:init - passing room object.
+          io.in(id).emit('room:init', room);
+          // get game by room.
+          _this.getGameByRoom(db, room, function(error, db, game) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
             // debug game.
-            debug('players initialize');
-            // players === 1 ?
-            if (players.length === 1) {
-              // socket emit - player:waiting - passing waiting object.
-              socket.emit('player:waiting', {
-                position: ~~!players[0].position
-              });
+            debug('game initialize');
+            // socket emit - game:init - passing room object.
+            socket.emit('game:init', game);
+            // get players by room.
+            player.getPlayersByRoom(db, room, function(error, db, players) {
+              // return callback - passing error object.
+              if (error) {
+                return callback(error);
+              }
               // debug game.
-              debug('player %s is waiting in #%d room', players[0].name, id);
-            }
-            // socket emit - player:init - passing players object.
-            io.in(id).emit('players:init', players);
+              debug('players initialize');
+              // players === 1 ?
+              if (players.length === 1) {
+                // socket emit - player:waiting - passing waiting object.
+                socket.emit('player:waiting', {
+                  position: ~~!players[0].position
+                });
+                // debug game.
+                debug('player %s is waiting in #%d room', players[0].name, id);
+              }
+              // socket emit - player:init - passing players object.
+              io.in(id).emit('players:init', players);
+            });
           });
         });
-      });
+      }
+      // :
+      else {
+        // debug game.
+        debug('object is empty - %o', _room);
+      }
     })
     // socket event - game:play.
     .on('game:play', function(data) {
-      // get room object.
-      var game = data.game;
-      // get target object.
-      var target = data.target;
-      // modify game state.
-      _this.modifyGameState(db, game, target, '$push', function(error, db, game) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
-        }
-        // get room id.
-        var id = game.room;
+      if (!_.isEmpty(data)) {
+        // get room object.
+        var game = data.game;
+        // get target object.
+        var target = data.target;
+        // modify game state.
+        _this.modifyGameState(db, game, target, '$push', function(error, db, game) {
+          // return callback - passing error object.
+          if (error) {
+            return callback(error);
+          }
+          // get room id.
+          var id = game.room;
+          // debug game.
+          debug('#%d room - targets: %s', id, JSON.stringify(game.targets));
+          // socket emit - game:play - passing object.
+          socket.broadcast.in(id).emit('game:play', target);
+        });
+      }
+      // :
+      else {
         // debug game.
-        debug('#%d room - targets: %s', id, JSON.stringify(game.targets));
-        // socket emit - game:play - passing object.
-        socket.broadcast.in(id).emit('game:play', target);
-      });
+        debug('object is empty - %o', data);
+      }
     })
     // socket event - players:switch.
     .on('players:switch', function(data) {
+      if (!_.isEmpty(data)) {
       // get room object.
       var game = data.game;
       // get target object.
@@ -556,52 +563,63 @@ module.exports = {
           });
         });
       });
+      }
+      // :
+      else {
+        // debug game.
+        debug('object is empty - %o', data);
+      }
     })
     // socket event - game:restart.
     .on('game:restart', function(data) {
-      // get game object.
-      var game = data.game;
-      // modify game state.
-      _this.modifyGameState(db, game, null, '$set', function(error, db, game) {
-        // return callback - passing error object.
-        if (error) {
-          return callback(error);
-        }
-        // reset figure.
-        game.figure = 0;
-        // change active figure.
-        _this.changeActiveFigure(db, game, function(error, db, game) {
+      if (!_.isEmpty(data)) {
+        // get game object.
+        var game = data.game;
+        // modify game state.
+        _this.modifyGameState(db, game, null, '$set', function(error, db, game) {
           // return callback - passing error object.
           if (error) {
             return callback(error);
           }
-          // get room object.
-          var room = data.room;
-          // update player score.
-          player.updateScore(db, data.wins, function(error, db, players) {
+          // reset figure.
+          game.figure = 0;
+          // change active figure.
+          _this.changeActiveFigure(db, game, function(error, db, game) {
             // return callback - passing error object.
             if (error) {
               return callback(error);
             }
-            // get players object.
-            player.getPlayersByRoom(db, room, function(error, db, players) {
+            // get room object.
+            var room = data.room;
+            // update player score.
+            player.updateScore(db, data.wins, function(error, db, players) {
               // return callback - passing error object.
               if (error) {
                 return callback(error);
               }
-              // socket emit - game:restart - passing object.
-              io.in(room._id).emit('game:restart', {
-                game: game,
-                players: players,
-                combination: data.combination
+              // get players object.
+              player.getPlayersByRoom(db, room, function(error, db, players) {
+                // return callback - passing error object.
+                if (error) {
+                  return callback(error);
+                }
+                // socket emit - game:restart - passing object.
+                io.in(room._id).emit('game:restart', {
+                  game: game,
+                  players: players,
+                  combination: data.combination
+                });
               });
             });
           });
         });
-      });
+      }
+      // :
+      else {
+        debug('object is empty - %o', data);
+      }
     })
     .on('disconnect', function() {
-      // cookies isn't empty ?
       if (socket.handshake.headers.cookie) {
         // get cookie object.
         var _cookie = cookie.parse(socket.handshake.headers.cookie);
@@ -609,7 +627,6 @@ module.exports = {
         var id = _cookie.id >> 0;
         // get position.
         var position = _cookie.position >> 0;
-        // id > 0 ?
         if (id) {
           // get rooms object size.
           var _size = !_.isEmpty(rooms) ? _.size(rooms[id]) : 0;
@@ -617,7 +634,6 @@ module.exports = {
           setTimeout(function() {
             // get rooms object size.
             var size = _.size(rooms[id]);
-            // size === _size ?
             if (size === _size) {
             // get player object by query object.
             player.getPlayerByObject(db, {
@@ -628,7 +644,6 @@ module.exports = {
               if (error) {
                 return callback(error);
               }
-              // player object isn't empty ?
               if (player) {
                 // get room object by id.
                 room.getRoomById(db, id, function(error, db, room) {
@@ -642,7 +657,6 @@ module.exports = {
                     if (error) {
                       return callback(error);
                     }
-                    // room is available && data type is object ?
                     if (!room.available && typeof data === 'object') {
                       // add position.
                       data.position = player.position;

@@ -20,6 +20,8 @@
     this.__canvas.setWidth(canvas.width);
     // set canvas height.
     this.__canvas.setHeight(canvas.height);
+    // set selection.
+    this.__canvas.selection = false;
     // set socket object.
     this.socket = socket;
     // set debug function.
@@ -214,6 +216,7 @@
    * @return {Object} this
    */
   Game.prototype.playerJoin = function() {
+    var _this = this;
     // join submit event.
     $('.id-join').submit(function(e) {
       // get input.
@@ -233,7 +236,7 @@
           // focus on input.
           input.focus();
           // debug players.
-          this.debug('players', '%s isn\'t a valid name.', value);
+          _this.debug('players', '%s isn\'t a valid name.', value);
         }
         // :
         else {
@@ -247,7 +250,7 @@
         // focus on input.
         input.focus();
         // debug players.
-        this.debug('players', 'field is empty.');
+        _this.debug('players', 'field is empty.');
       }
     });
     // get room id.
@@ -582,7 +585,7 @@
       _game.over = true;
       _game.wins = {};
       // debug game.
-      this.debug('game', 'game over status - draw');
+      this.debug('game', 'game is over status - draw');
     }
     // game is over, status - wins.
     for (var i in combinations) {
@@ -598,10 +601,9 @@
         _game.combination = combination;
         _game.wins = player;
         // debug game.
-        this.debug('game', 'game over status - wins - %s - %o', player.name, player);
+        this.debug('game', 'game is over status - wins - %s - %o', player.name, player);
       }
     }
-    // callback is function ?
     if (callback && $.isFunction(callback)) {
       // callback - passing game object.
       callback(_game);
@@ -855,7 +857,7 @@
     return this;
   }
   /**
-   * draw figure (X || O).
+   * draw figure (X | O).
    *
    * @param {Object} target
    * @param {Number} figure
@@ -927,7 +929,7 @@
         .updateTarget(_target, key, figure);
     });
     // debug canvas.
-    this.debug('canvas', 'drawing game figures (state).');
+    this.debug('canvas', 'drawing game figures (state) - %o', game);
 
     return this;
   }
@@ -1127,12 +1129,17 @@
   Game.prototype.drawOnResize = function() {
     var _this = this;
     $(window).resize(function() {
+      // remove canvas.
       _this.__canvas.forEachObject(function(object) {
         _this.__canvas.remove(object);
       });
+      // get window width.
       var width = window.innerWidth - (window.innerWidth - window.innerHeight);
+      // get window height.
       var height = window.innerHeight;
+      // set canvas width.
       _this.__canvas.setWidth(width);
+      // set canvas height.
       _this.__canvas.setHeight(height);
       _this
         // draw game.
@@ -1169,7 +1176,7 @@
         // :
         else {
           // debug socket
-          _this.debug('socket', 'event room:init - object is empty. - %o', room);
+          _this.debug('socket', 'event room:init - object is empty - %o', room);
         }
       })
       // socket event - game:init.
@@ -1192,7 +1199,7 @@
         // :
         else {
           // debug socket
-          _this.debug('socket', 'event game:init - object is empty. - %o', game);
+          _this.debug('socket', 'event game:init - object is empty - %o', game);
         }
       })
       // socket event - players:init.
@@ -1211,7 +1218,7 @@
         // :
         else {
           // debug socket.
-          _this.debug('socket', 'event players:init object is empty. - %o', players);
+          _this.debug('socket', 'event players:init object is empty - %o', players);
         }
       })
       // socket event - player:waiting.
@@ -1242,7 +1249,7 @@
         // :
         else {
           // debug socket.
-          _this.debug('socket', 'event players:waiting - data is empty. - %o', data);
+          _this.debug('socket', 'event players:waiting - data is empty - %o', data);
         }
       })
       // socket event - game:play.
@@ -1256,7 +1263,7 @@
         // :
         else {
           // debug socket.
-          _this.debug('socket', 'event game:play object is empty. - %o', target);
+          _this.debug('socket', 'event game:play object is empty - %o', target);
         }
       })
       // socket event - players:switch.
@@ -1273,7 +1280,7 @@
         // :
         else {
           // debug socket.
-          _this.debug('socket', 'event players:switch object is empty. - %o', data);
+          _this.debug('socket', 'event players:switch object is empty - %o', data);
         }
       })
       // socket event - game:restart.
@@ -1295,13 +1302,14 @@
         }
         // :
         else {
-          _this.debug()
+          // debug socket.
+          _this.debug('socket', 'event game:restart object is empty - %o', data);
         }
       })
       // socket event - disconnect.
       .on('disconnect', function() {
-        // Move to homepage.
-        window.location.replace('/');
+          // Move to homepage.
+          window.location.replace('/');
       })
    })
 
