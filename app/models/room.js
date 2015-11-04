@@ -142,11 +142,11 @@ module.exports = {
         return callback(error);
       }
       // get ok value.
-      var done = room.result.ok;
+      var ok = room.result.ok;
       // debug message.
-      var message = done
+      var message = ok
         ? '#%d has been added.'
-          : '#%d hasn\'t been added.';
+          : '#%d couldn\'t be added.';
       // debug room.
       debug(message, id);
       // return callback - passing database object, room object.
@@ -164,7 +164,7 @@ module.exports = {
   remove: function(db, room, callback) {
     // get collection.
     var collection = this.getCollection(db);
-    // get room id && casting id.
+    // get room id & casting id.
     var id = room._id >> 0;
     // remove room by id.
     collection.remove({
@@ -181,7 +181,7 @@ module.exports = {
       // debug message.
       var message = ok
         ? '#%d has been removed - %o'
-          : '#%d hasn\'t been removed - %o';
+          : '#%d couldn\'t be removed - %o';
       // debug room.
       debug(message, id, room);
       // return callback - passing database object, ok boolean.
@@ -224,7 +224,7 @@ module.exports = {
       // debug message.
       var message = done
         ? '#%d has been opened - %o'
-         : '#%d hasn\'t been opened - %o';
+         : '#%d couldn\'t be opened - %o';
       // debug room.
       debug(message, id, _room);
       // return callback - passing database object, room object.
@@ -265,7 +265,7 @@ module.exports = {
       // debug message.
       var message = done
         ? '#%d has been closed - %o'
-         : '#%d couldn\'t been closed - %o';
+         : '#%d couldn\'t be closed - %o';
       // debug room.
       debug(message, id, _room);
       // return callback - passing database object, room object.

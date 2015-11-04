@@ -44,16 +44,14 @@ module.exports = {
     var id = room._id >> 0;
     // get position.
     var position = room.left < 0 ? room.available ? 0 : 1 : room.left;
-    // prepare player object.
-    var _player = {
+    // add new player.
+    collection.insertOne({
       room: id,
       name: player,
       active: room.available ? true : false,
       position: position,
       score: 0
-    };
-    // add new player.
-    collection.save(_player, function(error, done) {
+    }, function(error, _player) {
       // return callback - passing error object.
       if (error) {
         return callback(error);
@@ -79,18 +77,18 @@ module.exports = {
           return callback(null, db, null);
         }
       });
-      // player has been added ?
-      if (done) {
-        // debug player.
-        debug('%s has been added. - %o.', player, _player);
-        // return callback - passing database object, player object.
-        return callback(null, db, _player);
-      }
-      // :
+      // get ok value.
+      var ok = _player.result.ok;
+      // get player object.
+      var __player = _player.ops[0];
+      // debug message.
+      var message = ok
+        ? '%s has been added - %o'
+          : 'player couldn\'t be added - %o';
       // debug player.
-      debug('player couldn\'t be added.');
-      // return callback - passing database object.
-      return callback(null, db, null);
+      debug(message, player, __player);
+      // return callback - passing database object player object.
+      return callback(null, db, __player);
     });
   },
   /**
@@ -105,10 +103,8 @@ module.exports = {
     // get collection.
     var collection = this.getCollection(db);
     // remove player by id.
-    collection.remove({
+    collection.deleteOne({
       _id: new objectID(player._id)
-    }, {
-      single: true
     }, function(error, _player) {
       // return callback - passing error object.
       if (error) {

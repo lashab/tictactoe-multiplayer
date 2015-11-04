@@ -497,7 +497,7 @@ module.exports = {
                 debug('player %s is waiting in #%d room', players[0].name, id);
               }
               // socket emit - player:init - passing players object.
-              io.in(id).emit('players:init', players);
+              io.in(id).emit('players:init', _.sortBy(players, 'position'));
             });
           });
         });
@@ -673,7 +673,7 @@ module.exports = {
               // debug game.
               debug('is on.');
             }
-          }, 5000);
+          }, 1000);
         }
       }
       // :

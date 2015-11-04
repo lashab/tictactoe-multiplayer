@@ -123,38 +123,36 @@ body {
       background-color: $color-green;
     }
   }
-  &:not(.is-mobile) {
-    > .#{$caption} {
-      > p {
-        margin: 5px;
-        &:first-child {
-          font-size: 1.2em;
-        }
-        &:last-child {
-          > span {
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 1em;
-          }
+  > .#{$caption} {
+    > p {
+      margin: 5px;
+      &:first-child {
+        font-size: 1.2em;
+      }
+      &:last-child {
+        > span {
+          padding: 5px 10px;
+          border-radius: 5px;
+          font-size: 1em;
         }
       }
     }
   }
-  &.is-mobile {
-    position: absolute;
-    margin: 0;
-    padding: 0;
-    > .#{$caption} {
-      > p {
-        margin: 0;
-      }
-    }
-    @at-root {
-      &.id-player-1 {
-        right: 0;
-      }
-    }
-  }
+  // &.is-mobile {
+  //   position: absolute;
+  //   margin: 0;
+  //   padding: 0;
+  //   > .#{$caption} {
+  //     > p {
+  //       margin: 0;
+  //     }
+  //   }
+  //   @at-root {
+  //     &.id-player-1 {
+  //       right: 0;
+  //     }
+  //   }
+  // }
   .#{$badge}-loosing {
     background-color: $color-rose !important;
   }

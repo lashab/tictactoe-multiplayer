@@ -16,10 +16,6 @@
   var Game = function(canvas, socket, debug) {
     // set fabric canvas object.
     this.__canvas = new fabric.Canvas(canvas.id);
-    // set canvas width.
-    this.__canvas.setWidth(canvas.width);
-    // set canvas height.
-    this.__canvas.setHeight(canvas.height);
     // set selection.
     this.__canvas.selection = false;
     // set socket object.
@@ -57,6 +53,23 @@
     var value = this[property];
 
     return value;
+  }
+  /**
+   * set canvas width & height.
+   *
+   * @return {Object} this
+   */
+  Game.prototype.setCanvasSize = function() {
+    // get window width.
+    var width = window.innerWidth - (window.innerWidth - window.innerHeight);
+    // get window height.
+    var height = window.innerHeight;
+    // set canvas width.
+    this.__canvas.setWidth(width);
+    // set canvas height.
+    this.__canvas.setHeight(height);
+
+    return this;
   }
   /**
    * get room object.
@@ -279,7 +292,7 @@
       // remove waiting class.
       $('.players.player-waiting').removeClass('player-waiting');
       // close modal.
-      $('.tic-tac-toe-m').modal('hide');
+      $('.x-o-m').modal('hide');
     }
     // render players.
     players.forEach(function(player) {
@@ -325,7 +338,7 @@
     // get player element.
     var _player = $('.id-player-' + position);
     // open modal.
-    $('.tic-tac-toe-m').modal();
+    $('.x-o-m').modal();
     // add waiting image.
     _player.children(':first-child').prop('src', '../images/loading.gif');
     // remove name.
@@ -370,6 +383,7 @@
     if (!isWaiting) {
       // get active player object.
       var _player = this.getActivePlayer();
+      console.log(_player);
       // debug players.
       this.debug('players', '%s\'s turn - %o', _player.name, _player);
     }
@@ -1128,28 +1142,27 @@
    */
   Game.prototype.drawOnResize = function() {
     var _this = this;
-    $(window).resize(function() {
-      // remove canvas.
-      _this.__canvas.forEachObject(function(object) {
-        _this.__canvas.remove(object);
-      });
-      // get window width.
-      var width = window.innerWidth - (window.innerWidth - window.innerHeight);
-      // get window height.
-      var height = window.innerHeight;
-      // set canvas width.
-      _this.__canvas.setWidth(width);
-      // set canvas height.
-      _this.__canvas.setHeight(height);
-      _this
-        // draw game.
-        .drawGame()
-        // init targets.
-        .initTargets();
-        // draw game state.
-        _this.drawGameState();
-        // set active player.
-        _this.setActivePlayer();
+    $(window).bind('orientationchange resize', function() {
+      // get room id.
+      var id = _this.getRoomIdByPathName();
+      if (id) {
+        // remove canvas.
+        _this.__canvas.forEachObject(function(object) {
+          _this.__canvas.remove(object);
+        });
+
+        _this
+          // set canvas size.
+          .setCanvasSize()
+          // draw game.
+          .drawGame()
+          // init targets.
+          .initTargets();
+          // draw game state.
+          _this.drawGameState();
+          // set active player.
+          _this.setActivePlayer();
+      }
     });
 
     return this;
@@ -1185,6 +1198,8 @@
         _this
           // set game object.
           .set('game', game)
+          // set canvas size.
+          .setCanvasSize()
           // draw game.
           .drawGame()
           // set canvas object size.
@@ -1308,6 +1323,11 @@
       })
       // socket event - disconnect.
       .on('disconnect', function() {
+          delete _this['players'];
+          delete _this['room'];
+          delete _this['game'];
+          delete _this['waiting'];
+          delete _this['size'];
           // Move to homepage.
           window.location.replace('/');
       })
@@ -1317,15 +1337,9 @@
   }
 
   $(function() {
-    // get window width.
-    var width = window.innerWidth - (window.innerWidth - window.innerHeight);
-    // get window height.
-    var height = window.innerHeight;
     // instantiate game object.
     var game = new Game({
-      id: 'tictactoe',
-      width: width,
-      height: height
+      id: 'tictactoe'
     }, io(), function(string) {
       debug(string).apply(this, _.toArray(arguments).slice(1));
     });

@@ -154,22 +154,14 @@ body {
     margin: 0 10px; }
     .players > .caption .badge {
       background-color: #5CB85C; }
-  .players:not(.is-mobile) > .caption > p {
+  .players > .caption > p {
     margin: 5px; }
-    .players:not(.is-mobile) > .caption > p:first-child {
+    .players > .caption > p:first-child {
       font-size: 1.2em; }
-    .players:not(.is-mobile) > .caption > p:last-child > span {
+    .players > .caption > p:last-child > span {
       padding: 5px 10px;
       border-radius: 5px;
       font-size: 1em; }
-  .players.is-mobile {
-    position: absolute;
-    margin: 0;
-    padding: 0; }
-    .players.is-mobile > .caption > p {
-      margin: 0; }
-    .players.is-mobile.id-player-1 {
-      right: 0; }
   .players .badge-loosing {
     background-color: #F70047 !important; }
   .players .badge-winning {
