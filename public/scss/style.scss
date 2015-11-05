@@ -8,6 +8,9 @@
 
 /* page body. */
 body {
+  position: fixed;
+  top: 0;
+  bottom: 0;
   @at-root {
     html, & {
       width: 100%;
@@ -27,6 +30,19 @@ body {
 @include keyframes(fadein) {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+@media only screen and (orientation:portrait) {
+  .players {
+    display: none;
+  }
+}
+@media only screen and (orientation:portrait) {
+  .players-waiting {
+    display: block;
+  }
+}
+.modal-open {
+  overflow: auto !important;
 }
 /* fade in effects */
 .fade-in-1-1 {
@@ -80,7 +96,7 @@ body {
     margin: $size auto;
     padding: $size;
     border: none {
-      radius: $size + 10px;
+      radius: $size + 15px;
     }
     $white: #fff !global;
     $color-rose: #F70047 !global;
@@ -138,21 +154,7 @@ body {
       }
     }
   }
-  // &.is-mobile {
-  //   position: absolute;
-  //   margin: 0;
-  //   padding: 0;
-  //   > .#{$caption} {
-  //     > p {
-  //       margin: 0;
-  //     }
-  //   }
-  //   @at-root {
-  //     &.id-player-1 {
-  //       right: 0;
-  //     }
-  //   }
-  // }
+
   .#{$badge}-loosing {
     background-color: $color-rose !important;
   }

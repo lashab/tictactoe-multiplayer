@@ -4,6 +4,9 @@
 /* fadein mixin. */
 /* page body. */
 body {
+  position: fixed;
+  top: 0;
+  bottom: 0;
   -webkit-animation: fadein 1.5s;
   -moz-animation: fadein 1.5s;
   -ms-animation: fadein 1.5s;
@@ -41,6 +44,15 @@ body {
     opacity: 0; }
   100% {
     opacity: 1; } }
+@media only screen and (orientation: portrait) {
+  .players {
+    display: none; } }
+@media only screen and (orientation: portrait) {
+  .players-waiting {
+    display: block; } }
+.modal-open {
+  overflow: auto !important; }
+
 /* fade in effects */
 .fade-in-1-1 {
   filter: alpha(opacity=100) !important;
@@ -125,7 +137,7 @@ body {
     margin: 25px auto;
     padding: 25px;
     border: none;
-      border-radius: 35px;
+      border-radius: 40px;
     color: #fff;
     background-color: #F70047;
     -webkit-transition: background, 0.5s;
