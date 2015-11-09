@@ -30,6 +30,7 @@ var database = require('mongodb').MongoClient;
 
 var routes = require('./app/routes');
 var game = require('./app/models/game');
+var player = require('./app/models/player');
 
 // all environments
 app.set('port', process.env.PORT || config.get('tictactoe.port'));

@@ -19,6 +19,9 @@ var game = require('./models/game');
 module.exports = function(db, app, callback) {
   // GET - / (homepage).
   app.get('/', function(request, response) {
+    player.getPlayersByRoom(db, {_id: 1}, function(error, db, players) {
+      console.log(players);
+    });
     // debug route.
     debug('clearing cookie id.');
     // remove cookie id.

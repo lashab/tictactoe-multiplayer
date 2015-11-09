@@ -487,6 +487,8 @@ module.exports = {
               }
               // debug game.
               debug('players initialize');
+              // socket emit - player:init - passing players object.
+              io.in(id).emit('players:init', players);
               // players === 1 ?
               if (players.length === 1) {
                 // socket emit - player:waiting - passing waiting object.
@@ -496,8 +498,6 @@ module.exports = {
                 // debug game.
                 debug('player %s is waiting in #%d room', players[0].name, id);
               }
-              // socket emit - player:init - passing players object.
-              io.in(id).emit('players:init', _.sortBy(players, 'position'));
             });
           });
         });
@@ -536,7 +536,7 @@ module.exports = {
       }
     })
     // socket event - players:switch.
-    .on('players:switch', function(data) {
+    .on('player:switch', function(data) {
       if (!_.isEmpty(data)) {
       // get room object.
       var game = data.game;
@@ -557,7 +557,7 @@ module.exports = {
           // get room id.
           var id = game.room;
           // socket emit - players:switch - passing object.
-          io.in(id).emit('players:switch', {
+          io.in(id).emit('player:switch', {
             game: game,
             players: players
           });

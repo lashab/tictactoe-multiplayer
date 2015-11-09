@@ -116,14 +116,14 @@
    */
   Game.prototype.getPlayers = function() {
     // get players object.
-    var players = this.get('players') || [];
+    var players = this.get('players');
     // debug message.
     if (!players.length) {
-      // debug players.
-      this.debug('players', 'object could\'t be found - %o', players);
+      // debug player.
+      this.debug('player', 'object could\'t be found - %o', players);
     }
 
-    return players;
+    return _.sortBy(players, 'position');
   };
   /**
    * get waiting status.
@@ -196,8 +196,8 @@
       })();
     }
     catch(e) {
-      // debug players.
-      this.debug('players', e.message);
+      // debug player.
+      this.debug('player', e.message);
 
       return -1;
     }
@@ -221,7 +221,9 @@
       var players = this.getPlayers();
       if (players.length) {
         // get player object by position.
-        player = players.length === 1 ? players[0] : players[position];
+        player = players.filter(function(player) {
+          return player.position === position;
+        })[0];
       }
     }
 
@@ -252,8 +254,8 @@
           formGroup.addClass('has-error');
           // focus on input.
           input.focus();
-          // debug players.
-          _this.debug('players', '%s isn\'t a valid name.', value);
+          // debug player.
+          _this.debug('player', '%s isn\'t a valid name.', value);
         }
         // :
         else {
@@ -266,8 +268,8 @@
         e.preventDefault();
         // focus on input.
         input.focus();
-        // debug players.
-        _this.debug('players', 'field is empty.');
+        // debug player.
+        _this.debug('player', 'field is empty.');
       }
     });
     // get room id.
@@ -306,8 +308,8 @@
       _player.children(':first-child').prop('src', '../images/default.png');
       // add player name.
       _player.find('.id-name').text(player.name);
-      // debug players.
-      _this.debug('players', 'rendering player - %s - %o', player.name, player);
+      // debug player.
+      _this.debug('player', 'rendering player - %s - %o', player.name, player);
     });
 
     return this;
@@ -329,12 +331,12 @@
     return this;
   };
   /**
-   * waiting for player.
+   * player waiting.
    *
    * @param {Number} position
    * @return {Object} this
    */
-  Game.prototype._waiting = function(position) {
+  Game.prototype.playerWaiting = function(position) {
     // get player object.
     var player = this.getPlayerByPosition();
     // get player element.
@@ -349,10 +351,8 @@
     _player.find('.id-badge').children().empty();
     // add player-waiting.
     _player.addClass('player-waiting');
-    if (!_.isEmpty(player)) {
-      // debug players.
-      this.debug('players', '%s is waiting - %o', player.name, player);
-    }
+    // debug player.
+    this.debug('player', '%s is waiting - %o', player.name, player);
 
     return this;
   };
@@ -385,8 +385,8 @@
     if (!isWaiting) {
       // get active player object.
       var _player = this.getActivePlayer();
-      // debug players.
-      this.debug('players', '%s\'s turn - %o', _player.name, _player);
+      // debug player.
+      this.debug('player', '%s\'s turn - %o', _player.name, _player);
     }
 
     return this;
@@ -415,6 +415,7 @@
     var _this = this;
     // get players object.
     var players = this.getPlayers();
+    console.log(players);
     // get badge elements.
     var badges = $('.players').find('.badge');
     // players length > 1 ?
@@ -461,8 +462,8 @@
       var badge = $('.id-player-' + player.position).find('.badge');
       // set score.
       badge.text(score);
-      // debug players.
-      _this.debug('players', '%s\'s score is %d - %o', player.name, score, player);
+      // debug player.
+      _this.debug('player', '%s\'s score is %d - %o', player.name, score, player);
     });
 
     return this;
@@ -549,7 +550,7 @@
    * @param {Function} callback
    * @return {Object} this
    */
-  Game.prototype.play = function(target, callback) {
+  Game.prototype._play = function(target, callback) {
     // get game object.
     var game = this.getGame();
     // get size.
@@ -629,7 +630,7 @@
    *
    * @return {Object} this
    */
-  Game.prototype._play = function() {
+  Game.prototype.play = function() {
     var _this = this;
     // get socket object.
     var socket = this.socket;
@@ -640,7 +641,7 @@
           // get target object.
           var target = e.target;
           // start playing.
-          _this.play(target, function(game) {
+          _this._play(target, function(game) {
             // get game object.
             var _game = _this.getGame();
             // socket emit - game:play - passing object.
@@ -652,7 +653,7 @@
               // get players object.
               var players = _this.getPlayers();
               // socket emit - players:switch - passing object.
-              socket.emit('players:switch', {
+              socket.emit('player:switch', {
                 game: _game,
                 players: players
               });
@@ -1167,154 +1168,110 @@
     socket.on('connect', function() {
       // socket event - room:init.
       socket.on('room:init', function(room) {
-        if (!_.isEmpty(room)) {
-          _this
-            // set room.
-            .set('room', room);
-        }
-        // :
-        else {
-          // debug socket
-          _this.debug('socket', 'event room:init - object is empty.');
-        }
+        // set room object.
+        _this.set('room', room)
+        // debug socket.
+        .debug('socket', 'event room:init - %o', room);
       })
       // socket event - game:init.
       .on('game:init', function(game) {
-        if (!_.isEmpty(game)) {
-        _this
-          // set game object.
-          .set('game', game)
-          // set canvas size.
-          .setCanvasSize()
-          // draw game.
-          .drawGame()
-          // set canvas object count.
-          .set('size', _this.getCanvasObjectSize() - 1)
-          // initialize targets.
-          .initTargets()
-          // draw game state.
-          .drawGameState()
-          // play game.
-          ._play();
-        }
-        // :
-        else {
-          // debug socket
-          _this.debug('socket', 'event game:init - object is empty.');
-        }
+        // set game object.
+        _this.set('game', game)
+        // set canvas size.
+        .setCanvasSize()
+        // draw game.
+        .drawGame()
+        // set canvas object count.
+        .set('size', _this.getCanvasObjectSize() - 1)
+        // initialize targets.
+        .initTargets()
+        // draw game state.
+        .drawGameState()
+        // play game.
+        .play()
+        // debug socket.
+        .debug('socket', 'event game:init - %o', game);
       })
       // socket event - players:init.
       .on('players:init', function(players) {
-        if (players.length) {
-        _this
-          // set players.
-          .set('players', players)
-          // add players.
-          .playersLoad()
-          // set active player.
-          .setActivePlayer()
-          // set player scores.
-          .setPlayersScore()
-        }
-        // :
-        else {
-          // debug socket.
-          _this.debug('socket', 'event players:init object is empty.');
-        }
+        // set players object.
+        _this.set('players', players)
+        // add players.
+        .playersLoad()
+        // set active player.
+        .setActivePlayer()
+        // set player scores.
+        .setPlayersScore()
+        // debug socket.
+        .debug('socket', 'event players:init - %o', players);
       })
       // socket event - player:waiting.
       .on('player:waiting', function(data) {
-        if (!_.isEmpty(data)) {
-          // data has room property && left value !== -1 ?
-          if (_.has(data, 'room') && data.room.left !== -1) {
-            _this
-            // set room object.
-            .set('room', data.room)
-            // set game object.
-            .set('game', data.game)
-            // set players object.
-            .set('players', data.players)
-            // restart game.
-            .removeFigures()
-            // set active player.
-            .setActivePlayer()
-            // set players score.
-            .setPlayersScore()
-          }
-          _this
-            // set waiting boolean value.
-            .set('waiting', true)
-            // waiting for player.
-            ._waiting(data.position);
+        // data has room property && left value !== -1 ?
+        if (_.has(data, 'room') && data.room.left !== -1) {
+          // set room object.
+          _this.set('room', data.room)
+          // set game object.
+          .set('game', data.game)
+          // set players object.
+          .set('players', data.players)
+          // restart game.
+          .removeFigures()
+          // set active player.
+          .setActivePlayer()
+          // set players score.
+          .setPlayersScore()
         }
-        // :
-        else {
-          // debug socket.
-          _this.debug('socket', 'event player:waiting object is empty.');
-        }
+        // set waiting boolean value.
+        _this.set('waiting', true)
+        // waiting for player.
+        .playerWaiting(data.position)
+        // debug socket.
+        .debug('socket', 'event player:waiting - %o', data);
       })
       // socket event - game:play.
       .on('game:play', function(target) {
-        if (!_.isEmpty(target)) {
-          // get target.
-          var _target = _this.canvas.item(Object.keys(target));
-          // play game.
-          _this.play(_target);
-        }
-        // :
-        else {
-          // debug socket.
-          _this.debug('socket', 'event game:play object is empty.');
-        }
+        // get target.
+        var _target = _this.canvas.item(Object.keys(target));
+        // play game.
+        _this._play(_target)
+        // debug socket.
+        .debug('socket', 'event game:play - %o', target);
       })
       // socket event - players:switch.
-      .on('players:switch', function(data) {
-        if (!_.isEmpty(data)) {
-        _this
-          // set game.
-          .set('game', data.game)
-          // set players.
-          .set('players', data.players)
-          // set active player.
-          .setActivePlayer();
-        }
-        // :
-        else {
-          // debug socket.
-          _this.debug('socket', 'event players:switch object is empty.');
-        }
+      .on('player:switch', function(data) {
+        // set game object.
+        _this.set('game', data.game)
+        // set players object.
+        .set('players', data.players)
+        // set active player.
+        .setActivePlayer()
+        // debug socket.
+        .debug('socket', 'event player:switch - %o', data);
       })
       // socket event - game:restart.
       .on('game:restart', function(data) {
-        if (!_.isEmpty(data)) {
-          _this
-            // set game.
-            .set('game', data.game)
-            // set players.
-            .set('players', data.players)
-            // draw cross out.
-            .drawCrossOut(data.combination)
-            // set players score.
-            .setPlayersScore()
-            // remove figures.
-            .removeFigures()
-            // re-initialize targets.
-            .initTargets()
-            // set active player.
-            .setActivePlayer()
-            // debug socket.
-            .debug('socket', 'event game:restart - restarting game - %o', data);
-        }
-        // :
-        else {
-          // debug socket.
-          _this.debug('socket', 'event game:restart - object is empty.');
-        }
+        // set game object.
+        _this.set('game', data.game)
+        // set players object.
+        .set('players', data.players)
+        // draw cross out.
+        .drawCrossOut(data.combination)
+        // set players score.
+        .setPlayersScore()
+        // remove figures.
+        .removeFigures()
+        // re-initialize targets.
+        .initTargets()
+        // set active player.
+        .setActivePlayer()
+        // debug socket.
+        .debug('socket', 'event game:restart - %o', data);
       })
       // socket event - disconnect.
       .on('disconnect', function() {
-          // Move to homepage.
-          window.location.replace('/');
+        // Move to homepage.
+        window.location.replace('/');
       })
    })
 
@@ -1328,18 +1285,16 @@
     }, io(), function(string) {
       debug(string).apply(this, _.toArray(arguments).slice(1));
     });
-
-    game
-      // join game.
-      .playerJoin()
-      // run game.
-      .run()
-      // re-draw on window resize.
-      .drawOnResize()
-      // switch audio.
-      .audioSwitch()
-      // leave game.
-      .playerLeave();
+    // join game.
+    game.playerJoin()
+    // run game.
+    .run()
+    // re-draw on window resize.
+    .drawOnResize()
+    // switch audio.
+    .audioSwitch()
+    // leave game.
+    .playerLeave();
     // activate tooltips.
     $('[data-toggle="tooltip"]').tooltip();
   });
