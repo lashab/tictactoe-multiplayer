@@ -35,6 +35,7 @@ module.exports = function(db, app, callback) {
     // render homepage.
     response.render('index', {
       title: app.get('title'),
+      $class: 'home',
       body: template.render('home')
     });
   });
@@ -111,6 +112,7 @@ module.exports = function(db, app, callback) {
     // render room page.
     response.render('index', {
       title: app.get('title'),
+      $class: 'room',
       body: template.render('room', {
         form: !request.cookies.position ? true : false
       })

@@ -1,6 +1,6 @@
 {
   "tictactoe": {
-    "title": "x-o",
+    "title": "Tic Tac Toe",
     "views": {
       "path": "app/views"
     },

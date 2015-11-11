@@ -8,9 +8,6 @@
 
 /* page body. */
 body {
-  position: fixed;
-  top: 0;
-  bottom: 0;
   @at-root {
     html, & {
       width: 100%;
@@ -18,31 +15,23 @@ body {
       margin: 0;
       padding: 0;
     }
+    &.room {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+    }
   }
   $container: '.container-fluid';
   #{$container},
   #{$container} > .row {
     @extend html;
   }
-  @include animation(fadein, 1.5s);
+  @include animation(fadein 1.5s);
 }
 
 @include keyframes(fadein) {
   0% { opacity: 0; }
   100% { opacity: 1; }
-}
-@media only screen and (orientation:portrait) {
-  .players {
-    display: none;
-  }
-}
-@media only screen and (orientation:portrait) {
-  .players-waiting {
-    display: block;
-  }
-}
-.modal-open {
-  overflow: auto !important;
 }
 /* fade in effects */
 .fade-in-1-1 {
@@ -55,29 +44,7 @@ body {
   opacity: 0;
   @include transition(opacity .4s ease-in);
 }
-/* animated figures. */
-.figures {
-  $width: 30%;
-  width: $width;
-  margin: 15px auto;
-  > .figure {
-    width: $width;
-    @at-root {
-      &-x {
-        @include animation(x-o, 15s, infinite);
-      }
-      &-o {
-        @include animation(x-o, 10s, infinite);
-      }
-    }
-  }
-}
 
-@include keyframes(x-o) {
-  0%   { opacity: 0.5; }
-  50%  { opacity: 0.1; }
-  100% { opacity: 0.5; }
-}
 /* join form. */
 .id-join {
   margin-top: 50px;
@@ -102,7 +69,7 @@ body {
     $color-rose: #F70047 !global;
     color: $white;
     background-color: $color-rose;
-    @include transition(background, .5s);
+    @include transition(background .5s);
     &:hover,
     &:active,
     &:focus {
@@ -130,16 +97,22 @@ body {
 }
 /* players. */
 .players {
-  $badge: 'badge';
+  $glyphicon: 'glyphicon-user';
   $caption: 'caption';
+  $badge: 'badge';
   margin-top: 15px;
+  > .#{$glyphicon} {
+    $color-turquoise: #02d8ad !global;
+    display: block;
+    font-size: 2.5em;
+    text-align: center;
+    color: $color-turquoise;
+  }
   > .#{$caption} {
     margin: 0 10px;
     .#{$badge} {
       background-color: $color-green;
     }
-  }
-  > .#{$caption} {
     > p {
       margin: 5px;
       &:first-child {
@@ -154,22 +127,32 @@ body {
       }
     }
   }
-
   .#{$badge}-loosing {
     background-color: $color-rose !important;
   }
   .#{$badge}-winning {
     background-color: $color-green !important;
   }
+  @at-root {
+    @media only screen and (orientation:portrait) {
+      & {
+        display: none;
+      }
+    }
+    @media only screen and (orientation:portrait) {
+      &-waiting {
+        display: block;
+      }
+    }
+  }
 }
 /* leave icon. */
 .glyphicon-menu-left {
-  $color-blue: #04ABDC !global;
   position: absolute !important;
   top: 50% !important;
   left: .5%;
   font-size: 6em;
-  color: $color-blue;
+  color: $color-turquoise;
   cursor: pointer;
   z-index: 5000;
   &:hover {
@@ -191,7 +174,7 @@ body {
     }
     &-up,
     &-off:hover {
-      color: $color-blue;
+      color: $color-turquoise;
     }
   }
 }

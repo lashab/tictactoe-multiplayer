@@ -59,9 +59,9 @@
    */
   Game.prototype.setCanvasSize = function() {
     // get window width.
-    var width = $(window).width();
+    var width = window.innerWidth;
     // get window height.
-    var height = $(window).height();
+    var height = window.innerHeight;
     // get window width by orientation.
     width = height < width ? width - (width - height) : width;
     // set canvas width.
@@ -304,8 +304,6 @@
     players.forEach(function(player) {
       // get player element by position.
       var _player = $('.id-player-' + player.position);
-      // add player image.
-      _player.children(':first-child').prop('src', '../images/default.png');
       // add player name.
       _player.find('.id-name').text(player.name);
       // debug player.
@@ -671,8 +669,6 @@
               });
             }
           })
-          // play audio.
-          .audioPlay();
         }
         // :
         else {
@@ -1036,93 +1032,6 @@
     return this;
   };
   /**
-   * get audio object.
-   *
-   * @return {Object} audio
-   */
-  Game.prototype.getAudioObject = function() {
-    // get audio object.
-    var audio = $('.id-audio')[0];
-
-    return audio;
-  };
-  /**
-   * play audio.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.audioPlay = function() {
-    // get audio object.
-    var audio = this.getAudioObject()
-    // play audio.
-    audio.play();
-
-    return this;
-  };
-  /**
-   * turn on audio.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.audioOn = function() {
-    // get audio object.
-    var audio = this.getAudioObject();
-    // unmute audio.
-    audio.muted = false;
-    // debug audio.
-    this.debug('audio', 'is on.');
-
-    return this;
-  };
-  /**
-   * turn off audio.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.audioOff = function() {
-    // get audio object.
-    var audio = this.getAudioObject();
-    // unmute audio.
-    audio.muted = true;
-    // debug audio.
-    this.debug('audio', 'is off.');
-
-    return this;
-  };
-  /**
-   * audio switch.
-   *
-   * @return {Object} this
-   */
-  Game.prototype.audioSwitch = function() {
-    var _this = this;
-    // get volume icon.
-    var volume = $('[class*=glyphicon-volume]');
-    // volume click event.
-    volume.click(function(e) {
-      // volume has glyphicon-volume-up volume-up class ?
-      if ($(this).hasClass('glyphicon-volume-up')) {
-        // remove glyphicon-volume-up class.
-        $(this).toggleClass('glyphicon-volume-up', false);
-        // add glyphicon-volume-off class.
-        $(this).toggleClass('glyphicon-volume-off', true);
-        // turn the audio off.
-        _this.audioOff();
-      }
-      // :
-      else {
-        // remove glyphicon-volume-off class.
-        $(this).toggleClass('glyphicon-volume-off', false);
-        // add glyphicon-volume-up class.
-        $(this).toggleClass('glyphicon-volume-up', true);
-        // turn the audio on.
-        _this.audioOn();
-      }
-    });
-
-    return this;
-  };
-  /**
    * draw game on resize.
    *
    * @return {Object} this
@@ -1291,8 +1200,6 @@
     .run()
     // re-draw on window resize.
     .drawOnResize()
-    // switch audio.
-    .audioSwitch()
     // leave game.
     .playerLeave();
     // activate tooltips.
