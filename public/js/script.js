@@ -293,13 +293,20 @@
     // get players object.
     var players = this.getPlayers();
     if (players.length > 1) {
-      // set waiting value.
-      this.set('waiting', false);
-      // remove waiting class.
-      $('.players.player-waiting').removeClass('player-waiting');
+      var _players = $('.players');
+      // hide img-waiting.
+      _players.find('.img-waiting').removeClass('show');
+      // get player waiting element.
+      _players.filter('.player-waiting')
+        .find('.glyphicon')
+          .removeClass('hide')
+        .end()
+      .removeClass('player-waiting');
       // close modal.
       $('.x-o-m').modal('hide');
-    }
+      // set waiting value.
+      this.set('waiting', false);
+    ś
     // render players.
     players.forEach(function(player) {
       // get player element by position.
@@ -341,12 +348,12 @@
     var _player = $('.id-player-' + position);
     // open modal.
     $('.x-o-m').modal();
-    // add waiting image.
-    _player.children(':first-child').prop('src', '../images/loading.gif');
     // remove name.
     _player.find('.id-name').empty();
     // remove badge.
     _player.find('.id-badge').children().empty();
+    // remove glyphicon.
+    _player.find('.glyphicon').addClass('hide').next().addClass('show');
     // add player-waiting.
     _player.addClass('player-waiting');
     // debug player.

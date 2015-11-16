@@ -97,7 +97,7 @@ body {
 }
 /* players. */
 .players {
-  $glyphicon: 'glyphicon-user';
+  $glyphicon: 'glyphicon';
   $caption: 'caption';
   $badge: 'badge';
   margin-top: 15px;
@@ -111,7 +111,7 @@ body {
   > .#{$caption} {
     margin: 0 10px;
     .#{$badge} {
-      background-color: $color-green;
+      background-color: $color-turquoise;
     }
     > p {
       margin: 5px;
@@ -131,7 +131,7 @@ body {
     background-color: $color-rose !important;
   }
   .#{$badge}-winning {
-    background-color: $color-green !important;
+    background-color: $color-turquoise !important;
   }
   @at-root {
     @media only screen and (orientation:portrait) {
@@ -139,10 +139,8 @@ body {
         display: none;
       }
     }
-    @media only screen and (orientation:portrait) {
-      &-waiting {
-        display: block;
-      }
+    & > .img-waiting {
+      display: none;
     }
   }
 }

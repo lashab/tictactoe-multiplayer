@@ -100,7 +100,7 @@ body {
 /* players. */
 .players {
   margin-top: 15px; }
-  .players > .glyphicon-user {
+  .players > .glyphicon {
     display: block;
     font-size: 2.5em;
     text-align: center;
@@ -108,7 +108,7 @@ body {
   .players > .caption {
     margin: 0 10px; }
     .players > .caption .badge {
-      background-color: #5CB85C; }
+      background-color: #02d8ad; }
     .players > .caption > p {
       margin: 5px; }
       .players > .caption > p:first-child {
@@ -120,13 +120,12 @@ body {
   .players .badge-loosing {
     background-color: #F70047 !important; }
   .players .badge-winning {
-    background-color: #5CB85C !important; }
+    background-color: #02d8ad !important; }
   @media only screen and (orientation: portrait) {
     .players {
       display: none; } }
-  @media only screen and (orientation: portrait) {
-    .players-waiting {
-      display: block; } }
+  .players > .img-waiting {
+    display: none; }
 
 /* leave icon. */
 .glyphicon-menu-left {
