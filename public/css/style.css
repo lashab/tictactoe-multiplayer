@@ -21,6 +21,22 @@ body {
     top: 0;
     bottom: 0; }
 
+  body.home .title {
+    font-family: fantasy !important;
+    font-size: normal; }
+  @media only screen and (min-width: 992px) {
+    body.home .row {
+      height: 50%;
+      overflow: auto;
+      margin: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0; }
+    body.home .title {
+      font-size: 4em !important; } }
+
 @-webkit-keyframes fadein {
   0% {
     opacity: 0; }
@@ -63,17 +79,14 @@ body {
 
 /* join form. */
 .id-join {
-  margin-top: 50px; }
+  margin-top: 25px; }
   .id-join .form-group > div {
     margin: 0 auto;
     float: none; }
-    @media (min-width: 992px) {
-      .id-join .form-group > div {
-        width: 20%; } }
   .id-join button {
     display: block;
-    margin: 25px auto;
-    padding: 25px;
+    margin: 0 auto;
+    padding: 20px;
     border: none;
       border-radius: 40px;
     color: #fff;
@@ -83,11 +96,12 @@ body {
     transition: background 0.5s; }
     .id-join button:hover, .id-join button:active, .id-join button:focus {
       color: #fff;
-      background-color: #5CB85C;
+      background-color: #02d8ad;
       outline: none !important; }
   .id-join .alert {
     display: none;
     margin-top: 5px;
+    margin-bottom: 0;
     padding: 5px;
     text-align: center; }
 

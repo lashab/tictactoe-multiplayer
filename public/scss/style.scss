@@ -20,6 +20,28 @@ body {
       top: 0;
       bottom: 0;
     }
+    &.home {
+      $title: '.title';
+      #{$title} {
+        font-family: fantasy !important;
+        font-size: normal;
+      }
+      @media only screen and (min-width: 992px) {
+        .row {
+          height: 50%;
+          overflow: auto;
+          margin: auto;
+          position: absolute;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          right: 0;
+        }
+        #{$title} {
+          font-size: 4em !important;
+        }
+      }
+    }
   }
   $container: '.container-fluid';
   #{$container},
@@ -47,21 +69,18 @@ body {
 
 /* join form. */
 .id-join {
-  margin-top: 50px;
+  $size: 25px;
+  margin-top: $size;
   .form-group {
     > div {
       margin: 0 auto;
       float: none;
-      @media (min-width: 992px) {
-        width: 20%;
-      }
     }
   }
   button {
-    $size: 25px;
     display: block;
-    margin: $size auto;
-    padding: $size;
+    margin: 0 auto;
+    padding: $size - 5;
     border: none {
       radius: $size + 15px;
     }
@@ -74,15 +93,18 @@ body {
     &:active,
     &:focus {
       color: $white;
-      $color-green: #5CB85C !global;
-      background-color: $color-green;
+      $color-turquoise: #02d8ad !global;
+      background-color: $color-turquoise;
       outline: none !important;
     }
   }
   .alert {
     $size: 5px;
     display: none;
-    margin-top: $size;
+    margin: {
+      top: $size;
+      bottom: 0;
+    }
     padding: $size;
     text-align: center;
   }
@@ -102,7 +124,6 @@ body {
   $badge: 'badge';
   margin-top: 15px;
   > .#{$glyphicon} {
-    $color-turquoise: #02d8ad !global;
     display: block;
     font-size: 2.5em;
     text-align: center;

@@ -306,7 +306,7 @@
       $('.x-o-m').modal('hide');
       // set waiting value.
       this.set('waiting', false);
-    ś
+    }
     // render players.
     players.forEach(function(player) {
       // get player element by position.
